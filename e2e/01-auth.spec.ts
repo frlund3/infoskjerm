@@ -1,8 +1,8 @@
 import { test, expect } from "@playwright/test"
 
 const BASE = "http://localhost:3000"
-const TEST_EMAIL = process.env.TEST_EMAIL || "test@gange-rolv.no"
-const TEST_PASSWORD = process.env.TEST_PASSWORD || "testpassord123"
+const TEST_EMAIL = process.env.TEST_EMAIL || "e2einfoskjerm@gmail.com"
+const TEST_PASSWORD = process.env.TEST_PASSWORD || "E2eTestPassord123!"
 
 test.describe("Autentisering", () => {
   test("login-siden vises ved besøk av /admin", async ({ page }) => {
@@ -21,12 +21,6 @@ test.describe("Autentisering", () => {
   })
 
   test("kan logge inn med gyldige credentials", async ({ page }) => {
-    // Krever at TEST_EMAIL og TEST_PASSWORD er satt som miljøvariabler
-    // Kjør: TEST_EMAIL=din@epost.no TEST_PASSWORD=passord npx playwright test
-    test.skip(
-      !process.env.TEST_EMAIL || !process.env.TEST_PASSWORD,
-      "Hopper over: TEST_EMAIL og TEST_PASSWORD env-variabler er ikke satt"
-    )
     await page.goto(`${BASE}/login`)
     await page.locator('input[type="email"]').fill(TEST_EMAIL)
     await page.locator('input[type="password"]').fill(TEST_PASSWORD)

@@ -15,7 +15,10 @@ test.describe("Builder — modul-palette", () => {
     await expect(page.getByText(/application error|unhandled runtime error/i)).not.toBeVisible({
       timeout: 5000,
     })
-    await expect(page.getByRole("heading").first()).toBeVisible({ timeout: 10000 })
+    // Builder bruker ikke <h1> — sjekk at lagre/publiser-knapp er synlig
+    await expect(page.getByRole("button", { name: /lagre|publiser|save/i }).first()).toBeVisible({
+      timeout: 10000,
+    })
   })
 
   test("modul-palette eller canvas er synlig", async ({ page }) => {

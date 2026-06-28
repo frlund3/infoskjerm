@@ -31,9 +31,9 @@ test.describe("Innholdsstyring", () => {
       (r) => r.url().includes("/admin/builder") || r.status() === 200,
       { timeout: 15000 }
     ).catch(() => null)
-    // Sjekk at siden ikke krasjer
+    // Sjekk at siden ikke krasjer — builder bruker ikke <h1>, sjekk lagre-knapp
     await expect(page.getByText(/application error/i)).not.toBeVisible({ timeout: 8000 })
-    await expect(page.getByRole("heading").first()).toBeVisible({ timeout: 10000 })
+    await expect(page.getByRole("button", { name: /lagre|publiser|save/i }).first()).toBeVisible({ timeout: 10000 })
   })
 
   test("kalender-visning (/admin/content/calendar) laster", async ({ page }) => {

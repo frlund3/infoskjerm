@@ -31,9 +31,8 @@ test.describe("Skjermstyring", () => {
     await page.goto(`${BASE}/admin/screens/new`)
     const generateBtn = page.getByRole("button", { name: /generer/i })
     await generateBtn.click()
-    // Etter generering: koden vises (text-5xl = stor skrift)
-    // new-screen-client.tsx setter code i state og viser det
-    await expect(page.locator(".text-5xl, .font-mono, [class*='text-5xl']")).toBeVisible({
+    // Etter generering: koden vises — bruker p.text-5xl.font-black (unik for kode-displayet)
+    await expect(page.locator("p.text-5xl.font-black")).toBeVisible({
       timeout: 10000,
     })
   })

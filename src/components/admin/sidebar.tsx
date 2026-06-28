@@ -169,7 +169,7 @@ export function Sidebar({ user }: SidebarProps) {
           </div>
           <button
             onClick={handleLogout}
-            className="text-zinc-400 hover:text-zinc-700 transition-colors flex-shrink-0"
+            className="text-zinc-400 hover:text-zinc-700 transition-colors flex-shrink-0 p-2.5 -m-2.5 rounded-lg hover:bg-zinc-50"
             title="Logg ut"
           >
             <LogOut className="w-4 h-4" />

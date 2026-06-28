@@ -43,7 +43,8 @@ test.describe("Mobil admin-tilpasning", () => {
     await loginAsAdmin(page)
     await page.goto(`${BASE}/admin`)
 
-    const buttons = await page.getByRole("button").all()
+    // Ekskluder Next.js dev-overlay knapper — kun admin-UI-knapper
+    const buttons = await page.locator("header button, aside button, main button").all()
     const visibleButtons = []
     for (const btn of buttons.slice(0, 8)) {
       const box = await btn.boundingBox()

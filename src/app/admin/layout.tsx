@@ -28,16 +28,18 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       brandFg={chain?.brand_fg ?? undefined}
     >
       <div className="min-h-screen bg-[var(--background)]">
-        <Sidebar
-          user={{
-            email: user.email ?? "",
-            fullName: profile?.full_name ?? "Admin",
-            role,
-            chainName: chain?.name ?? null,
-            chainColor: chain?.color ?? null,
-          }}
-        />
-        <main className="ml-64 min-h-screen flex flex-col">
+        <div className="hidden md:block">
+          <Sidebar
+            user={{
+              email: user.email ?? "",
+              fullName: profile?.full_name ?? "Admin",
+              role,
+              chainName: chain?.name ?? null,
+              chainColor: chain?.color ?? null,
+            }}
+          />
+        </div>
+        <main className="md:ml-64 min-h-screen flex flex-col">
           {children}
         </main>
       </div>

@@ -3,8 +3,8 @@ import { Page, test } from "@playwright/test"
 // Login-URL er /login (ikke /admin/login) — se admin/layout.tsx redirect
 const BASE = "http://localhost:3000"
 
-export const TEST_EMAIL = process.env.TEST_EMAIL || ""
-export const TEST_PASSWORD = process.env.TEST_PASSWORD || ""
+export const TEST_EMAIL = process.env.TEST_EMAIL || "e2einfoskjerm@gmail.com"
+export const TEST_PASSWORD = process.env.TEST_PASSWORD || "E2eTestPassord123!"
 
 /**
  * Logger inn som admin. Forutsetter at TEST_EMAIL og TEST_PASSWORD er satt.
@@ -23,7 +23,5 @@ export async function loginAsAdmin(page: Page) {
  * Bruk i test.beforeEach for suiter som krever innlogging.
  */
 export function skipIfNoCredentials() {
-  if (!TEST_EMAIL || !TEST_PASSWORD) {
-    test.skip(true, "Krever TEST_EMAIL og TEST_PASSWORD miljøvariabler")
-  }
+  // Credentials er alltid satt (testbruker opprettet i Supabase)
 }
