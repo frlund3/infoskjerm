@@ -3,7 +3,7 @@ import { getUsersWithDetails } from "@/lib/admin/queries"
 import { requireRole } from "@/lib/admin/require-role"
 import { Topbar } from "@/components/admin/topbar"
 import { Card, CardContent } from "@/components/ui/card"
-import { Shield, Building2, LayoutGrid, UserCircle } from "lucide-react"
+import { Shield, Building2, LayoutGrid, UserCircle, Network } from "lucide-react"
 import { UserDeleteButton } from "./user-delete-button"
 import { UserRoleSelect } from "./user-role-select"
 import { InviteUserForm } from "./invite-user-form"
@@ -14,6 +14,7 @@ export const dynamic = "force-dynamic"
 const roleConfig: Record<UserRole, { label: string; icon: React.ElementType; color: string; bg: string }> = {
   super_admin: { label: ROLE_LABELS.super_admin, icon: Shield, color: "text-violet-700", bg: "bg-violet-50" },
   chain_manager: { label: ROLE_LABELS.chain_manager, icon: Building2, color: "text-blue-700", bg: "bg-blue-50" },
+  area_manager: { label: ROLE_LABELS.area_manager, icon: Network, color: "text-indigo-700", bg: "bg-indigo-50" },
   store_manager: { label: ROLE_LABELS.store_manager, icon: LayoutGrid, color: "text-emerald-700", bg: "bg-emerald-50" },
   store_employee: { label: ROLE_LABELS.store_employee, icon: UserCircle, color: "text-zinc-600", bg: "bg-zinc-50" },
 }

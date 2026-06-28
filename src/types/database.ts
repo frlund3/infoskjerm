@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       chains: {
@@ -994,6 +1019,7 @@ export type Database = {
       user_role:
         | "super_admin"
         | "chain_manager"
+        | "area_manager"
         | "store_manager"
         | "store_employee"
     }
@@ -1121,6 +1147,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       chain_type: ["EUROSPAR", "JOKER", "SPAR"],
@@ -1138,6 +1167,7 @@ export const Constants = {
       user_role: [
         "super_admin",
         "chain_manager",
+        "area_manager",
         "store_manager",
         "store_employee",
       ],

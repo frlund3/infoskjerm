@@ -105,6 +105,8 @@ export function ScreenDisplay({
   chainName = "Infoskjerm",
   chainShortName = "IS",
   storeName,
+  brandPrimary,
+  brandFg,
 }: {
   token: string
   screenId?: string
@@ -112,6 +114,8 @@ export function ScreenDisplay({
   chainName?: string
   chainShortName?: string
   storeName?: string
+  brandPrimary?: string
+  brandFg?: string
 }) {
   const [slides, setSlides] = useState<Slide[]>([CLOCK_SLIDE])
   const [currentIndex, setCurrentIndex] = useState(0)
@@ -206,8 +210,12 @@ export function ScreenDisplay({
 
   const slide = slides[currentIndex % slides.length]
 
+  const cssVars: React.CSSProperties = brandPrimary
+    ? { '--brand-primary': brandPrimary, '--brand-fg': brandFg ?? '#ffffff' } as React.CSSProperties
+    : {}
+
   return (
-    <div className="w-screen h-screen overflow-hidden relative bg-black">
+    <div className="w-screen h-screen overflow-hidden relative bg-black" style={cssVars}>
       {/* Slide content */}
       <div
         className="absolute inset-0 transition-opacity"

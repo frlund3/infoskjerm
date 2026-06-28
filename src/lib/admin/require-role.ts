@@ -1,7 +1,6 @@
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
-
-type UserRole = "super_admin" | "chain_manager" | "store_manager" | "store_employee"
+import { type UserRole } from "@/lib/roles"
 
 type SupabaseClient = Awaited<ReturnType<typeof createClient>>
 

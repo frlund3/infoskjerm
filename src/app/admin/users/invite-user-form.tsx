@@ -6,10 +6,11 @@ import { inviteUser } from "./actions"
 
 import { ROLE_LABELS, ROLE_DESCRIPTIONS } from "@/lib/roles"
 
-type InviteRole = "chain_manager" | "store_manager" | "store_employee"
+type InviteRole = "chain_manager" | "area_manager" | "store_manager" | "store_employee"
 
 const ROLE_OPTIONS: { value: InviteRole; label: string; desc: string }[] = [
   { value: "chain_manager", label: ROLE_LABELS.chain_manager, desc: ROLE_DESCRIPTIONS.chain_manager },
+  { value: "area_manager", label: ROLE_LABELS.area_manager, desc: ROLE_DESCRIPTIONS.area_manager },
   { value: "store_manager", label: ROLE_LABELS.store_manager, desc: ROLE_DESCRIPTIONS.store_manager },
   { value: "store_employee", label: ROLE_LABELS.store_employee, desc: ROLE_DESCRIPTIONS.store_employee },
 ]

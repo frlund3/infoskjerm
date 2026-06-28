@@ -10,7 +10,7 @@ import {
 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 
-type UserRole = "super_admin" | "chain_manager" | "store_manager" | "store_employee"
+type UserRole = "super_admin" | "chain_manager" | "area_manager" | "store_manager" | "store_employee"
 
 interface NavItem {
   href: string
@@ -29,28 +29,28 @@ const navGroups: NavGroup[] = [
   {
     label: "Oversikt",
     items: [
-      { href: "/admin", label: "Dashboard", icon: LayoutDashboard, roles: ["super_admin", "chain_manager", "store_manager", "store_employee"] },
+      { href: "/admin", label: "Dashboard", icon: LayoutDashboard, roles: ["super_admin", "chain_manager", "area_manager", "store_manager", "store_employee"] },
     ],
   },
   {
     label: "Skjermer",
     items: [
-      { href: "/admin/screens", label: "Mine skjermer", icon: Monitor, roles: ["super_admin", "chain_manager", "store_manager"], matchPrefix: true },
-      { href: "/admin/stores", label: "Enheter", icon: Store, roles: ["super_admin", "chain_manager"] },
+      { href: "/admin/screens", label: "Mine skjermer", icon: Monitor, roles: ["super_admin", "chain_manager", "area_manager", "store_manager"], matchPrefix: true },
+      { href: "/admin/stores", label: "Enheter", icon: Store, roles: ["super_admin", "chain_manager", "area_manager"] },
     ],
   },
   {
     label: "Innhold",
     items: [
-      { href: "/admin/content", label: "Alt innhold", icon: FileStack, roles: ["super_admin", "chain_manager", "store_manager", "store_employee"], matchPrefix: true },
-      { href: "/admin/playlists", label: "Spillelister", icon: ListVideo, roles: ["super_admin", "chain_manager"], matchPrefix: true },
-      { href: "/admin/emergency", label: "Nødkringkasting", icon: AlertTriangle, roles: ["super_admin", "chain_manager"] },
+      { href: "/admin/content", label: "Alt innhold", icon: FileStack, roles: ["super_admin", "chain_manager", "area_manager", "store_manager", "store_employee"], matchPrefix: true },
+      { href: "/admin/playlists", label: "Spillelister", icon: ListVideo, roles: ["super_admin", "chain_manager", "area_manager"], matchPrefix: true },
+      { href: "/admin/emergency", label: "Nødkringkasting", icon: AlertTriangle, roles: ["super_admin", "chain_manager", "area_manager"] },
     ],
   },
   {
     label: "Publisering",
     items: [
-      { href: "/admin/publish", label: "Publiser til skjermer", icon: Send, roles: ["super_admin", "chain_manager", "store_manager"] },
+      { href: "/admin/publish", label: "Publiser til skjermer", icon: Send, roles: ["super_admin", "chain_manager", "area_manager", "store_manager"] },
     ],
   },
   {
@@ -60,7 +60,7 @@ const navGroups: NavGroup[] = [
       { href: "/admin/modules", label: "Moduler", icon: Layers, roles: ["super_admin"] },
       { href: "/admin/zones", label: "Skjermlayout", icon: Layout, roles: ["super_admin"] },
       { href: "/admin/onboarding", label: "Ny tenant", icon: UserPlus, roles: ["super_admin"] },
-      { href: "/admin/settings", label: "Innstillinger", icon: Settings, roles: ["super_admin", "chain_manager", "store_manager"] },
+      { href: "/admin/settings", label: "Innstillinger", icon: Settings, roles: ["super_admin", "chain_manager", "area_manager", "store_manager"] },
     ],
   },
 ]
@@ -78,6 +78,7 @@ interface SidebarProps {
 const roleLabels: Record<string, string> = {
   super_admin: "Super Admin",
   chain_manager: "Tenant Admin",
+  area_manager: "Flerenhetsadmin",
   store_manager: "Enhetsadmin",
   store_employee: "Redaktør",
 }

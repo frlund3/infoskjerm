@@ -3,7 +3,24 @@
 import { useState } from "react"
 import { Trash2, Plus, GripVertical, Clock, ChevronDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { addToPlaylist, removeFromPlaylist, updateItemDuration } from "../../actions"
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core"
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+  arrayMove,
+} from "@dnd-kit/sortable"
+import { CSS } from "@dnd-kit/utilities"
+import { addToPlaylist, removeFromPlaylist, updateItemDuration, reorderPlaylistItems } from "../../actions"
 import { toast } from "sonner"
 
 interface ContentItem {
@@ -39,13 +56,111 @@ const statusColors: Record<string, string> = {
   pending_approval: "bg-amber-100 text-amber-700",
 }
 
-export function PlaylistDetailClient({ playlistId, items, availableContent }: Props) {
+function SortableRow({
+  item,
+  index,
+  onRemove,
+  onDurationChange,
+  removing,
+}: {
+  item: PlaylistItem
+  index: number
+  onRemove: (id: string) => void
+  onDurationChange: (id: string, seconds: number) => void
+  removing: boolean
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 50 : undefined,
+  }
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`flex items-center gap-3 px-5 py-3 bg-white ${isDragging ? "shadow-lg rounded-lg" : ""}`}
+    >
+      <button
+        {...attributes}
+        {...listeners}
+        className="text-zinc-300 hover:text-zinc-500 cursor-grab active:cursor-grabbing touch-none"
+        tabIndex={-1}
+        aria-label="Dra for å endre rekkefølge"
+      >
+        <GripVertical className="w-4 h-4" />
+      </button>
+      <span className="text-xs text-zinc-400 w-5 tabular-nums">{index + 1}</span>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium text-zinc-900 truncate">
+          {item.content_items?.title ?? "Ukjent"}
+        </p>
+        <div className="flex items-center gap-2 mt-0.5">
+          <span className="text-xs text-zinc-400">
+            {typeLabels[item.content_items?.type ?? ""] ?? item.content_items?.type}
+          </span>
+          <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${statusColors[item.content_items?.status ?? "draft"] ?? statusColors.draft}`}>
+            {item.content_items?.status}
+          </span>
+        </div>
+      </div>
+      <div className="flex items-center gap-1.5">
+        <Clock className="w-3.5 h-3.5 text-zinc-300" />
+        <select
+          defaultValue={item.duration_seconds ?? 15}
+          onChange={(e) => onDurationChange(item.id, Number(e.target.value))}
+          className="text-xs border border-zinc-200 rounded-lg px-2 py-1 bg-white text-zinc-700 focus:outline-none"
+        >
+          {[5, 10, 15, 20, 30, 45, 60].map(s => (
+            <option key={s} value={s}>{s}s</option>
+          ))}
+        </select>
+      </div>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-7 w-7 text-red-400 hover:text-red-600 hover:bg-red-50"
+        onClick={() => onRemove(item.id)}
+        disabled={removing}
+      >
+        <Trash2 className="w-3.5 h-3.5" />
+      </Button>
+    </div>
+  )
+}
+
+export function PlaylistDetailClient({ playlistId, items: initialItems, availableContent }: Props) {
+  const [items, setItems] = useState<PlaylistItem[]>(initialItems)
   const [showAddPanel, setShowAddPanel] = useState(false)
   const [addingId, setAddingId] = useState<string | null>(null)
   const [removingId, setRemovingId] = useState<string | null>(null)
 
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  )
+
   const addedContentIds = new Set(items.map(i => i.content_items?.id).filter(Boolean))
   const notAdded = availableContent.filter(c => !addedContentIds.has(c.id))
+
+  async function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+
+    const oldIndex = items.findIndex(i => i.id === active.id)
+    const newIndex = items.findIndex(i => i.id === over.id)
+    const reordered = arrayMove(items, oldIndex, newIndex)
+    setItems(reordered)
+
+    const result = await reorderPlaylistItems(playlistId, reordered.map(i => i.id))
+    if (!result.ok) {
+      setItems(items)
+      toast.error("Kunne ikke lagre rekkefølge")
+    }
+  }
 
   async function handleAdd(contentItemId: string) {
     setAddingId(contentItemId)
@@ -59,8 +174,12 @@ export function PlaylistDetailClient({ playlistId, items, availableContent }: Pr
     setRemovingId(playlistItemId)
     const result = await removeFromPlaylist(playlistItemId, playlistId)
     setRemovingId(null)
-    if (result.ok) toast.success("Fjernet fra spilleliste")
-    else toast.error(result.error ?? "Feil")
+    if (result.ok) {
+      setItems(prev => prev.filter(i => i.id !== playlistItemId))
+      toast.success("Fjernet fra spilleliste")
+    } else {
+      toast.error(result.error ?? "Feil")
+    }
   }
 
   async function handleDurationChange(playlistItemId: string, seconds: number) {
@@ -86,48 +205,22 @@ export function PlaylistDetailClient({ playlistId, items, availableContent }: Pr
             Ingen elementer ennå. Legg til innhold ovenfor.
           </div>
         ) : (
-          <div className="divide-y divide-zinc-50">
-            {items.map((item, index) => (
-              <div key={item.id} className="flex items-center gap-3 px-5 py-3">
-                <span className="text-zinc-300 cursor-grab">
-                  <GripVertical className="w-4 h-4" />
-                </span>
-                <span className="text-xs text-zinc-400 w-5 tabular-nums">{index + 1}</span>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-zinc-900 truncate">
-                    {item.content_items?.title ?? "Ukjent"}
-                  </p>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    <span className="text-xs text-zinc-400">{typeLabels[item.content_items?.type ?? ""] ?? item.content_items?.type}</span>
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${statusColors[item.content_items?.status ?? "draft"] ?? statusColors.draft}`}>
-                      {item.content_items?.status}
-                    </span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <Clock className="w-3.5 h-3.5 text-zinc-300" />
-                  <select
-                    defaultValue={item.duration_seconds ?? 15}
-                    onChange={(e) => handleDurationChange(item.id, Number(e.target.value))}
-                    className="text-xs border border-zinc-200 rounded-lg px-2 py-1 bg-white text-zinc-700 focus:outline-none"
-                  >
-                    {[5, 10, 15, 20, 30, 45, 60].map(s => (
-                      <option key={s} value={s}>{s}s</option>
-                    ))}
-                  </select>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7 text-red-400 hover:text-red-600 hover:bg-red-50"
-                  onClick={() => handleRemove(item.id)}
-                  disabled={removingId === item.id}
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </Button>
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext items={items.map(i => i.id)} strategy={verticalListSortingStrategy}>
+              <div className="divide-y divide-zinc-50">
+                {items.map((item, index) => (
+                  <SortableRow
+                    key={item.id}
+                    item={item}
+                    index={index}
+                    onRemove={handleRemove}
+                    onDurationChange={handleDurationChange}
+                    removing={removingId === item.id}
+                  />
+                ))}
               </div>
-            ))}
-          </div>
+            </SortableContext>
+          </DndContext>
         )}
       </div>
 

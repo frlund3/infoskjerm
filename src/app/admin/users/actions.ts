@@ -4,8 +4,7 @@ import { revalidatePath } from "next/cache"
 import { requireRole } from "@/lib/admin/require-role"
 import { createClient } from "@supabase/supabase-js"
 import { createAdminClient } from "@/lib/supabase/server"
-
-type UserRole = "super_admin" | "chain_manager" | "store_manager" | "store_employee"
+import { type UserRole } from "@/lib/roles"
 
 export async function inviteUser(email: string, role: Exclude<UserRole, "super_admin">) {
   await requireRole(["super_admin", "chain_manager"])
