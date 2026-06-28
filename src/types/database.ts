@@ -16,6 +16,8 @@ export type Database = {
     Tables: {
       chains: {
         Row: {
+          brand_fg: string | null
+          brand_light: string | null
           color: string
           created_at: string | null
           id: string
@@ -23,6 +25,8 @@ export type Database = {
           tenant_id: string
         }
         Insert: {
+          brand_fg?: string | null
+          brand_light?: string | null
           color?: string
           created_at?: string | null
           id?: string
@@ -30,6 +34,8 @@ export type Database = {
           tenant_id: string
         }
         Update: {
+          brand_fg?: string | null
+          brand_light?: string | null
           color?: string
           created_at?: string | null
           id?: string

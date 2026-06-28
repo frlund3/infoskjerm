@@ -11,16 +11,21 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   const { data: profile } = await supabase
     .from("users")
-    .select("full_name, role, chains(name, color)")
+    .select("full_name, role, chains(name, color, brand_light, brand_fg)")
     .eq("id", user.id)
     .single()
 
   const role = profile?.role ?? "store_employee"
-  const chain = (profile as unknown as { chains: { name: string; color: string } | null } | null)?.chains ?? null
+  const chain = (profile as unknown as { chains: { name: string; color: string; brand_light: string | null; brand_fg: string | null } | null } | null)?.chains ?? null
   const chainKey = role === "super_admin" ? "super_admin" : (chain?.name ?? "SPAR")
 
   return (
-    <ChainThemeProvider chainKey={chainKey}>
+    <ChainThemeProvider
+      chainKey={chainKey}
+      brandPrimary={chain?.color ?? undefined}
+      brandLight={chain?.brand_light ?? undefined}
+      brandFg={chain?.brand_fg ?? undefined}
+    >
       <div className="min-h-screen bg-[var(--background)]">
         <Sidebar
           user={{

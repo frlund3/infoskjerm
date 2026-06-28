@@ -67,3 +67,20 @@ export async function deleteScreen(screenId: string) {
   revalidatePath("/admin/settings")
   return { ok: true }
 }
+
+export async function updateChainBranding(
+  chainId: string,
+  color: string,
+  brandLight: string,
+  brandFg: string
+) {
+  const supabase = await requireUser()
+  const { error } = await supabase
+    .from("chains")
+    .update({ color, brand_light: brandLight, brand_fg: brandFg })
+    .eq("id", chainId)
+  if (error) return { ok: false, error: error.message }
+  revalidatePath("/admin/settings")
+  revalidatePath("/admin")
+  return { ok: true }
+}

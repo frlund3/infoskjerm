@@ -3,18 +3,23 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Monitor } from "lucide-react"
 import { createClient } from "@/lib/supabase/server"
 import { DevicesPanel, type ScreenRow } from "./devices-panel"
+import { BrandingPanel } from "./branding-panel"
 
 export const dynamic = "force-dynamic"
 
 export default async function SettingsPage() {
   const supabase = await createClient()
 
-  const [{ data: screens }, { data: stores }] = await Promise.all([
+  const [{ data: screens }, { data: stores }, { data: chains }] = await Promise.all([
     supabase
       .from("screens")
       .select("id, name, token, status, power_state, pending_command, last_seen_at, app_info, stores(name)")
       .order("name"),
     supabase.from("stores").select("id, name").order("name"),
+    supabase
+      .from("chains")
+      .select("id, name, color, brand_light, brand_fg")
+      .order("name"),
   ])
 
   const rows: ScreenRow[] = (screens ?? []).map((s) => ({
@@ -35,6 +40,18 @@ export default async function SettingsPage() {
 
       <div className="flex-1 p-6 space-y-6">
         <DevicesPanel screens={rows} stores={stores ?? []} />
+
+        {chains && chains.length > 0 && (
+          <BrandingPanel
+            chains={chains.map((c) => ({
+              id: c.id,
+              name: c.name,
+              color: c.color,
+              brand_light: c.brand_light,
+              brand_fg: c.brand_fg,
+            }))}
+          />
+        )}
 
         {/* Setup instructions */}
         <Card>
