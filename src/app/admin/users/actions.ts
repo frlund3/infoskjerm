@@ -1,19 +1,12 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
-import { createClient } from "@/lib/supabase/server"
+import { requireRole } from "@/lib/admin/require-role"
 
 type UserRole = "super_admin" | "chain_manager" | "store_manager" | "store_employee"
 
-async function requireUser() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error("Ikke innlogget")
-  return { supabase, userId: user.id }
-}
-
 export async function deleteUser(userId: string) {
-  const { supabase } = await requireUser()
+  const { supabase } = await requireRole(["super_admin", "chain_manager"])
   const { error } = await supabase.from("users").delete().eq("id", userId)
   if (error) return { ok: false, error: error.message }
   revalidatePath("/admin/users")
@@ -21,7 +14,7 @@ export async function deleteUser(userId: string) {
 }
 
 export async function updateUserRole(userId: string, role: UserRole) {
-  const { supabase } = await requireUser()
+  const { supabase } = await requireRole(["super_admin", "chain_manager"])
   const { error } = await supabase
     .from("users")
     .update({ role })

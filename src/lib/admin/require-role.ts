@@ -3,7 +3,9 @@ import { redirect } from "next/navigation"
 
 type UserRole = "super_admin" | "chain_manager" | "store_manager" | "store_employee"
 
-export async function requireRole(allowedRoles: UserRole[]): Promise<{ userId: string; role: UserRole; tenantId: string }> {
+type SupabaseClient = Awaited<ReturnType<typeof createClient>>
+
+export async function requireRole(allowedRoles: UserRole[]): Promise<{ supabase: SupabaseClient; userId: string; role: UserRole; tenantId: string }> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect("/login")
@@ -20,5 +22,5 @@ export async function requireRole(allowedRoles: UserRole[]): Promise<{ userId: s
     redirect("/admin")
   }
 
-  return { userId: user.id, role, tenantId: profile?.tenant_id ?? "" }
+  return { supabase, userId: user.id, role, tenantId: profile?.tenant_id ?? "" }
 }

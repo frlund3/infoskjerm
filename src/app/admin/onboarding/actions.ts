@@ -1,10 +1,10 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
-import { createClient } from "@/lib/supabase/server"
+import { requireRole } from "@/lib/admin/require-role"
 
 export async function createTenant(name: string, slug: string) {
-  const supabase = await createClient()
+  const { supabase } = await requireRole(["super_admin"])
 
   // Check uniqueness
   const { data: existing } = await supabase
@@ -31,7 +31,7 @@ export async function createChainForTenant(
   chainName: "SPAR" | "EUROSPAR" | "JOKER",
   color: string
 ) {
-  const supabase = await createClient()
+  const { supabase } = await requireRole(["super_admin"])
   const { data, error } = await supabase
     .from("chains")
     .insert({ tenant_id: tenantId, name: chainName, color })
@@ -47,7 +47,7 @@ export async function createStoreForChain(
   chainId: string,
   storeName: string
 ) {
-  const supabase = await createClient()
+  const { supabase } = await requireRole(["super_admin"])
   const { data, error } = await supabase
     .from("stores")
     .insert({

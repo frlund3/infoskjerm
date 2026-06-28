@@ -1,15 +1,13 @@
 "use server"
 
+import { randomBytes } from "crypto"
 import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
 
 function generateCode(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
-  let code = ""
-  for (let i = 0; i < 6; i++) {
-    code += chars[Math.floor(Math.random() * chars.length)]
-  }
-  return code
+  const bytes = randomBytes(6)
+  return Array.from(bytes).map(b => chars[b % chars.length]).join("")
 }
 
 export async function createRegistrationCode(storeId: string | null) {

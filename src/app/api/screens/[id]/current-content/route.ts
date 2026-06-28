@@ -1,21 +1,33 @@
 import { createClient } from "@/lib/supabase/server"
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 
 export const dynamic = "force-dynamic"
 
-export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
+  const authHeader = req.headers.get("authorization")
+  const token = authHeader?.replace("Bearer ", "") ?? null
+
   const supabase = await createClient()
 
   // Find content_targets that match this screen (via store, chain, or target_all)
   // First get screen info
   const { data: screen } = await supabase
     .from("screens")
-    .select("id, store_id, stores(chain_id)")
+    .select("id, token, store_id, stores(chain_id)")
     .eq("id", id)
     .single()
 
-  if (!screen) return NextResponse.json({ content: null })
+  if (!screen) return NextResponse.json({ error: "Not found" }, { status: 404 })
+
+  // Tillat enten gyldig screen token ELLER admin-sesjon
+  const { data: { user } } = await supabase.auth.getUser()
+  const hasValidToken = token !== null && (screen as { token?: string | null }).token === token
+  const hasAdminSession = !!user
+
+  if (!hasValidToken && !hasAdminSession) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
 
   const storeId = screen.store_id
   const chainId = (screen.stores as { chain_id: string } | null)?.chain_id ?? null

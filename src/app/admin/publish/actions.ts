@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
+import { requireRole } from "@/lib/admin/require-role"
 import type { Json } from "@/types/database"
 
 async function requireUser() {
@@ -43,7 +44,7 @@ export async function submitForApproval(contentItemId: string) {
 
 // Chain manager / super_admin approves
 export async function approveContent(contentItemId: string) {
-  const { supabase, userId } = await requireUser()
+  const { supabase, userId } = await requireRole(["super_admin", "chain_manager"])
 
   const { data: item } = await supabase
     .from("content_items")
@@ -71,7 +72,7 @@ export async function approveContent(contentItemId: string) {
 
 // Chain manager / super_admin rejects
 export async function rejectContent(contentItemId: string, reason?: string) {
-  const { supabase, userId } = await requireUser()
+  const { supabase, userId } = await requireRole(["super_admin", "chain_manager"])
 
   const { data: item } = await supabase
     .from("content_items")
@@ -106,7 +107,7 @@ export async function publishContent(
   selectedIds: string[],
   scheduledAt?: string | null
 ) {
-  const { supabase, userId } = await requireUser()
+  const { supabase, userId } = await requireRole(["super_admin", "chain_manager"])
 
   const { data: item } = await supabase
     .from("content_items")
@@ -175,7 +176,7 @@ export async function publishContent(
 
 // Rollback a publish (restore from snapshot)
 export async function rollbackContent(publishLogId: string) {
-  const { supabase, userId } = await requireUser()
+  const { supabase, userId } = await requireRole(["super_admin", "chain_manager"])
 
   const { data: logEntry } = await supabase
     .from("publish_log")
@@ -187,14 +188,17 @@ export async function rollbackContent(publishLogId: string) {
 
   const snapshot = logEntry.snapshot as Record<string, unknown>
 
-  // Restore the snapshot (exclude id, tenant_id — keep them from current)
-  const { id, tenant_id, ...restorableFields } = snapshot
-  void id; void tenant_id
+  // Restore only whitelisted fields from snapshot — never spread unknown keys
+  const RESTORABLE_FIELDS = ["title", "type", "body", "valid_from", "valid_to", "scheduled_at"] as const
+  const safeRestore: Record<string, unknown> = {}
+  for (const field of RESTORABLE_FIELDS) {
+    if (field in snapshot) safeRestore[field] = snapshot[field as keyof typeof snapshot]
+  }
 
   const { error } = await supabase
     .from("content_items")
     .update({
-      ...(restorableFields as Record<string, unknown>),
+      ...safeRestore,
       status: "draft",
       updated_at: new Date().toISOString(),
     })

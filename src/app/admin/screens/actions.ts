@@ -1,12 +1,12 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
-import { createClient } from "@/lib/supabase/server"
+import { requireRole } from "@/lib/admin/require-role"
 
 type ScreenCommand = "reload" | "reboot" | "power_off" | "power_on" | "maintenance_on" | "maintenance_off"
 
 export async function sendCommand(screenId: string, command: ScreenCommand) {
-  const supabase = await createClient()
+  const { supabase } = await requireRole(["super_admin", "chain_manager", "store_manager"])
   const { error } = await supabase
     .from("screens")
     .update({ pending_command: command })
@@ -17,7 +17,7 @@ export async function sendCommand(screenId: string, command: ScreenCommand) {
 }
 
 export async function sendBulkCommand(screenIds: string[], command: ScreenCommand) {
-  const supabase = await createClient()
+  const { supabase } = await requireRole(["super_admin", "chain_manager", "store_manager"])
   const { error } = await supabase
     .from("screens")
     .update({ pending_command: command })
@@ -28,7 +28,7 @@ export async function sendBulkCommand(screenIds: string[], command: ScreenComman
 }
 
 export async function setMaintenanceMode(screenId: string, enable: boolean) {
-  const supabase = await createClient()
+  const { supabase } = await requireRole(["super_admin", "chain_manager", "store_manager"])
   const { error } = await supabase
     .from("screens")
     .update({

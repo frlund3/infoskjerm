@@ -1,11 +1,9 @@
 "use server"
 import { revalidatePath } from "next/cache"
-import { createClient } from "@/lib/supabase/server"
+import { requireRole } from "@/lib/admin/require-role"
 
 export async function duplicateContentItem(id: string) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { ok: false, error: "Ikke innlogget" }
+  const { supabase, userId } = await requireRole(["super_admin", "chain_manager", "store_manager"])
 
   const { data: original } = await supabase
     .from("content_items")
@@ -21,7 +19,7 @@ export async function duplicateContentItem(id: string) {
     body: original.body,
     status: "draft",
     tenant_id: original.tenant_id,
-    created_by: user.id,
+    created_by: userId,
   })
 
   if (error) return { ok: false, error: error.message }
@@ -34,7 +32,7 @@ export async function duplicateContentItem(id: string) {
 }
 
 export async function deleteContentItem(id: string) {
-  const supabase = await createClient()
+  const { supabase } = await requireRole(["super_admin", "chain_manager", "store_manager"])
   await supabase.from("content_items").delete().eq("id", id)
   revalidatePath("/admin/content")
   revalidatePath("/admin/content/news")
@@ -45,14 +43,14 @@ export async function deleteContentItem(id: string) {
 }
 
 export async function quickApprove(id: string) {
-  const supabase = await createClient()
+  const { supabase } = await requireRole(["super_admin", "chain_manager"])
   await supabase.from("content_items").update({ status: "approved" }).eq("id", id)
   revalidatePath("/admin/content/news")
   revalidatePath("/admin/content/stats")
 }
 
 export async function rejectContentItem(id: string) {
-  const supabase = await createClient()
+  const { supabase } = await requireRole(["super_admin", "chain_manager"])
   await supabase.from("content_items").update({ status: "rejected" }).eq("id", id)
   revalidatePath("/admin/content/news")
   revalidatePath("/admin/content/stats")

@@ -17,7 +17,7 @@ export function CustomUrlModule({ fields }: Props) {
         src={url}
         className="w-full h-full border-0 origin-top-left"
         style={{ transform: `scale(${zoom / 100})`, width: `${10000 / zoom}%`, height: `${10000 / zoom}%` }}
-        sandbox="allow-scripts allow-same-origin allow-forms"
+        sandbox="allow-scripts allow-forms allow-popups"
       />
     </div>
   )
