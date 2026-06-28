@@ -4,9 +4,7 @@ import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 import {
-  LayoutDashboard, Store, Monitor, ListVideo, Send, Users,
-  Settings, ChevronRight, LogOut, Layers, Layout,
-  UserPlus, AlertTriangle, FileStack, PlusCircle,
+  Store, Monitor, Users, Settings, ChevronRight, LogOut,
 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 
@@ -29,39 +27,19 @@ const navGroups: NavGroup[] = [
   {
     label: "Oversikt",
     items: [
-      { href: "/admin", label: "Dashboard", icon: LayoutDashboard, roles: ["super_admin", "chain_manager", "area_manager", "store_manager", "store_employee"] },
-      { href: "/admin/cms", label: "Skjermsystem", icon: Monitor, roles: ["super_admin", "chain_manager", "area_manager"] },
+      { href: "/admin/cms", label: "Skjermsystem", icon: Monitor, roles: ["super_admin", "chain_manager", "area_manager", "store_manager"], matchPrefix: true },
     ],
   },
   {
-    label: "Skjermer",
+    label: "Butikker",
     items: [
-      { href: "/admin/screens", label: "Mine skjermer", icon: Monitor, roles: ["super_admin", "chain_manager", "area_manager", "store_manager"], matchPrefix: true },
-      { href: "/admin/stores", label: "Enheter", icon: Store, roles: ["super_admin", "chain_manager", "area_manager"] },
-    ],
-  },
-  {
-    label: "Innhold",
-    items: [
-      { href: "/admin/content/new", label: "Nytt innhold", icon: PlusCircle, roles: ["super_admin", "chain_manager", "area_manager", "store_manager", "store_employee"] },
-      { href: "/admin/content", label: "Alt innhold", icon: FileStack, roles: ["super_admin", "chain_manager", "area_manager", "store_manager", "store_employee"], matchPrefix: true },
-      { href: "/admin/playlists", label: "Spillelister", icon: ListVideo, roles: ["super_admin", "chain_manager", "area_manager"], matchPrefix: true },
-      { href: "/admin/emergency", label: "Nødkringkasting", icon: AlertTriangle, roles: ["super_admin", "chain_manager", "area_manager"] },
-    ],
-  },
-  {
-    label: "Publisering",
-    items: [
-      { href: "/admin/publish", label: "Publiser til skjermer", icon: Send, roles: ["super_admin", "chain_manager", "area_manager", "store_manager"] },
+      { href: "/admin/stores", label: "Butikker", icon: Store, roles: ["super_admin", "chain_manager", "area_manager"], matchPrefix: true },
     ],
   },
   {
     label: "Admin",
     items: [
       { href: "/admin/users", label: "Brukere", icon: Users, roles: ["super_admin", "chain_manager"] },
-      { href: "/admin/modules", label: "Moduler", icon: Layers, roles: ["super_admin"] },
-      { href: "/admin/zones", label: "Skjermlayout", icon: Layout, roles: ["super_admin"] },
-      { href: "/admin/onboarding", label: "Ny tenant", icon: UserPlus, roles: ["super_admin"] },
       { href: "/admin/settings", label: "Innstillinger", icon: Settings, roles: ["super_admin", "chain_manager", "area_manager", "store_manager"] },
     ],
   },
