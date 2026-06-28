@@ -119,6 +119,23 @@ Anbefaling: prototyp vei 1 først (gir reneste «én rad = én nyhet»-modell), 
 - Bildelagring: Xibo media-bibliotek via API, eller Supabase Storage + URL inn i DataSet.
 - Hvor mange skjermer i MVP, og hvilken kjede som er først ut.
 
+## Innholds-CMS (white-label authoring) — låst plan
+
+Bygges som én komplett enhet i appen (`infoskjerm.framtidtech.no`), oppå eksisterende
+Supabase-tabeller (`content_items`, `content_targets`, `stores`) + `media-uploader.tsx`.
+
+**Innholdstyper:** nyhet, bursdagshilsen, konkurranse, lokalt tilbud, ticker (utvidbart).
+**Per sak:** rik HTML-editor (Tiptap), bilde-opplasting (Supabase Storage), mottaker-velger
+(flere valgte butikker / alle), fra/til-dato, status (utkast→publisert), rediger/dupliser/slett.
+**Flate:** `/admin/innhold` (liste m/ søk+filter) + opprett + rediger. RÅFLOTT design.
+**Synk til Xibo:** publisert innhold pushes til Xibo (DataSet/layout) målrettet butikkenes
+display groups. Rendering-vei avgjøres med spike (DataSet-filtrering vs gruppe-planlegging).
+
+**Prep før bygging:**
+1. Rydd dobbel lockfile (behold pnpm-lock.yaml, fjern package-lock.json) så Vercel bygger konsistent.
+2. Legg til Tiptap (`@tiptap/react @tiptap/pm @tiptap/starter-kit @tiptap/extension-link`).
+3. Migrasjon: utvid `content_type`-enum med `birthday`, `ticker`, `offer` (verifiser prosjekt-ID fcxwrfmdvfjulhoebceq først).
+
 ## Ikke i scope (YAGNI for MVP)
 
 - Full multi-tenant SaaS-isolasjon for mange separate kunder (én Xibo-instans nå; flerkunde vurderes senere).
