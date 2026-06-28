@@ -1,81 +1,38 @@
 import { Topbar } from "@/components/admin/topbar"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import {
-  Monitor, Store, Newspaper, Trophy,
-  TrendingUp, TrendingDown, AlertCircle, CheckCircle2,
-  ArrowRight, Eye
-} from "lucide-react"
+import { ScreenStatusDot } from "@/components/admin/screen-status-dot"
+import { Monitor, Store, AlertCircle, CheckCircle2, ArrowRight } from "lucide-react"
 import Link from "next/link"
+import { createClient } from "@/lib/supabase/server"
+import { getAdminStats, getChainOverview, formatLastSeen, getScreenStatusColor } from "@/lib/admin/queries"
 
-const stats = [
-  {
-    label: "Aktive skjermer",
-    value: "17",
-    sub: "av 17 totalt",
-    icon: Monitor,
-    trend: "+2 denne uken",
-    up: true,
-    color: "text-emerald-600",
-    bg: "bg-emerald-50",
-  },
-  {
-    label: "Butikker",
-    value: "17",
-    sub: "3 kjeder",
-    icon: Store,
-    trend: "Alle aktive",
-    up: true,
-    color: "text-blue-600",
-    bg: "bg-blue-50",
-  },
-  {
-    label: "Aktive nyheter",
-    value: "8",
-    sub: "2 venter godkjenning",
-    icon: Newspaper,
-    trend: "+3 siden i går",
-    up: true,
-    color: "text-violet-600",
-    bg: "bg-violet-50",
-  },
-  {
-    label: "Aktive konkurranser",
-    value: "2",
-    sub: "1 utløper snart",
-    icon: Trophy,
-    trend: "Avsluttes fredag",
-    up: false,
-    color: "text-amber-600",
-    bg: "bg-amber-50",
-  },
-]
+export const dynamic = "force-dynamic"
 
-const recentActivity = [
-  { type: "news", text: "Ny nyhet publisert: Sommeråpningstider", store: "EUROSPAR MOA", time: "5 min siden", status: "published" },
-  { type: "approval", text: "Venter godkjenning: Ukens tilbud", store: "SPAR ULSTEINVIK", time: "23 min siden", status: "pending" },
-  { type: "screen", text: "Skjerm koblet til: Personalrom", store: "JOKER GODØY", time: "1 time siden", status: "online" },
-  { type: "competition", text: "Konkurranse oppdatert: Sommerquiz", store: "Alle butikker", time: "2 timer siden", status: "published" },
-  { type: "screen", text: "Skjerm offline", store: "SPAR HORNINDAL", time: "3 timer siden", status: "offline" },
-]
+export default async function AdminDashboard() {
+  const supabase = await createClient()
 
-const chainOverview = [
-  { name: "EUROSPAR", stores: 6, screens: 6, color: "#E30613", online: 6 },
-  { name: "JOKER", stores: 2, screens: 2, color: "#F7A600", online: 2 },
-  { name: "SPAR", stores: 9, screens: 9, color: "#007B40", online: 8 },
-]
+  const [stats, chains] = await Promise.all([
+    getAdminStats(supabase),
+    getChainOverview(supabase),
+  ])
 
-export default function AdminDashboard() {
+  const { data: recentScreens } = await supabase
+    .from("screens")
+    .select("id, name, status, last_heartbeat, stores(name)")
+    .order("last_heartbeat", { ascending: false, nullsFirst: false })
+    .limit(16)
+
+  const screens = recentScreens ?? []
+
   return (
     <div className="flex flex-col flex-1">
       <Topbar
         title="Dashboard"
         subtitle="Gange-Rolv Infoskjerm — oversikt"
         actions={
-          <Button asChild size="sm">
+          <Button asChild size="sm" style={{ backgroundColor: "var(--brand-primary)", color: "var(--brand-fg)" }}>
             <Link href="/admin/publish">
-              <Eye className="w-4 h-4" />
               Publiser innhold
             </Link>
           </Button>
@@ -83,152 +40,141 @@ export default function AdminDashboard() {
       />
 
       <div className="flex-1 p-6 space-y-6">
-        {/* Stat cards */}
         <div className="grid grid-cols-4 gap-4">
-          {stats.map((stat) => {
-            const Icon = stat.icon
-            return (
-              <Card key={stat.label} className="relative overflow-hidden">
-                <CardContent className="p-5">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-xs text-zinc-500 font-medium">{stat.label}</p>
-                      <p className="text-3xl font-bold text-zinc-900 mt-1">{stat.value}</p>
-                      <p className="text-xs text-zinc-400 mt-0.5">{stat.sub}</p>
-                    </div>
-                    <div className={`w-10 h-10 rounded-xl ${stat.bg} flex items-center justify-center`}>
-                      <Icon className={`w-5 h-5 ${stat.color}`} />
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1 mt-3">
-                    {stat.up
-                      ? <TrendingUp className="w-3 h-3 text-emerald-500" />
-                      : <TrendingDown className="w-3 h-3 text-amber-500" />
-                    }
-                    <span className={`text-xs ${stat.up ? "text-emerald-600" : "text-amber-600"}`}>
-                      {stat.trend}
-                    </span>
-                  </div>
-                </CardContent>
-              </Card>
-            )
-          })}
+          <Card>
+            <CardContent className="p-5">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-xs text-zinc-500 font-medium">Skjermer online</p>
+                  <p className="text-3xl font-bold text-zinc-900 mt-1">{stats.onlineScreens}</p>
+                  <p className="text-xs text-zinc-400 mt-0.5">av {stats.totalScreens} totalt</p>
+                </div>
+                <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center">
+                  <Monitor className="w-5 h-5 text-emerald-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-5">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-xs text-zinc-500 font-medium">Butikker</p>
+                  <p className="text-3xl font-bold text-zinc-900 mt-1">{stats.totalStores}</p>
+                  <p className="text-xs text-zinc-400 mt-0.5">{chains.length} kjeder</p>
+                </div>
+                <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
+                  <Store className="w-5 h-5 text-blue-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-5">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-xs text-zinc-500 font-medium">Til godkjenning</p>
+                  <p className="text-3xl font-bold text-zinc-900 mt-1">{stats.pendingApproval}</p>
+                  <p className="text-xs text-zinc-400 mt-0.5">venter på deg</p>
+                </div>
+                <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center">
+                  <AlertCircle className="w-5 h-5 text-amber-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-5">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-xs text-zinc-500 font-medium">Innhold live</p>
+                  <p className="text-3xl font-bold text-zinc-900 mt-1">{stats.liveContent}</p>
+                  <p className="text-xs text-zinc-400 mt-0.5">aktive elementer</p>
+                </div>
+                <div className="w-10 h-10 rounded-xl bg-violet-50 flex items-center justify-center">
+                  <CheckCircle2 className="w-5 h-5 text-violet-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         <div className="grid grid-cols-3 gap-4">
-          {/* Kjede-oversikt */}
           <Card className="col-span-1">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm">Kjeder</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {chainOverview.map((chain) => (
+              {chains.length === 0 && (
+                <p className="text-sm text-zinc-400 text-center py-4">Ingen kjeder funnet</p>
+              )}
+              {chains.map((chain) => (
                 <div key={chain.name} className="flex items-center gap-3">
-                  <div
-                    className="w-2 h-10 rounded-full flex-shrink-0"
-                    style={{ backgroundColor: chain.color }}
-                  />
+                  <div className="w-2 h-10 rounded-full flex-shrink-0" style={{ backgroundColor: chain.color }} />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
                       <p className="text-sm font-semibold text-zinc-900">{chain.name}</p>
-                      <span className="text-xs text-zinc-400">{chain.stores} butikker</span>
+                      <span className="text-xs text-zinc-400">{chain.storeCount} butikker</span>
                     </div>
                     <div className="flex items-center gap-2 mt-1">
                       <div className="flex-1 h-1.5 bg-zinc-100 rounded-full overflow-hidden">
                         <div
-                          className="h-full rounded-full bg-emerald-500"
-                          style={{ width: `${(chain.online / chain.screens) * 100}%` }}
+                          className="h-full rounded-full bg-emerald-500 transition-all"
+                          style={{ width: chain.totalScreens > 0 ? `${(chain.onlineScreens / chain.totalScreens) * 100}%` : "0%" }}
                         />
                       </div>
-                      <span className="text-xs text-zinc-500">{chain.online}/{chain.screens} online</span>
+                      <span className="text-xs text-zinc-500">{chain.onlineScreens}/{chain.totalScreens} online</span>
                     </div>
                   </div>
                 </div>
               ))}
-              <Button variant="ghost" size="sm" className="w-full mt-2" asChild>
+              <Button variant="ghost" size="sm" className="w-full mt-2 text-zinc-500" asChild>
                 <Link href="/admin/stores">
-                  Se alle butikker <ArrowRight className="w-3 h-3" />
+                  Se alle butikker <ArrowRight className="w-3 h-3 ml-1" />
                 </Link>
               </Button>
             </CardContent>
           </Card>
 
-          {/* Aktivitet */}
           <Card className="col-span-2">
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm">Siste aktivitet</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm">Skjermstatus</CardTitle>
+                <Button variant="ghost" size="sm" className="text-zinc-400" asChild>
+                  <Link href="/admin/screens">Se alle <ArrowRight className="w-3 h-3 ml-1" /></Link>
+                </Button>
+              </div>
             </CardHeader>
-            <CardContent className="space-y-0">
-              {recentActivity.map((item, i) => (
-                <div key={i} className="flex items-start gap-3 py-3 border-b border-zinc-50 last:border-0">
-                  <div className="mt-0.5 flex-shrink-0">
-                    {item.status === "pending" && <AlertCircle className="w-4 h-4 text-amber-500" />}
-                    {item.status === "published" && <CheckCircle2 className="w-4 h-4 text-emerald-500" />}
-                    {item.status === "online" && <CheckCircle2 className="w-4 h-4 text-blue-500" />}
-                    {item.status === "offline" && <AlertCircle className="w-4 h-4 text-red-500" />}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-zinc-800">{item.text}</p>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <span className="text-xs text-zinc-400">{item.store}</span>
-                      <span className="text-zinc-200">·</span>
-                      <span className="text-xs text-zinc-400">{item.time}</span>
-                    </div>
-                  </div>
-                  {item.status === "pending" && (
-                    <Badge variant="warning" className="flex-shrink-0">Godkjenn</Badge>
-                  )}
+            <CardContent>
+              {screens.length === 0 && (
+                <div className="text-center py-8">
+                  <Monitor className="w-8 h-8 text-zinc-200 mx-auto mb-2" />
+                  <p className="text-sm text-zinc-400">Ingen skjermer registrert ennå</p>
+                  <Button size="sm" className="mt-3" asChild>
+                    <Link href="/admin/settings">Registrer første skjerm</Link>
+                  </Button>
                 </div>
-              ))}
+              )}
+              <div className="grid grid-cols-4 gap-2">
+                {screens.map((screen) => {
+                  const color = getScreenStatusColor(screen.status, screen.last_heartbeat)
+                  const bgMap = { green: "bg-emerald-50 border-emerald-100", yellow: "bg-amber-50 border-amber-100", red: "bg-red-50 border-red-100" }
+                  const storeName = (screen.stores as { name: string } | null)?.name ?? "Ukjent"
+                  return (
+                    <div key={screen.id} className={`rounded-lg p-2.5 border text-center ${bgMap[color]}`}>
+                      <ScreenStatusDot status={screen.status} lastHeartbeat={screen.last_heartbeat} size="sm" />
+                      <p className="text-[10px] font-medium text-zinc-700 leading-tight mt-1.5">{storeName}</p>
+                      <p className="text-[9px] text-zinc-400 mt-0.5">{formatLastSeen(screen.last_heartbeat)}</p>
+                    </div>
+                  )
+                })}
+              </div>
             </CardContent>
           </Card>
         </div>
-
-        {/* Skjermstatus grid */}
-        <Card>
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm">Skjermstatus — alle butikker</CardTitle>
-              <Button variant="ghost" size="sm" asChild>
-                <Link href="/admin/screens">Se alle <ArrowRight className="w-3 h-3" /></Link>
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-6 gap-2">
-              {[
-                { name: "EUROSPAR BLINDHEIM", online: true },
-                { name: "EUROSPAR HAREID", online: true },
-                { name: "EUROSPAR LARSGÅRDEN", online: true },
-                { name: "EUROSPAR MOA", online: true },
-                { name: "EUROSPAR ÅLESUND", online: true },
-                { name: "EUROSPAR ØRSTA", online: true },
-                { name: "JOKER GODØY", online: true },
-                { name: "JOKER ÅHEIM", online: true },
-                { name: "SPAR ELLINGSØY", online: true },
-                { name: "SPAR HORNINDAL", online: false },
-                { name: "SPAR LANGEVÅG", online: true },
-                { name: "SPAR RAUDEBERG", online: true },
-                { name: "SPAR STRAUMANE", online: true },
-                { name: "SPAR TRESFJORD", online: true },
-                { name: "SPAR ULSTEINVIK", online: true },
-                { name: "SPAR FISKÅ", online: true },
-              ].map((screen) => (
-                <div
-                  key={screen.name}
-                  className={`rounded-lg p-2.5 border text-center ${
-                    screen.online
-                      ? "bg-emerald-50 border-emerald-100"
-                      : "bg-red-50 border-red-100"
-                  }`}
-                >
-                  <div className={`w-2 h-2 rounded-full mx-auto mb-1.5 ${screen.online ? "bg-emerald-500" : "bg-red-500"}`} />
-                  <p className="text-[10px] font-medium text-zinc-700 leading-tight">{screen.name}</p>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </div>
   )
