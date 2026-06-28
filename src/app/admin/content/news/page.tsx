@@ -9,6 +9,7 @@ import Link from "next/link"
 import { ContentDeleteButton } from "../_components/content-delete-button"
 import { ContentApproveButton } from "../_components/content-approve-button"
 import { ContentRejectButton } from "../_components/content-reject-button"
+import { ContentDuplicateButton } from "../_components/content-duplicate-button"
 
 export const dynamic = "force-dynamic"
 
@@ -113,6 +114,7 @@ export default async function NewsPage() {
                           <Pencil className="w-4 h-4" />
                         </Link>
                       </Button>
+                      <ContentDuplicateButton itemId={item.id} />
                       <ContentDeleteButton itemId={item.id} />
                     </div>
                   </div>

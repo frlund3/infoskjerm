@@ -3,6 +3,7 @@ import { getPlaylistsWithItems } from "@/lib/admin/queries"
 import { Topbar } from "@/components/admin/topbar"
 import { Card, CardContent } from "@/components/ui/card"
 import { Play, ListVideo } from "lucide-react"
+import Link from "next/link"
 import { PlaylistDeleteButton } from "./playlist-delete-button"
 import { PlaylistFormDialog } from "./playlist-form-dialog"
 
@@ -80,10 +81,11 @@ export default async function PlaylistsPage() {
                       </div>
                     )}
 
-                    <div className="flex items-center justify-end pt-3 border-t border-zinc-100">
-                      <div className="flex items-center gap-1">
-                        <PlaylistDeleteButton playlistId={pl.id} />
-                      </div>
+                    <div className="flex items-center justify-between pt-3 border-t border-zinc-100">
+                      <Link href={`/admin/playlists/${pl.id}`} className="text-xs text-zinc-500 hover:text-zinc-900 border border-zinc-200 px-3 py-1.5 rounded-lg transition-colors font-medium">
+                        Rediger innhold
+                      </Link>
+                      <PlaylistDeleteButton playlistId={pl.id} />
                     </div>
                   </CardContent>
                 </Card>

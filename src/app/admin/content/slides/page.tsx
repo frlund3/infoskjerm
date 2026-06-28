@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Plus, Pencil, Eye, Image as ImageIcon, GripVertical } from "lucide-react"
 import Link from "next/link"
 import { ContentDeleteButton } from "../_components/content-delete-button"
+import { ContentDuplicateButton } from "../_components/content-duplicate-button"
 
 export const dynamic = "force-dynamic"
 
@@ -85,6 +86,7 @@ export default async function SlidesPage() {
                           <Pencil className="w-4 h-4" />
                         </Link>
                       </Button>
+                      <ContentDuplicateButton itemId={slide.id} />
                       <ContentDeleteButton itemId={slide.id} />
                     </div>
                   </div>
