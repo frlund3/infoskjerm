@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useMemo } from "react"
+import { motion, AnimatePresence } from "framer-motion"
 import { useScreenStatuses } from "@/lib/realtime/screens"
 import { ScreenCard } from "./screen-card"
 import { ScreenSlideOver } from "./screen-slide-over"
@@ -172,34 +173,46 @@ export function ScreenMapClient({ screens: initialScreens }: ScreenMapClientProp
         </div>
       ) : viewMode === "grid" ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-          {filtered.map((screen) => {
-            const storeData = screen.stores
-            return (
-              <ScreenCard
-                key={screen.id}
-                screen={{
-                  id: screen.id,
-                  name: screen.name,
-                  status: screen.status,
-                  last_heartbeat: screen.last_heartbeat,
-                  last_seen_at: screen.last_seen_at,
-                  store_name: storeData?.name ?? "—",
-                  store_chain_color: storeData?.chains?.color ?? "#888",
-                  pending_command: screen.pending_command,
-                  power_state: screen.power_state,
-                  app_info: screen.app_info,
-                }}
-                isSelected={selectedIds.includes(screen.id)}
-                onClick={() => setActiveScreenId(screen.id === activeScreenId ? null : screen.id)}
-                onSelect={(e) => toggleSelect(screen.id, e)}
-              />
-            )
-          })}
+          <AnimatePresence mode="popLayout">
+            {filtered.map((screen, i) => {
+              const storeData = screen.stores
+              return (
+                <motion.div
+                  key={screen.id}
+                  layout
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.3, delay: i * 0.03, ease: [0.16, 1, 0.3, 1] }}
+                  whileHover={{ y: -2 }}
+                >
+                  <ScreenCard
+                    screen={{
+                      id: screen.id,
+                      name: screen.name,
+                      status: screen.status,
+                      last_heartbeat: screen.last_heartbeat,
+                      last_seen_at: screen.last_seen_at,
+                      store_name: storeData?.name ?? "—",
+                      store_chain_color: storeData?.chains?.color ?? "#888",
+                      pending_command: screen.pending_command,
+                      power_state: screen.power_state,
+                      app_info: screen.app_info,
+                    }}
+                    isSelected={selectedIds.includes(screen.id)}
+                    onClick={() => setActiveScreenId(screen.id === activeScreenId ? null : screen.id)}
+                    onSelect={(e) => toggleSelect(screen.id, e)}
+                  />
+                </motion.div>
+              )
+            })}
+          </AnimatePresence>
         </div>
       ) : (
         // List view
         <div className="space-y-1.5">
-          {filtered.map((screen) => {
+          <AnimatePresence mode="popLayout">
+          {filtered.map((screen, i) => {
             const storeData = screen.stores
             const chainColor = storeData?.chains?.color ?? "#888"
             const isOnline =
@@ -207,8 +220,13 @@ export function ScreenMapClient({ screens: initialScreens }: ScreenMapClientProp
               Date.now() - new Date(screen.last_heartbeat).getTime() < 30_000
             const isMaintenance = screen.status === "maintenance"
             return (
-              <div
+              <motion.div
                 key={screen.id}
+                layout
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 10 }}
+                transition={{ duration: 0.2, delay: i * 0.02 }}
                 onClick={() => setActiveScreenId(screen.id === activeScreenId ? null : screen.id)}
                 className={`flex items-center gap-4 px-4 py-3 rounded-xl border cursor-pointer transition-all ${
                   selectedIds.includes(screen.id)
@@ -262,9 +280,10 @@ export function ScreenMapClient({ screens: initialScreens }: ScreenMapClientProp
                     {screen.pending_command}
                   </span>
                 )}
-              </div>
+              </motion.div>
             )
           })}
+          </AnimatePresence>
         </div>
       )}
 

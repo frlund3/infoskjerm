@@ -1,5 +1,6 @@
 import { Topbar } from "@/components/admin/topbar"
 import { Button } from "@/components/ui/button"
+import { PageTransition } from "@/components/admin/page-transition"
 import { Plus, Monitor, CheckCircle2, XCircle, Settings2 } from "lucide-react"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/server"
@@ -40,6 +41,7 @@ export default async function ScreensPage() {
 
   return (
     <div className="flex flex-col flex-1">
+      <PageTransition>
       <Topbar
         title="Skjermer"
         subtitle={`${online} online · ${offline} offline · ${maintenance} vedlikehold`}
@@ -77,6 +79,7 @@ export default async function ScreensPage() {
         {/* Live map */}
         <ScreenMapClient screens={screens} />
       </div>
+      </PageTransition>
     </div>
   )
 }

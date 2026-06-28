@@ -1,6 +1,7 @@
 "use client"
 
 import { useDraggable } from "@dnd-kit/core"
+import { motion } from "framer-motion"
 import { formatModuleCategory, categoryOrder } from "@/lib/admin/modules"
 import type { ModuleRow } from "@/lib/admin/modules"
 import { Search } from "lucide-react"
@@ -17,16 +18,19 @@ function DraggableModuleItem({ mod }: { mod: ModuleRow }) {
   })
 
   return (
-    <div
+    <motion.div
       ref={setNodeRef}
       {...listeners}
       {...attributes}
-      className={`flex items-center gap-2.5 bg-white border border-zinc-200 rounded-lg px-3 py-2.5 cursor-grab active:cursor-grabbing select-none transition-all ${
+      whileHover={isDragging ? {} : { scale: 1.02, y: -2 }}
+      whileTap={{ scale: 0.98 }}
+      transition={{ duration: 0.15 }}
+      className={`flex items-center gap-2.5 bg-white border border-zinc-200 rounded-lg px-3 py-2.5 cursor-grab active:cursor-grabbing select-none transition-colors ${
         isDragging ? 'opacity-30 scale-95' : 'hover:border-zinc-300 hover:shadow-sm'
       }`}
     >
       <span className="text-xs text-zinc-500 leading-tight font-medium">{mod.name}</span>
-    </div>
+    </motion.div>
   )
 }
 

@@ -1,7 +1,9 @@
 import { Topbar } from "@/components/admin/topbar"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card" // still used for chains + screens sections
 import { Button } from "@/components/ui/button"
 import { ScreenStatusDot } from "@/components/admin/screen-status-dot"
+import { AnimatedStatCard } from "./_components/animated-stat-card"
+import { PageTransition } from "@/components/admin/page-transition"
 import { Monitor, Store, AlertCircle, CheckCircle2, ArrowRight } from "lucide-react"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/server"
@@ -46,67 +48,41 @@ export default async function AdminDashboard() {
         }
       />
 
+      <PageTransition>
       <div className="flex-1 p-6 space-y-6">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card>
-            <CardContent className="p-5">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-xs text-zinc-500 font-medium">Skjermer online</p>
-                  <p className="text-3xl font-bold text-zinc-900 mt-1">{stats.onlineScreens}</p>
-                  <p className="text-xs text-zinc-400 mt-0.5">av {stats.totalScreens} totalt</p>
-                </div>
-                <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center">
-                  <Monitor className="w-5 h-5 text-emerald-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-5">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-xs text-zinc-500 font-medium">Butikker</p>
-                  <p className="text-3xl font-bold text-zinc-900 mt-1">{stats.totalStores}</p>
-                  <p className="text-xs text-zinc-400 mt-0.5">{chains.length} kjeder</p>
-                </div>
-                <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
-                  <Store className="w-5 h-5 text-blue-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-5">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-xs text-zinc-500 font-medium">Til godkjenning</p>
-                  <p className="text-3xl font-bold text-zinc-900 mt-1">{stats.pendingApproval}</p>
-                  <p className="text-xs text-zinc-400 mt-0.5">venter på deg</p>
-                </div>
-                <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center">
-                  <AlertCircle className="w-5 h-5 text-amber-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-5">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-xs text-zinc-500 font-medium">Innhold live</p>
-                  <p className="text-3xl font-bold text-zinc-900 mt-1">{stats.liveContent}</p>
-                  <p className="text-xs text-zinc-400 mt-0.5">aktive elementer</p>
-                </div>
-                <div className="w-10 h-10 rounded-xl bg-violet-50 flex items-center justify-center">
-                  <CheckCircle2 className="w-5 h-5 text-violet-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <AnimatedStatCard
+            label="Skjermer online"
+            value={stats.onlineScreens}
+            sublabel={`av ${stats.totalScreens} totalt`}
+            icon={<Monitor className="w-5 h-5 text-emerald-600" />}
+            color="bg-emerald-50"
+            delay={0}
+          />
+          <AnimatedStatCard
+            label="Butikker"
+            value={stats.totalStores}
+            sublabel={`${chains.length} kjeder`}
+            icon={<Store className="w-5 h-5 text-blue-600" />}
+            color="bg-blue-50"
+            delay={0.05}
+          />
+          <AnimatedStatCard
+            label="Til godkjenning"
+            value={stats.pendingApproval}
+            sublabel="venter på deg"
+            icon={<AlertCircle className="w-5 h-5 text-amber-600" />}
+            color="bg-amber-50"
+            delay={0.10}
+          />
+          <AnimatedStatCard
+            label="Innhold live"
+            value={stats.liveContent}
+            sublabel="aktive elementer"
+            icon={<CheckCircle2 className="w-5 h-5 text-violet-600" />}
+            color="bg-violet-50"
+            delay={0.15}
+          />
         </div>
 
         <div className="grid grid-cols-3 gap-4">
@@ -218,6 +194,7 @@ export default async function AdminDashboard() {
           </div>
         )}
       </div>
+      </PageTransition>
     </div>
   )
 }

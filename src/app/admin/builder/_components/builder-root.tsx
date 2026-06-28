@@ -23,6 +23,8 @@ import type { ModuleRow } from "@/lib/admin/modules"
 import { Save, CheckCircle, AlertCircle, Loader2, Eye, Send, Columns, Monitor } from "lucide-react"
 import { submitForApproval } from "@/app/admin/publish/actions"
 import { toast } from "sonner"
+import confetti from "canvas-confetti"
+import { SuccessToast } from "@/components/admin/success-toast"
 
 interface BuilderRootProps {
   modules: ModuleRow[]
@@ -186,7 +188,13 @@ export function BuilderRoot({ modules, tenantId, userId, initialName = 'Nytt inn
     const result = await submitForApproval(state.contentItemId)
     setSubmitting(false)
     if (result.ok) {
-      toast.success('Sendt til godkjenning')
+      toast(<SuccessToast message="Sendt til godkjenning!" />, { duration: 4000 })
+      confetti({
+        particleCount: 120,
+        spread: 80,
+        origin: { y: 0.7 },
+        colors: ["#22c55e", "#3b82f6", "#f59e0b", "#8b5cf6"],
+      })
     } else {
       toast.error(result.error ?? 'Feil ved innsending')
     }

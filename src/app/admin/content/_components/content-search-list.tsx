@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { motion, AnimatePresence } from "framer-motion"
 import { Search } from "lucide-react"
 
 interface ContentItem {
@@ -61,7 +62,20 @@ export function ContentSearchList({ items, renderItem, emptyMessage = "Ingen ele
         </div>
       ) : (
         <div className="space-y-2">
-          {filtered.map(item => renderItem(item))}
+          <AnimatePresence mode="popLayout">
+            {filtered.map((item, i) => (
+              <motion.div
+                key={item.id}
+                layout
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 10 }}
+                transition={{ duration: 0.2, delay: i * 0.03 }}
+              >
+                {renderItem(item)}
+              </motion.div>
+            ))}
+          </AnimatePresence>
         </div>
       )}
     </div>
