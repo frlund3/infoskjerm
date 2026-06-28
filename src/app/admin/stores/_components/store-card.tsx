@@ -1,7 +1,9 @@
 "use client"
 
+import { useState } from "react"
 import Link from "next/link"
 import { Monitor, Mail, Building2, MapPin, Hash, ArrowUpRight, X } from "lucide-react"
+import { cn } from "@/lib/utils"
 import { TagPopover } from "./tag-popover"
 import type { BoardStore, BoardTag } from "./types"
 import { withAlpha } from "./types"
@@ -26,9 +28,15 @@ export function StoreCard({
   onCreateTag,
 }: StoreCardProps) {
   const online = store.screenCount > 0
+  const [tagOpen, setTagOpen] = useState(false)
 
   return (
-    <div className="group relative flex flex-col rounded-2xl border border-zinc-200 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-zinc-300 hover:shadow-lg hover:z-10">
+    <div
+      className={cn(
+        "group relative flex flex-col rounded-2xl border border-zinc-200 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-zinc-300 hover:shadow-lg",
+        tagOpen ? "z-40" : "hover:z-10"
+      )}
+    >
       {/* Chain accent strip */}
       <div
         className="h-1.5 w-full rounded-t-2xl"
@@ -103,6 +111,8 @@ export function StoreCard({
           <TagPopover
             assigned={tags}
             allTags={allTags}
+            open={tagOpen}
+            onOpenChange={setTagOpen}
             onToggle={onToggleTag}
             onCreate={onCreateTag}
           />

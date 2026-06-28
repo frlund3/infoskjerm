@@ -14,12 +14,20 @@ const PALETTE = [
 interface TagPopoverProps {
   assigned: BoardTag[]
   allTags: BoardTag[]
+  open: boolean
+  onOpenChange: (open: boolean) => void
   onToggle: (tag: BoardTag, assign: boolean) => void
   onCreate: (name: string, color: string) => Promise<{ ok: boolean; error?: string }>
 }
 
-export function TagPopover({ assigned, allTags, onToggle, onCreate }: TagPopoverProps) {
-  const [open, setOpen] = useState(false)
+export function TagPopover({
+  assigned,
+  allTags,
+  open,
+  onOpenChange,
+  onToggle,
+  onCreate,
+}: TagPopoverProps) {
   const [query, setQuery] = useState("")
   const [color, setColor] = useState(PALETTE[0])
   const [busy, setBusy] = useState(false)
@@ -30,10 +38,10 @@ export function TagPopover({ assigned, allTags, onToggle, onCreate }: TagPopover
   useEffect(() => {
     if (!open) return
     function onDoc(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+      if (ref.current && !ref.current.contains(e.target as Node)) onOpenChange(false)
     }
     function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") setOpen(false)
+      if (e.key === "Escape") onOpenChange(false)
     }
     document.addEventListener("mousedown", onDoc)
     document.addEventListener("keydown", onKey)
@@ -41,7 +49,7 @@ export function TagPopover({ assigned, allTags, onToggle, onCreate }: TagPopover
       document.removeEventListener("mousedown", onDoc)
       document.removeEventListener("keydown", onKey)
     }
-  }, [open])
+  }, [open, onOpenChange])
 
   const needle = query.trim().toLowerCase()
   const filtered = allTags.filter((t) => t.name.toLowerCase().includes(needle))
@@ -61,7 +69,7 @@ export function TagPopover({ assigned, allTags, onToggle, onCreate }: TagPopover
     <div className="relative" ref={ref}>
       <button
         type="button"
-        onClick={() => setOpen((o) => !o)}
+        onClick={() => onOpenChange(!open)}
         className={cn(
           "inline-flex items-center gap-1 rounded-full border border-dashed border-zinc-300 px-2.5 py-1 text-xs font-medium text-zinc-500",
           "transition-colors hover:border-zinc-400 hover:bg-zinc-50 hover:text-zinc-700",
