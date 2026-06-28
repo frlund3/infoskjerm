@@ -45,7 +45,7 @@ export default async function ScreensPage() {
         subtitle={`${online} online · ${offline} offline · ${maintenance} vedlikehold`}
         actions={
           <Button size="sm" asChild>
-            <Link href="/admin/settings">
+            <Link href="/admin/screens/new">
               <Plus className="w-4 h-4" />
               Ny skjerm
             </Link>

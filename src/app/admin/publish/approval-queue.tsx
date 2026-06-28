@@ -98,7 +98,7 @@ export function ApprovalQueue({ pendingItems, publishLog, canApprove }: Approval
           </h2>
           <div className="space-y-2">
             {pendingItems.map((item) => (
-              <div key={item.id} className="flex items-center gap-4 bg-white border border-amber-200 rounded-xl px-4 py-3">
+              <div key={item.id} className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 bg-white border border-amber-200 rounded-xl px-4 py-3">
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-zinc-900 truncate">{item.title}</p>
                   <p className="text-xs text-zinc-400">

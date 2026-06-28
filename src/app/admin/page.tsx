@@ -47,7 +47,7 @@ export default async function AdminDashboard() {
       />
 
       <div className="flex-1 p-6 space-y-6">
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <Card>
             <CardContent className="p-5">
               <div className="flex items-start justify-between">

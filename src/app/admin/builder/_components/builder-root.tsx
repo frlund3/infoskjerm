@@ -20,7 +20,7 @@ import { createClient } from "@/lib/supabase/client"
 import type { ModulePlacement, BuilderState, ModuleSchema } from "@/lib/builder/types"
 import type { Json } from "@/types/database"
 import type { ModuleRow } from "@/lib/admin/modules"
-import { Save, CheckCircle, AlertCircle, Loader2, Eye, Send } from "lucide-react"
+import { Save, CheckCircle, AlertCircle, Loader2, Eye, Send, Columns, Monitor } from "lucide-react"
 import { submitForApproval } from "@/app/admin/publish/actions"
 import { toast } from "sonner"
 
@@ -60,6 +60,7 @@ export function BuilderRoot({ modules, tenantId, userId, initialName = 'Nytt inn
   })
 
   const [submitting, setSubmitting] = useState(false)
+  const [previewMode, setPreviewMode] = useState<"panel" | "embedded">("panel")
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
@@ -207,6 +208,23 @@ export function BuilderRoot({ modules, tenantId, userId, initialName = 'Nytt inn
         )}
         <div className="ml-auto flex items-center gap-3">
           <SaveStatusIndicator status={state.saveStatus} />
+          {/* Preview toggle */}
+          <div className="flex items-center border border-zinc-200 rounded-lg overflow-hidden">
+            <button
+              onClick={() => setPreviewMode("panel")}
+              className={`px-3 py-1.5 text-sm transition-colors ${previewMode === "panel" ? "bg-zinc-900 text-white" : "text-zinc-500 hover:bg-zinc-50"}`}
+              title="Panel-visning"
+            >
+              <Columns className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setPreviewMode("embedded")}
+              className={`px-3 py-1.5 text-sm transition-colors ${previewMode === "embedded" ? "bg-zinc-900 text-white" : "text-zinc-500 hover:bg-zinc-50"}`}
+              title="Skjerm-forhåndsvisning"
+            >
+              <Monitor className="w-4 h-4" />
+            </button>
+          </div>
           {state.contentItemId && (
             <a
               href={`/preview/${state.contentItemId}`}
@@ -215,7 +233,7 @@ export function BuilderRoot({ modules, tenantId, userId, initialName = 'Nytt inn
               className="flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-lg border border-zinc-200 text-zinc-700 hover:bg-zinc-50 transition-colors"
             >
               <Eye className="w-3.5 h-3.5" />
-              Forhåndsvis
+              Fullskjerm
             </a>
           )}
           {state.contentItemId && (
@@ -259,10 +277,35 @@ export function BuilderRoot({ modules, tenantId, userId, initialName = 'Nytt inn
 
           {/* Right: Preview + Field editor */}
           <div className="flex flex-1 overflow-hidden">
-            {/* Live preview */}
-            <div className="flex-1 overflow-hidden">
-              <LivePreview placements={state.placements} />
-            </div>
+            {previewMode === "embedded" ? (
+              /* Embedded TV-skjerm preview */
+              <div className="flex-1 bg-zinc-800 flex items-center justify-center p-8 overflow-hidden">
+                <div className="w-full max-w-3xl">
+                  <div className="aspect-video bg-black rounded-xl overflow-hidden shadow-2xl ring-1 ring-white/10">
+                    {state.contentItemId ? (
+                      <iframe
+                        src={`/preview/${state.contentItemId}`}
+                        className="w-full h-full border-0"
+                        key={state.placements.length}
+                      />
+                    ) : (
+                      <div className="flex items-center justify-center h-full text-zinc-600">
+                        <div className="text-center">
+                          <Monitor className="w-12 h-12 mx-auto mb-3" />
+                          <p className="text-sm">Lagre utkast for å se forhåndsvisning</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-center text-zinc-500 text-xs mt-3">16:9 skjermformat</p>
+                </div>
+              </div>
+            ) : (
+              /* Live panel preview */
+              <div className="flex-1 overflow-hidden">
+                <LivePreview placements={state.placements} />
+              </div>
+            )}
 
             {/* Field editor (slide-in when selected) */}
             {selectedPlacement && (

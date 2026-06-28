@@ -171,7 +171,7 @@ export function ScreenMapClient({ screens: initialScreens }: ScreenMapClientProp
           <p className="text-sm mt-1">Prøv et annet søk eller filter</p>
         </div>
       ) : viewMode === "grid" ? (
-        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
           {filtered.map((screen) => {
             const storeData = screen.stores
             return (
