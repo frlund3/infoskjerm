@@ -24,6 +24,9 @@ import { SeasonalItemsModule } from './seasonal-items-module'
 import { CustomUrlModule } from './custom-url-module'
 import { SustainabilityInfoModule } from './sustainability-info-module'
 import { NewsTickerModule } from './news-ticker-module'
+import { PowerBIModule } from './powerbi-module'
+import { PlectoModule } from './plecto-module'
+import { DataSourceModule } from './data-source-module'
 
 interface ModuleRendererProps {
   moduleKey: string
@@ -58,6 +61,9 @@ export function ModuleRenderer({ moduleKey, fields }: ModuleRendererProps) {
     case 'custom-url': return <CustomUrlModule fields={fields} />
     case 'sustainability-info': return <SustainabilityInfoModule fields={fields} />
     case 'news-ticker': return <NewsTickerModule fields={fields} />
+    case 'powerbi': return <PowerBIModule fields={fields} />
+    case 'plecto': return <PlectoModule fields={fields} />
+    case 'data-source': return <DataSourceModule fields={fields} />
     default: return (
       <div className="flex items-center justify-center h-full text-zinc-400 text-2xl font-medium">
         Ukjent modul: {moduleKey}

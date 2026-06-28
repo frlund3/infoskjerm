@@ -73,6 +73,7 @@ export function ScreenDisplay({
   const [isTransitioning, setIsTransitioning] = useState(false)
   const [isPoweredOff, setIsPoweredOff] = useState(false)
   const transitionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const slideStartTimeRef = useRef<number>(Date.now())
 
   const fetchContent = useCallback(async () => {
     if (!screenId) return
@@ -83,10 +84,26 @@ export function ScreenDisplay({
       if (!res.ok) return
       const json = await res.json() as { slides?: Slide[] }
       if (json.slides && json.slides.length > 0) {
+        // Cache slides for offline fallback
+        try {
+          localStorage.setItem(`slides_cache_${screenId}`, JSON.stringify(json.slides))
+          localStorage.setItem(`slides_cache_${screenId}_ts`, Date.now().toString())
+        } catch { /* localStorage might be unavailable */ }
         setSlides([CLOCK_SLIDE, ...json.slides])
       }
     } catch {
-      // keep existing slides on network error
+      // Try to use cached slides
+      try {
+        const cached = localStorage.getItem(`slides_cache_${screenId}`)
+        if (cached) {
+          const parsed = JSON.parse(cached) as Slide[]
+          if (parsed.length > 0) {
+            setSlides([CLOCK_SLIDE, ...parsed])
+            return // keep showing last known content
+          }
+        }
+      } catch { /* ignore */ }
+      // Only keep existing slides if no cache available
     }
   }, [screenId, token])
 
@@ -126,9 +143,26 @@ export function ScreenDisplay({
     if (slides.length === 0) return
     const slide = slides[currentIndex % slides.length]
     const duration = (slide.durationSeconds ?? 10) * 1000
+    slideStartTimeRef.current = Date.now()
     const outer = setTimeout(() => {
       setIsTransitioning(true)
       transitionTimerRef.current = setTimeout(() => {
+        // Fire play-log before advancing (skip clock slide)
+        if (slide.moduleKey !== "__clock__" && screenId) {
+          const durationMs = Date.now() - slideStartTimeRef.current
+          fetch(`/api/screens/${screenId}/play-log`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contentItemId: slide.contentItemId !== "__clock__" ? slide.contentItemId : undefined,
+              moduleKey: slide.moduleKey,
+              durationMs,
+              slideIndex: currentIndex,
+            }),
+            keepalive: true,
+          }).catch(() => {}) // fire and forget
+        }
+        slideStartTimeRef.current = Date.now()
         setCurrentIndex((prev) => (prev + 1) % slides.length)
         setIsTransitioning(false)
       }, 500)
@@ -137,7 +171,7 @@ export function ScreenDisplay({
       clearTimeout(outer)
       if (transitionTimerRef.current) clearTimeout(transitionTimerRef.current)
     }
-  }, [currentIndex, slides])
+  }, [currentIndex, slides, screenId])
 
   if (isPoweredOff) {
     return <div className="w-screen h-screen bg-black" />

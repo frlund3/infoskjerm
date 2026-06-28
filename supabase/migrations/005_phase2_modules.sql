@@ -79,3 +79,26 @@ VALUES (
   '{"fields":[{"key":"title","label":"Tittel (valgfri)","type":"text","required":false},{"key":"ticker_text","label":"Ticker-tekst (separer elementer med pipe-tegn)","type":"textarea","required":true},{"key":"speed","label":"Hastighet (sekunder for ett gjennomløp)","type":"number","required":false},{"key":"bg_color","label":"Bakgrunnsfarge (hex)","type":"color","required":false},{"key":"text_color","label":"Tekstfarge (hex)","type":"color","required":false}]}'::jsonb
 )
 ON CONFLICT (key) DO NOTHING;
+
+-- Sprint N: Power BI, Plecto, Datakilde (REST) moduler
+INSERT INTO module_registry (key, name, category, description, icon, schema, is_active)
+VALUES
+  ('powerbi', 'Power BI', 'data',
+   'Vis Power BI-rapport via «Publish to web» iframe',
+   'BarChart2',
+   '{"fields":[{"key":"embed_url","label":"Power BI URL (Publish to web)","type":"text","required":true},{"key":"refresh_interval","label":"Oppdater hvert (sekunder)","type":"number","required":false}]}'::jsonb,
+   true),
+
+  ('plecto', 'Plecto', 'data',
+   'Vis Plecto salgs-dashboard',
+   'Trophy',
+   '{"fields":[{"key":"embed_url","label":"Plecto URL","type":"text","required":true},{"key":"refresh_interval","label":"Oppdater hvert (sekunder)","type":"number","required":false}]}'::jsonb,
+   true),
+
+  ('data-source', 'Datakilde (REST)', 'data',
+   'Hent tall fra valgfri REST-URL og vis som KPI',
+   'Link',
+   '{"fields":[{"key":"source_url","label":"Kilde-URL (returnerer JSON)","type":"text","required":true},{"key":"label","label":"Etikett","type":"text","required":false},{"key":"unit","label":"Enhet (kr, stk, %)","type":"text","required":false},{"key":"refresh_interval","label":"Oppdater hvert (sekunder)","type":"number","required":false}]}'::jsonb,
+   true)
+
+ON CONFLICT (key) DO NOTHING;

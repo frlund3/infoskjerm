@@ -38,12 +38,39 @@ function AnimatedNumber({ target, duration = 1500, prefix = "", suffix = "" }: {
   )
 }
 
+interface LiveData {
+  actual?: number
+  target?: number
+  label?: string
+  period?: string
+  trend_percent?: number
+}
+
 export function SalesStatsModule({ fields }: Props) {
   const title = (fields.title as string) || "Salgstall"
-  const period = (fields.period as string) || "Dag"
-  const actual = Number(fields.actual) || 0
-  const target = Number(fields.target) || 0
-  const trendPercent = Number(fields.trend_percent) || 0
+  const dataSourceUrl = fields.data_source_url as string | null ?? null
+  const refreshSeconds = Number(fields.refresh_interval ?? 30)
+
+  const [liveData, setLiveData] = useState<LiveData | null>(null)
+
+  useEffect(() => {
+    if (!dataSourceUrl) return
+    const proxyUrl = `/api/data-source?url=${encodeURIComponent(dataSourceUrl)}`
+    async function fetchLive() {
+      try {
+        const res = await fetch(proxyUrl, { cache: "no-store" })
+        if (res.ok) setLiveData(await res.json())
+      } catch { /* silent */ }
+    }
+    fetchLive()
+    const t = setInterval(fetchLive, refreshSeconds * 1000)
+    return () => clearInterval(t)
+  }, [dataSourceUrl, refreshSeconds])
+
+  const period = liveData?.period ?? (fields.period as string) ?? "Dag"
+  const actual = liveData?.actual ?? Number(fields.actual) ?? 0
+  const target = liveData?.target ?? Number(fields.target) ?? 0
+  const trendPercent = liveData?.trend_percent ?? Number(fields.trend_percent) ?? 0
 
   const pct = target > 0 ? Math.min((actual / target) * 100, 100) : 0
   const pctRounded = Math.round(target > 0 ? (actual / target) * 100 : 100)

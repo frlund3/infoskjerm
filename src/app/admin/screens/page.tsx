@@ -1,7 +1,7 @@
 import { Topbar } from "@/components/admin/topbar"
 import { Button } from "@/components/ui/button"
 import { PageTransition } from "@/components/admin/page-transition"
-import { Plus } from "lucide-react"
+import { Plus, AlertTriangle } from "lucide-react"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/server"
 import { getScreensWithStore, getScreenStatusColor } from "@/lib/admin/queries"
@@ -20,6 +20,15 @@ export default async function ScreensPage() {
     (s) => getScreenStatusColor(s.status, s.last_heartbeat) === "red"
   ).length
   const maintenance = rawScreens.filter((s) => s.status === "maintenance").length
+
+  // Screens that have gone silent: active, previously seen, heartbeat >10 min ago
+  const tenMinutesAgo = Date.now() - 10 * 60 * 1000
+  const offlineCount = rawScreens.filter(
+    (s) =>
+      s.status === "active" &&
+      s.last_heartbeat !== null &&
+      new Date(s.last_heartbeat).getTime() < tenMinutesAgo
+  ).length
 
   // Map to the shape ScreenMapClient expects, casting nested Supabase relation
   type StoreWithChain = {
@@ -56,6 +65,14 @@ export default async function ScreensPage() {
       />
 
       <div className="flex-1 p-6">
+        {offlineCount > 0 && (
+          <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3 text-red-800 mb-4">
+            <AlertTriangle className="w-5 h-5 text-red-500 shrink-0" />
+            <span className="font-medium">
+              {offlineCount} skjerm{offlineCount > 1 ? "er" : ""} er offline (ingen hjerteslag siste 10 min)
+            </span>
+          </div>
+        )}
         <ScreensRealtimeWrapper screens={screens} />
       </div>
       </PageTransition>
