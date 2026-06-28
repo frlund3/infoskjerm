@@ -31,9 +31,18 @@ export function TagPopover({
   const [query, setQuery] = useState("")
   const [color, setColor] = useState(PALETTE[0])
   const [busy, setBusy] = useState(false)
+  const [dropUp, setDropUp] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
+  const triggerRef = useRef<HTMLButtonElement>(null)
 
   const assignedIds = new Set(assigned.map((t) => t.id))
+
+  // Open upward when there isn't enough room below the trigger.
+  useEffect(() => {
+    if (!open) return
+    const rect = triggerRef.current?.getBoundingClientRect()
+    if (rect) setDropUp(window.innerHeight - rect.bottom < 320)
+  }, [open])
 
   useEffect(() => {
     if (!open) return
@@ -68,6 +77,7 @@ export function TagPopover({
   return (
     <div className="relative" ref={ref}>
       <button
+        ref={triggerRef}
         type="button"
         onClick={() => onOpenChange(!open)}
         className={cn(
@@ -81,7 +91,12 @@ export function TagPopover({
       </button>
 
       {open && (
-        <div className="absolute right-0 z-50 mt-2 w-64 overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-xl ring-1 ring-black/5">
+        <div
+          className={cn(
+            "absolute right-0 z-50 w-64 overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-xl ring-1 ring-black/5",
+            dropUp ? "bottom-full mb-2" : "top-full mt-2"
+          )}
+        >
           <div className="border-b border-zinc-100 p-2">
             <input
               autoFocus
