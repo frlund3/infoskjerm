@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { saveContent, type ContentType, type TargetMode } from "../actions"
 import { toast } from "sonner"
 import {
-  Newspaper, Trophy, BarChart2, CloudSun, ImageIcon,
+  Newspaper, Trophy, ImageIcon,
   Store as StoreIcon, Tag, Globe, X, Calendar, Save, Send, ChevronLeft,
 } from "lucide-react"
 import Link from "next/link"
@@ -29,12 +29,12 @@ export interface ContentInitial {
   validTo: string | null
 }
 
+// Bare AUTHORED innhold her. Vær/klokke/salgstall er per-enhet-widgets
+// i Xibo-malen, ikke noe man «publiserer».
 const TYPES: { key: ContentType; label: string; icon: React.ElementType }[] = [
   { key: "news", label: "Nyhet", icon: Newspaper },
   { key: "competition", label: "Konkurranse", icon: Trophy },
   { key: "slide", label: "Tilbud / annet", icon: ImageIcon },
-  { key: "stats", label: "Salgstall", icon: BarChart2 },
-  { key: "weather", label: "Vær", icon: CloudSun },
 ]
 
 export function ContentForm({ stores, tags, initial }: { stores: StoreOption[]; tags: TagOption[]; initial?: ContentInitial }) {
