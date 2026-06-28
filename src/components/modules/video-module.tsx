@@ -4,9 +4,18 @@ export function VideoModule({ fields }: Props) {
   const title = (fields.title as string) || ''
   const videoUrl = (fields.video_url as string) || ''
   const isYoutube = videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be')
-  const embedUrl = isYoutube
-    ? videoUrl.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/') + '?autoplay=1&mute=1&loop=1'
-    : videoUrl
+  const embedUrl = (() => {
+    if (!isYoutube) return videoUrl
+    try {
+      const url = new URL(videoUrl)
+      const videoId = url.hostname.includes('youtu.be')
+        ? url.pathname.slice(1)
+        : url.searchParams.get('v') ?? ''
+      return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&loop=1&playlist=${videoId}`
+    } catch {
+      return videoUrl
+    }
+  })()
 
   return (
     <div className="relative h-full bg-black overflow-hidden">
