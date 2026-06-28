@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils"
 import {
   LayoutDashboard, Store, Monitor, ListVideo, Send, Users,
   Settings, ChevronRight, LogOut, Layers, Layout,
-  UserPlus, AlertTriangle, FileStack,
+  UserPlus, AlertTriangle, FileStack, PlusCircle,
 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 
@@ -42,6 +42,7 @@ const navGroups: NavGroup[] = [
   {
     label: "Innhold",
     items: [
+      { href: "/admin/content/new", label: "Nytt innhold", icon: PlusCircle, roles: ["super_admin", "chain_manager", "area_manager", "store_manager", "store_employee"] },
       { href: "/admin/content", label: "Alt innhold", icon: FileStack, roles: ["super_admin", "chain_manager", "area_manager", "store_manager", "store_employee"], matchPrefix: true },
       { href: "/admin/playlists", label: "Spillelister", icon: ListVideo, roles: ["super_admin", "chain_manager", "area_manager"], matchPrefix: true },
       { href: "/admin/emergency", label: "Nødkringkasting", icon: AlertTriangle, roles: ["super_admin", "chain_manager", "area_manager"] },

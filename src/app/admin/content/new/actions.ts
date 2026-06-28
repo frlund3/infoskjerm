@@ -27,7 +27,32 @@ export async function createContentItem(formData: FormData) {
 
   if (!user) throw new Error("Bruker ikke funnet")
 
-  let body: Json = {}
+  function genId() {
+    return Math.random().toString(36).slice(2, 10)
+  }
+
+  // Default placements per type — saves user from having to drag a module manually
+  const defaultPlacementsByType: Record<ContentType, Json> = {
+    news: {
+      builder_v1: {
+        placements: [
+          { id: genId(), moduleKey: "internal-news", moduleName: "Intern nyhet", fields: { title: title.trim() }, durationSeconds: 15 },
+        ],
+      },
+    },
+    weather: {
+      builder_v1: {
+        placements: [
+          { id: genId(), moduleKey: "weather", moduleName: "Vær", fields: {}, durationSeconds: 15 },
+        ],
+      },
+    },
+    competition: { builder_v1: { placements: [] } },
+    stats: { builder_v1: { placements: [] } },
+    slide: { builder_v1: { placements: [] } },
+  }
+
+  let body: Json = defaultPlacementsByType[type] ?? {}
 
   if (templateId) {
     const { data: template } = await supabase
