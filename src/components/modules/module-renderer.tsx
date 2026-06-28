@@ -10,6 +10,19 @@ import { WeatherModule } from './weather-module'
 import { CompanyInfoModule } from './company-info'
 import { LunchMenuModule } from './lunch-menu'
 import { SlideModule } from './slide-module'
+import { VideoModule } from './video-module'
+import { NewsFeedModule } from './news-feed-module'
+import { InstagramWallModule } from './instagram-wall-module'
+import { GoogleReviewsModule } from './google-reviews-module'
+import { TriviaQuizModule } from './trivia-quiz-module'
+import { LoyaltyProgramModule } from './loyalty-program-module'
+import { CountdownTimerModule } from './countdown-timer-module'
+import { QueueStatusModule } from './queue-status-module'
+import { BirthdayAnnouncementModule } from './birthday-announcement-module'
+import { ProductSpotlightModule } from './product-spotlight-module'
+import { SeasonalItemsModule } from './seasonal-items-module'
+import { CustomUrlModule } from './custom-url-module'
+import { SustainabilityInfoModule } from './sustainability-info-module'
 
 interface ModuleRendererProps {
   moduleKey: string
@@ -30,6 +43,19 @@ export function ModuleRenderer({ moduleKey, fields }: ModuleRendererProps) {
     case 'company-info': return <CompanyInfoModule fields={fields} />
     case 'lunch-menu': return <LunchMenuModule fields={fields} />
     case 'slide': return <SlideModule fields={fields} />
+    case 'video': return <VideoModule fields={fields} />
+    case 'news-feed': return <NewsFeedModule fields={fields} />
+    case 'instagram-wall': return <InstagramWallModule fields={fields} />
+    case 'google-reviews': return <GoogleReviewsModule fields={fields} />
+    case 'trivia-quiz': return <TriviaQuizModule fields={fields} />
+    case 'loyalty-program': return <LoyaltyProgramModule fields={fields} />
+    case 'countdown-timer': return <CountdownTimerModule fields={fields} />
+    case 'queue-status': return <QueueStatusModule fields={fields} />
+    case 'birthday-announcement': return <BirthdayAnnouncementModule fields={fields} />
+    case 'product-spotlight': return <ProductSpotlightModule fields={fields} />
+    case 'seasonal-items': return <SeasonalItemsModule fields={fields} />
+    case 'custom-url': return <CustomUrlModule fields={fields} />
+    case 'sustainability-info': return <SustainabilityInfoModule fields={fields} />
     default: return (
       <div className="flex items-center justify-center h-full text-zinc-400 text-2xl font-medium">
         Ukjent modul: {moduleKey}
