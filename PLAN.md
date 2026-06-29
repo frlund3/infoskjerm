@@ -27,29 +27,37 @@ White-label digital signage-CMS for **Gange-Rolv** (16 SPAR/EUROSPAR/JOKER-butik
 
 ---
 
+## FERDIG (dynamisk modell + per-butikk — 10/10)
+
+### ✅ 1. Den dynamiske modellen
+`src/lib/xibo/sync.ts` upserter nå **én RAD i DataSet «Nyheter» (id 1)** per publisering (match på `contentId`), sletter rad ved avpublisering/sletting. `saveContent`/`deleteContent` bruker modellen. Bevist end-to-end i prod.
+
+### ✅ 2. Base-malen (campaign 8) rebygd
+Digital klokke + dato, Yr-vær (webpage-widget `/widget/vaer`), DataSet View-nyhetssone (roterer + autoscroll lang tekst), ticker (`/widget/ticker`, scroll + rød puls). Bygges av `scripts/xibo/build-base-template.mjs` (delt logikk i `scripts/xibo/lib.mjs`). 16 butikker har fått lat/long.
+
+### ✅ 3. Per-butikk-laget + planlegging
+`scripts/xibo/build-store-layouts.mjs` lager **16 butikk-spesifikke layouts** (campaign 12–27): vær på butikkens koordinater + nyhetssone filtrert på `butikker`-kolonnen (ALLE eller butikknavn) + **dato-vindu** (`fra`/`til`). Hver er **planlagt** til sin display-gruppe (5–20, Always-daypart). Idempotent.
+
+### ✅ Ekstra polish
+- Nyhetskort: **publiseringsdato + forfatter** (byline) via DataSet-kolonner `dato`/`forfatter`.
+- **Type-merkelapp** som kicker (GANGE-ROLV / KONKURRANSE / TILBUD / STILLING LEDIG) via kolonne `merkelapp`.
+- `/widget/*` rammbar fra hvor som helst (CSP `frame-ancestors *`) — offentlig display-innhold.
+
+### ✅ Stillingsannonser
+Ny `content_type 'job'` (migrasjon 015) med felter kontaktperson + søknadslenke i skjemaet; vises på kortet med «STILLING LEDIG»-merkelapp.
+
+> DataSet 1-kolonner nå: tittel, tekst, bilde, type, butikker, fra, til, contentId, **dato, forfatter, merkelapp**.
+> Endre maldesign: rediger `scripts/xibo/lib.mjs` → kjør base- + butikk-builderne på nytt (idempotent).
+
+---
+
 ## DET SOM GJENSTÅR
 
-### 🔴 1. Den dynamiske modellen (VIKTIGST — feil i dagens kode)
-Dagens `src/lib/xibo/sync.ts` lager **én layout per nyhet** = FEIL. Skal være DYNAMISK:
-- **Publiser → upsert en RAD i DataSet «Nyheter» (id 1)**, ikke en layout. Match eksisterende via `contentId`. Slett rad ved avpublisering.
-- **Base-malen får en nyhets-sone = DataSet View** som **roterer** gjennom radene, filtrert per butikk.
-- Skriv om `sync.ts` + `saveContent` (`src/app/admin/innhold/actions.ts`). Fjern layout-per-nyhet.
-
-### 🔴 2. Rebygg base-malen (Xibo layout 12 «Gange-Rolv Mal», campaign 8)
-- **Digital klokke + dato** — mindre (clockTypeId=1=digital, IKKE 2=analog som nå)
-- **Yr-vær per butikk** — lag `/widget/vaer?lat=&lon=` i appen (Yr: `api.met.no/weatherapi/locationforecast/2.0/compact`, User-Agent, cache), embed i Xibo som web-widget. Fyll lat/long på de 16 butikkene i Supabase `stores`.
-- **Nyhets-sone = DataSet View** mot DataSet 1 (roterer)
-- **Ticker** (behold)
-
-### 🟠 3. Planlegg malen til display groups
-`POST /api/schedule` → koble malen til butikkenes display groups ut fra målretting, så det vises på riktige skjermer.
-
-### 🟡 4. Resten
-- Stillingsannonser som innholdstype (enum `job` + felt: butikk, kontaktperson, søk-lenke) — eksempel: gangerolv.no/stillinger
-- Bursdagshilsen + flere typer
+### 🟡 Resten
+- Bursdagshilsen + flere innholdstyper
 - Per-rolle datafiltrering (enhetsadmin ser kun sine butikkers innhold)
-- Raspberry Pi: Arexibo-spiller når maskinvare finnes
-- GDPR: oppdater Framtid Tech AS art.30 (Xibo/Hetzner som underdatabehandler)
+- Raspberry Pi: Arexibo-spiller når maskinvare finnes (ingen displays registrert ennå → planleggingen «venter» på hardware)
+- **GDPR (AVKLARES):** global regel sier GangeRolv-prosjekter holdes UTENFOR Framtid Tech AS art.30. Men infra (xibo.framtidtech.no/Hetzner) er Framtid Tech AS, og hvis Framtid Tech driver signage-plattformen som databehandler for Gange-Rolv, hører Xibo/Hetzner som underdatabehandlere inn i protokollen. **Bekreft forretningsforholdet med Frank før master-protokollen røres.**
 
 ---
 
