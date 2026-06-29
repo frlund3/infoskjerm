@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type CSSProperties } from "react"
 import type { LiveItem, Block } from "@/lib/content/live"
 import { OfferCard } from "@/app/widget/tilbud/offer-card"
 import { PdfFlyer } from "@/app/widget/tilbud/pdf-flyer"
+import { CompetitionCard } from "@/app/widget/_shared/competition-card"
 
 const KICKER: Record<string, string> = {
   competition: "KONKURRANSE",
@@ -271,51 +272,6 @@ function StatsCard({ item }: { item: LiveItem }) {
       )}
       <div style={{ marginTop: 24 }}>
         <Byline item={item} />
-      </div>
-    </div>
-  )
-}
-
-/**
- * Competition card — deliberately loud so it stands out from regular news: a
- * vibrant gradient, floating confetti, a tilted "KONKURRANSE" badge, a moving
- * shine sweep and a pulsing CTA. Honors a custom bg/text colour when set.
- */
-function CompetitionCard({ item, qrUrl }: { item: LiveItem; qrUrl?: string }) {
-  const fg = item.textColor ?? "#fff"
-  const hasImg = !!item.imageUrl
-  return (
-    <div style={{ position: "absolute", inset: 0, overflow: "hidden", color: fg, background: item.bgColor ?? "linear-gradient(135deg,#4c1d95 0%,#9d174d 48%,#b45309 100%)", fontFamily: "Arial, Helvetica, sans-serif" }}>
-      <style>{`@keyframes grcShine{0%{transform:translateX(-40%) skewX(-12deg)}100%{transform:translateX(180%) skewX(-12deg)}}@keyframes grcFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-16px)}}@keyframes grcPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}`}</style>
-      <div style={{ position: "absolute", top: -140, right: -100, width: 460, height: 460, borderRadius: "50%", background: "rgba(255,255,255,.08)" }} />
-      <div style={{ position: "absolute", bottom: -180, left: -120, width: 560, height: 560, borderRadius: "50%", background: "rgba(0,0,0,.12)" }} />
-      <div style={{ position: "absolute", top: 0, bottom: 0, left: 0, width: 240, background: "linear-gradient(90deg,transparent,rgba(255,255,255,.16),transparent)", animation: "grcShine 7s linear infinite" }} />
-      <div style={{ position: "absolute", inset: 0, padding: 74, display: "flex", gap: 54, alignItems: "stretch", boxSizing: "border-box" }}>
-        <div style={{ flex: "1 1 auto", minWidth: 0, display: "flex", flexDirection: "column" }}>
-          <div style={{ alignSelf: "flex-start", display: "inline-flex", alignItems: "center", gap: 14, background: "#fff", color: "#9d174d", fontWeight: 900, fontSize: 28, letterSpacing: 3, padding: "12px 26px", borderRadius: 14, transform: "rotate(-3deg)", boxShadow: "0 12px 40px rgba(0,0,0,.3)", textTransform: "uppercase" }}>
-            <span style={{ fontSize: 36 }}>🏆</span> Konkurranse
-          </div>
-          <div style={{ flex: "1 1 auto", display: "flex", flexDirection: "column", justifyContent: "center", minHeight: 0 }}>
-            <div style={{ fontSize: hasImg ? 84 : 110, lineHeight: 1, animation: "grcFloat 4s ease-in-out infinite" }}>🎉</div>
-            <h1 style={{ fontSize: hasImg ? 76 : 98, fontWeight: 900, margin: "14px 0 0", lineHeight: 1.0, letterSpacing: -2, textShadow: "0 6px 30px rgba(0,0,0,.25)" }}>{item.title}</h1>
-            {item.blocks.length > 0 && <div style={{ marginTop: 22, opacity: 0.96, maxHeight: 440, overflow: "hidden" }}><RichBlocks blocks={item.blocks} /></div>}
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 28 }}>
-            <div style={{ background: "#fff", color: "#9d174d", fontWeight: 900, fontSize: 32, padding: "16px 40px", borderRadius: 9999, animation: "grcPulse 2s ease-in-out infinite", boxShadow: "0 14px 44px rgba(0,0,0,.3)" }}>{qrUrl ? "Skann og delta!" : "Bli med og vinn!"}</div>
-            {qrUrl && (
-              <div style={{ background: "#fff", padding: 14, borderRadius: 18, boxShadow: "0 14px 44px rgba(0,0,0,.3)" }}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={qrUrl} alt="QR-kode for å delta" width={130} height={130} style={{ display: "block" }} />
-              </div>
-            )}
-          </div>
-        </div>
-        {hasImg && (
-          <div style={{ flex: "0 0 40%", minWidth: 0, borderRadius: 28, overflow: "hidden", boxShadow: "0 20px 60px rgba(0,0,0,.35)", background: "rgba(255,255,255,.1)" }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={item.imageUrl!} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-          </div>
-        )}
       </div>
     </div>
   )

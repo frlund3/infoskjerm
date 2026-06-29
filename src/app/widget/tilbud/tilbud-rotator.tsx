@@ -4,6 +4,7 @@ import { useEffect, useState, type CSSProperties } from "react"
 import type { LiveItem, Block } from "@/lib/content/live"
 import { OfferCard, type ChainBrand } from "./offer-card"
 import { PdfFlyer } from "./pdf-flyer"
+import { CompetitionCard } from "@/app/widget/_shared/competition-card"
 
 /**
  * Full-screen offer presentation: a left side panel with the heading, period and
@@ -147,7 +148,7 @@ function TickerOverlay({ messages }: { messages: string[] }) {
   )
 }
 
-export function TilbudRotator({ items, ticker, storeName, chain = null }: { items: LiveItem[]; ticker: string[]; storeName: string | null; chain?: ChainBrand | null }) {
+export function TilbudRotator({ items, ticker, storeName, chain = null, qr = {} }: { items: LiveItem[]; ticker: string[]; storeName: string | null; chain?: ChainBrand | null; qr?: Record<string, string> }) {
   const [i, setI] = useState(0)
   useEffect(() => {
     if (items.length <= 1) return
@@ -173,6 +174,11 @@ export function TilbudRotator({ items, ticker, storeName, chain = null }: { item
       {!item ? (
         <div style={{ ...inset, display: "flex", alignItems: "center", justifyContent: "center", color: "rgba(255,255,255,.4)", fontSize: 34 }}>
           Ingen aktive tilbud
+        </div>
+      ) : item.type === "competition" ? (
+        // Customer competition → full-bleed flashy portrait card with QR.
+        <div key={item.id} style={{ ...inset, animation: "grFade .6s ease-out" }}>
+          <CompetitionCard item={item} qrUrl={qr[item.id]} portrait />
         </div>
       ) : item.offer ? (
         // Structured offer → full-bleed price card (no side panel).
