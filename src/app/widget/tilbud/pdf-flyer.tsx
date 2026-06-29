@@ -3,18 +3,15 @@
 import { useEffect, useState } from "react"
 
 /**
- * Renders the first pages of a PDF flyer (kundeavis) to images in the browser
- * with pdf.js, then rotates through them full-screen. No server-side rendering —
- * the player's Chromium rasterises the pages. Portrait flyer pages fill a
- * portrait screen; on landscape they are contained over a blurred fill.
+ * Renders the FRONT PAGE of a PDF flyer (kundeavis) to an image in the browser
+ * with pdf.js, full-bleed, with a heading above it (e.g. "Kundeavis uke 27").
+ * No PDF toolbar, no multi-page rotation — just the cover.
  */
 
-const MAX_PAGES = 6
-const PAGE_SECONDS = 7
+const GREEN = "#16a34a"
 
-export function PdfFlyer({ url }: { url: string }) {
-  const [pages, setPages] = useState<string[]>([])
-  const [i, setI] = useState(0)
+export function PdfFlyer({ url, title }: { url: string; title?: string }) {
+  const [cover, setCover] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -22,53 +19,36 @@ export function PdfFlyer({ url }: { url: string }) {
       const pdfjs = await import("pdfjs-dist")
       pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs"
       const doc = await pdfjs.getDocument({ url }).promise
-      const n = Math.min(MAX_PAGES, doc.numPages)
-      const out: string[] = []
-      for (let p = 1; p <= n && !cancelled; p++) {
-        const page = await doc.getPage(p)
-        const viewport = page.getViewport({ scale: 1.6 })
-        const canvas = document.createElement("canvas")
-        canvas.width = Math.ceil(viewport.width)
-        canvas.height = Math.ceil(viewport.height)
-        const ctx = canvas.getContext("2d")
-        if (!ctx) continue
-        await page.render({ canvasContext: ctx, viewport }).promise
-        out.push(canvas.toDataURL("image/jpeg", 0.82))
-        if (!cancelled) setPages([...out]) // progressively reveal as pages render
-      }
+      const page = await doc.getPage(1)
+      const viewport = page.getViewport({ scale: 2 })
+      const canvas = document.createElement("canvas")
+      canvas.width = Math.ceil(viewport.width)
+      canvas.height = Math.ceil(viewport.height)
+      const ctx = canvas.getContext("2d")
+      if (!ctx) return
+      await page.render({ canvasContext: ctx, viewport }).promise
+      if (!cancelled) setCover(canvas.toDataURL("image/jpeg", 0.85))
     })().catch(() => {})
     return () => {
       cancelled = true
     }
   }, [url])
 
-  useEffect(() => {
-    if (pages.length <= 1) return
-    const id = setTimeout(() => setI((v) => (v + 1) % pages.length), PAGE_SECONDS * 1000)
-    return () => clearTimeout(id)
-  }, [i, pages])
-
-  if (pages.length === 0) {
-    return (
-      <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", color: "rgba(255,255,255,.4)", fontSize: 30 }}>
-        Laster kundeavis…
-      </div>
-    )
-  }
-
-  const page = pages[i % pages.length]
   return (
-    <div style={{ position: "absolute", inset: 0, overflow: "hidden" }}>
-      <div style={{ position: "absolute", inset: 0, backgroundImage: `url('${page}')`, backgroundSize: "cover", backgroundPosition: "center", filter: "blur(48px) brightness(0.4)", transform: "scale(1.25)" }} />
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img key={i} src={page} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", animation: "grFade .5s ease-out" }} />
-      {pages.length > 1 && (
-        <div style={{ position: "absolute", bottom: 22, left: 0, right: 0, display: "flex", gap: 10, justifyContent: "center" }}>
-          {pages.map((_, p) => (
-            <span key={p} style={{ width: 12, height: 12, borderRadius: 9999, background: p === i % pages.length ? "#16a34a" : "rgba(255,255,255,.4)" }} />
-          ))}
+    <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", background: "#fff", overflow: "hidden" }}>
+      {title && (
+        <div style={{ flex: "0 0 auto", background: GREEN, color: "#fff", textAlign: "center", padding: "2.4vmin", fontWeight: 900, fontSize: "5vmin", letterSpacing: "0.3vmin", textTransform: "uppercase" }}>
+          {title}
         </div>
       )}
+      <div style={{ flex: "1 1 auto", minHeight: 0, position: "relative" }}>
+        {cover ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={cover} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", animation: "grFade .5s ease-out" }} />
+        ) : (
+          <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", color: "#9aa0a6", fontSize: "4vmin" }}>Laster kundeavis…</div>
+        )}
+      </div>
     </div>
   )
 }

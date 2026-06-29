@@ -58,7 +58,7 @@ export function OfferCard({ item, chain = null }: { item: LiveItem; chain?: Chai
   if (!offer) return null
   const period = formatPeriod(item.validFrom, item.validTo)
   const img = item.imageUrl
-  const fine = [offer.enhetspris, offer.maks, offer.pant ? "+ pant" : null].filter(Boolean) as string[]
+  const fine = [offer.pant ? "+ pant" : null, offer.maks, offer.enhetspris].filter(Boolean) as string[]
   const badgeBg = chain?.color ?? RED
   const badgeFg = chain?.brandFg ?? "#fff"
 
@@ -75,7 +75,7 @@ export function OfferCard({ item, chain = null }: { item: LiveItem; chain?: Chai
       {/* Main: text column + large image column */}
       <div style={{ flex: "1 1 auto", minHeight: 0, display: "flex", gap: "4vmin", alignItems: "stretch", marginTop: "2.5vmin" }}>
         {/* Left: name + price */}
-        <div style={{ flex: "0 0 46%", minWidth: 0, display: "flex", flexDirection: "column" }}>
+        <div style={{ flex: "0 0 46%", minWidth: 0, overflow: "hidden", display: "flex", flexDirection: "column" }}>
           <h1 style={{ fontSize: "10vmin", fontWeight: 900, margin: 0, lineHeight: 0.98, letterSpacing: "-0.3vmin" }}>{offer.varenavn}</h1>
           {offer.vareinfo && <p style={{ fontSize: "3.8vmin", color: MUTED, margin: "1.6vmin 0 0" }}>{offer.vareinfo}</p>}
 
@@ -83,9 +83,13 @@ export function OfferCard({ item, chain = null }: { item: LiveItem; chain?: Chai
 
           <div style={{ flex: "0 0 auto", display: "flex", flexDirection: "column", gap: "0.8vmin" }}>
             {offer.mengde && <span style={{ fontSize: "7vmin", fontWeight: 900, color: INK, lineHeight: 1 }}>{offer.mengde}</span>}
-            {offer.forpris && <span style={{ fontSize: "5vmin", color: "#9aa0a6", textDecoration: "line-through", fontWeight: 700, lineHeight: 1 }}>{offer.forpris}</span>}
+            {offer.forpris && (
+        <span style={{ fontSize: "4vmin", color: "#9aa0a6", fontWeight: 700, lineHeight: 1.2 }}>
+          Førpris <span style={{ textDecoration: "line-through" }}>{offer.forpris}</span>
+        </span>
+      )}
             {offer.rabatt ? (
-              <span style={{ fontSize: "22vmin", fontWeight: 900, color: RED, lineHeight: 0.85, letterSpacing: "-0.8vmin" }}>{offer.rabatt}</span>
+              <span style={{ fontSize: "16vmin", fontWeight: 900, color: RED, lineHeight: 0.9, letterSpacing: "-0.5vmin", whiteSpace: "nowrap" }}>{offer.rabatt}</span>
             ) : offer.pris ? (
               <PriceTag offer={offer} />
             ) : null}

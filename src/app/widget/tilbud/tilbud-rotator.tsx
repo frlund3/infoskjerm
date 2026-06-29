@@ -204,7 +204,7 @@ export function TilbudRotator({ items, ticker, storeName, chain = null }: { item
       ) : item.isPdf && item.imageUrl ? (
         // PDF flyer (kundeavis) → full-bleed page-by-page rotation.
         <div key={item.id} style={{ ...inset, animation: "grFade .6s ease-out" }}>
-          <PdfFlyer url={item.imageUrl} />
+          <PdfFlyer url={item.imageUrl} title={item.title} />
         </div>
       ) : (
         // Uploaded poster (image) → side panel + media.

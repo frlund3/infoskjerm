@@ -168,16 +168,45 @@ export function topbarUri(appUrl, { butikk, lat, lon, navn }) {
 
 export const ALWAYS_DAYPART_ID = 2
 
+export const PORTRAIT_RESOLUTION_ID = 3 // 1080×1920
+
 /** Find a published (parentId===null) layout by exact name, or create it. */
-export async function findOrCreateLayout(api, name) {
+export async function findOrCreateLayout(api, name, resolutionId = 1) {
   const capped = name.slice(0, 50)
   const found = ((await api(`/layout?layout=${encodeURIComponent(capped)}&length=50`)) || []).find(
     (l) => l.layout === capped && l.parentId === null
   )
   if (found) return { layoutId: found.layoutId, campaignId: found.campaignId }
-  const created = await api(`/layout`, { method: "POST", form: { name: capped, resolutionId: 1 } })
+  const created = await api(`/layout`, { method: "POST", form: { name: capped, resolutionId } })
   const fresh = (await api(`/layout?layoutId=${created.layoutId}`))[0]
   return { layoutId: created.layoutId, campaignId: fresh.campaignId }
+}
+
+/**
+ * (Re)builds a PORTRAIT customer layout (1080×1920): one full-screen region with
+ * the offer/kundeavis content — no top strip (customers see only the offers).
+ * The layout itself must have been created with PORTRAIT_RESOLUTION_ID.
+ */
+export async function buildPortraitCustomer(api, layoutId, { contentUri }) {
+  const draftId = await getDraftId(api, layoutId)
+  const draft = (await api(`/layout?layoutId=${draftId}&embed=regions,playlists`))[0]
+  for (const r of draft.regions || []) await api(`/region/${r.regionId}`, { method: "DELETE" })
+  const pl = await addRegion(api, draftId, { width: 1080, height: 1920, top: 0, left: 0 })
+  await addWebpage(api, pl, contentUri, { transparency: 0 })
+  await api(`/layout/publish/${layoutId}`, { method: "PUT", form: { publishNow: 1 } })
+}
+
+/** Remove all schedule events for a campaign on a display group. Returns count. */
+export async function unscheduleCampaignFromGroup(api, campaignId, displayGroupId) {
+  const events = (await api(`/schedule?length=2000`)) || []
+  let n = 0
+  for (const e of events) {
+    if (e.campaignId === campaignId && (e.displayGroups || []).some((g) => g.displayGroupId === displayGroupId)) {
+      await api(`/schedule/${e.eventId}`, { method: "DELETE" })
+      n++
+    }
+  }
+  return n
 }
 
 /** displayGroupId for a real (non display-specific) group by exact name, or null. */

@@ -50,7 +50,6 @@ export function ScreenPreview({
   const portrait = flate === "kunde"
   const STAGE_W = portrait ? 1080 : 1920
   const STAGE_H = portrait ? 1920 : 1080
-  const STRIP_H = portrait ? 150 : 180
 
   useEffect(() => {
     const el = wrapRef.current
@@ -66,8 +65,6 @@ export function ScreenPreview({
   if (!store) return <p className="text-sm text-zinc-500">Ingen butikker ennå.</p>
 
   const storeScreens = screens[store.id] ?? []
-  const navn = store.city || store.name
-  const topbarSrc = `/widget/topbar?butikk=${encodeURIComponent(store.name)}&lat=${store.lat ?? ""}&lon=${store.lon ?? ""}&navn=${encodeURIComponent(navn)}`
   const tilbudSrc = `/widget/tilbud?store=${store.id}`
   const kpiSrc = `/widget/butikk-kpi?store=${store.id}`
   const oversiktSrc = `/widget/kpi-oversikt`
@@ -114,7 +111,7 @@ export function ScreenPreview({
           </button>
         ))}
         {flate === "kunde" && (
-          <span className="text-xs text-zinc-400">Stående kundeskjerm — toppstripe + tilbud/kundeavis. Aldri interne nyheter eller ticker.</span>
+          <span className="text-xs text-zinc-400">Stående kundeskjerm — tilbud/kundeavis i full skjerm. Aldri interne nyheter eller ticker.</span>
         )}
         {flate === "intern" && (
           <span className="text-xs text-zinc-400">Bakrom/ansatte — vises aldri til kunder.</span>
@@ -127,19 +124,12 @@ export function ScreenPreview({
       {/* Scaled stage — portrait for customer, landscape for internal */}
       <div ref={wrapRef} className="relative rounded-2xl overflow-hidden border border-zinc-200 bg-black shadow-sm mx-auto" style={{ aspectRatio: portrait ? "9 / 16" : "16 / 9", width: "100%", maxWidth: portrait ? 400 : undefined }}>
         <div style={{ position: "absolute", top: 0, left: 0, width: STAGE_W, height: STAGE_H, transform: `scale(${scale})`, transformOrigin: "top left" }}>
-          {view === "kunde-skjerm" ? (
-            <>
-              <iframe title="Toppstripe" src={topbarSrc} scrolling="no" style={{ position: "absolute", top: 0, left: 0, width: STAGE_W, height: STRIP_H, border: "none" }} />
-              <iframe title="Innhold" src={tilbudSrc} scrolling="no" style={{ position: "absolute", top: STRIP_H, left: 0, width: STAGE_W, height: STAGE_H - STRIP_H, border: "none" }} />
-            </>
-          ) : (
-            <iframe
-              title={view}
-              src={view === "kunde-tilbud" ? tilbudSrc : view === "intern-kpi" ? kpiSrc : view === "intern-innhold" ? internInnholdSrc : oversiktSrc}
-              scrolling="no"
-              style={{ position: "absolute", top: 0, left: 0, width: STAGE_W, height: STAGE_H, border: "none" }}
-            />
-          )}
+          <iframe
+            title={view}
+            src={flate === "kunde" ? tilbudSrc : view === "intern-kpi" ? kpiSrc : view === "intern-innhold" ? internInnholdSrc : oversiktSrc}
+            scrolling="no"
+            style={{ position: "absolute", top: 0, left: 0, width: STAGE_W, height: STAGE_H, border: "none" }}
+          />
         </div>
       </div>
 

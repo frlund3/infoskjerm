@@ -54,6 +54,7 @@ const AVDELINGER: { key: string; label: string }[] = [
   { key: "felles", label: "Hele butikken" },
   { key: "frukt", label: "Frukt & grønt" },
   { key: "ferskvare", label: "Ferskvare" },
+  { key: "frys", label: "Frys" },
   { key: "bakeri", label: "Bakeri" },
   { key: "kjott-fisk", label: "Kjøtt & fisk" },
   { key: "kasse", label: "Kasse" },
