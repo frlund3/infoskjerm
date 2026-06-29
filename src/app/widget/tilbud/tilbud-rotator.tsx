@@ -194,7 +194,7 @@ export function TilbudRotator({ items, ticker, storeName, chain = null }: { item
         // Kundeavis / PDF → rasterised page-by-page (pdf.js), full-bleed, under a
         // bold heading. No native PDF viewer chrome (toolbar/scrollbars).
         <div key={item.id} style={{ ...inset, animation: "grFade .6s ease-out" }}>
-          <PdfFlyer url={item.imageUrl} title={item.title} color={chain?.color} fg={chain?.brandFg} />
+          <PdfFlyer url={item.imageUrl} title={item.title} color={chain?.color} fg={chain?.brandFg} pages={item.pages} />
         </div>
       ) : (
         // Uploaded poster (image) → side panel + media.

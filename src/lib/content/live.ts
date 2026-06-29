@@ -47,6 +47,8 @@ export interface LiveItem {
   imageUrls: string[]
   imageMode: ImageMode
   isPdf: boolean
+  /** Pre-rendered flyer page images (kundeavis) — shown instead of client PDF. */
+  pages: string[]
   validFrom: string | null
   validTo: string | null
   author: string
@@ -78,6 +80,7 @@ interface Body {
   avdeling?: string | null
   bgColor?: string | null
   textColor?: string | null
+  pages?: string[]
 }
 
 interface Target {
@@ -214,6 +217,7 @@ export async function fetchLiveContent(storeId: string | null, types: string[], 
       imageUrls,
       imageMode: body.imageMode === "plakat" ? "plakat" : body.imageMode === "liten" ? "liten" : "bakgrunn",
       isPdf: (firstImage ?? "").toLowerCase().split("?")[0].endsWith(".pdf"),
+      pages: Array.isArray(body.pages) ? body.pages.filter(Boolean) : [],
       validFrom: it.valid_from,
       validTo: it.valid_to,
       author: it.created_by ? authorName.get(it.created_by) ?? "" : "",

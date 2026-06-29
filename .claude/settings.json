@@ -113,7 +113,11 @@
       "Bash(curl -s -o /dev/null -w '%{http_code}\\\\n' --max-time 15 https://infoskjerm.framtidtech.no/glemt-passord)",
       "Bash(curl -s -o /dev/null -w '%{http_code} -> %{redirect_url}\\\\n' --max-time 15 https://infoskjerm.framtidtech.no/auth/callback)",
       "Bash(curl -s -o /dev/null -w '%{http_code} -> %{redirect_url}\\\\n' --max-time 15 https://infoskjerm.framtidtech.no/velkommen)",
-      "Bash(curl -s -o /dev/null -w '%{http_code}\\\\n' --max-time 15 https://infoskjerm.framtidtech.no/)"
+      "Bash(curl -s -o /dev/null -w '%{http_code}\\\\n' --max-time 15 https://infoskjerm.framtidtech.no/)",
+      "Bash(curl -s https://api.resend.com/domains -H 'Authorization: Bearer __TRACKED_VAR__')",
+      "Bash(node -e \"const p=require\\('./node_modules/pdf-to-img/package.json'\\); console.log\\('deps:', JSON.stringify\\(p.dependencies||{},null,1\\)\\); console.log\\('main:', p.main, 'type:', p.type\\)\")",
+      "Bash(node /private/tmp/claude-501/-Users-frlund3-Documents-GitHub-infoskjerm/02221b57-3217-4346-90d7-96e557ed6cf6/scratchpad/test-pdf.mjs)",
+      "Bash(node scripts/_tmp-test-pdf.mjs)"
     ],
     "additionalDirectories": [
       "/Users/frlund3/Documents/GitHub/infoskjerm/src/app/preview/[id]",

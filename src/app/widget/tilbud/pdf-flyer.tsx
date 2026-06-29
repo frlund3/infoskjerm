@@ -3,23 +3,25 @@
 import { useEffect, useState } from "react"
 
 /**
- * Renders the first pages of a PDF flyer (kundeavis) to images in the browser
- * with pdf.js, under a bold heading (e.g. "Kundeavis uke 27"), and rotates
- * through them. Flyer pages are tall, so they fill a portrait screen. No PDF
- * toolbar — clean rasterised pages.
+ * Shows the kundeavis flyer as rotating page images under a bold chain-coloured
+ * heading. Prefers server pre-rendered page images (`pages`) — instant, no work
+ * on the weak Pi. Falls back to client-side pdf.js rasterisation (via the CORS
+ * proxy) when pre-rendered pages aren't available yet.
  */
 
 const GREEN = "#16a34a"
 const MAX_PAGES = 6
 const PAGE_SECONDS = 7
 
-export function PdfFlyer({ url, title, color, fg }: { url: string; title?: string; color?: string | null; fg?: string | null }) {
+export function PdfFlyer({ url, title, color, fg, pages: serverPages }: { url: string; title?: string; color?: string | null; fg?: string | null; pages?: string[] }) {
   const headBg = color || GREEN
   const headFg = fg || "#fff"
-  const [pages, setPages] = useState<string[]>([])
+  const preRendered = serverPages && serverPages.length > 0 ? serverPages : null
+  const [pages, setPages] = useState<string[]>(preRendered ?? [])
   const [i, setI] = useState(0)
 
   useEffect(() => {
+    if (preRendered) { setPages(preRendered); return } // already have server images
     let cancelled = false
     ;(async () => {
       const pdfjs = await import("pdfjs-dist")
@@ -45,7 +47,7 @@ export function PdfFlyer({ url, title, color, fg }: { url: string; title?: strin
     return () => {
       cancelled = true
     }
-  }, [url])
+  }, [url, preRendered])
 
   useEffect(() => {
     if (pages.length <= 1) return

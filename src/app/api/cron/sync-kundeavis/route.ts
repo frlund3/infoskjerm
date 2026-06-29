@@ -21,6 +21,37 @@ export const maxDuration = 60
 const UA = "Mozilla/5.0 (compatible; Infoskjerm-kundeavis/1.0)"
 const SPAR_PROBE = "https://spar.no/finn-butikk/eurospar-moa"
 const SOURCE = "kundeavis-spar"
+const MAX_PAGES = 6
+const PAGE_SCALE = 1.5
+
+/**
+ * Rasterises the first pages of the flyer PDF to PNGs (server-side, pdf-to-img)
+ * and uploads them to the public `media` bucket, so customer screens show ready
+ * images instantly — no client-side PDF rendering on the weak Raspberry Pis.
+ * Best-effort: any failure returns [] and the widget falls back to client PDF.
+ */
+async function renderAndUploadPages(pdfUrl: string, week: number, supabase: ReturnType<typeof createAdminClient>): Promise<string[]> {
+  try {
+    const { pdf: renderPdf } = await import("pdf-to-img")
+    const res = await fetch(pdfUrl, { cache: "no-store" })
+    if (!res.ok) return []
+    const buf = Buffer.from(await res.arrayBuffer())
+    const doc = await renderPdf(buf, { scale: PAGE_SCALE })
+    const urls: string[] = []
+    let i = 0
+    for await (const img of doc) {
+      i++
+      const path = `kundeavis/uke-${week}-${i}.png`
+      const up = await supabase.storage.from("media").upload(path, img, { contentType: "image/png", upsert: true })
+      if (!up.error) urls.push(supabase.storage.from("media").getPublicUrl(path).data.publicUrl)
+      if (i >= MAX_PAGES) break
+    }
+    return urls
+  } catch (err) {
+    console.error("kundeavis-render feilet:", err)
+    return []
+  }
+}
 
 function isoWeek(d: Date): { week: number; year: number } {
   const date = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()))
@@ -75,18 +106,25 @@ export async function GET(req: Request) {
       .map((s) => s.id)
     const jokerUrl = `https://publ.joker.no/digital-avis-uke-${week}`
 
-    const body = { imageUrl: pdf, imageUrls: [pdf], imageMode: "plakat", audience: "kunde", source: SOURCE }
-
     // 3. Upsert the single SPAR kundeavis item (find by body marker). A new week
     // MUST deactivate the previous avis: we keep ONE row and archive any extras,
     // so a stale week can never linger live alongside the current one.
     const { data: existingRows } = await supabase
       .from("content_items")
-      .select("id, created_at")
+      .select("id, created_at, body, valid_to")
       .filter("body->>source", "eq", SOURCE)
       .order("created_at", { ascending: true })
 
-    let itemId = existingRows?.[0]?.id
+    const existing = existingRows?.[0]
+    let itemId = existing?.id
+
+    // Reuse already-rendered page images for the same week; otherwise render now.
+    const existingBody = (existing?.body ?? {}) as { pages?: string[] }
+    const sameWeek = existing?.valid_to === to && Array.isArray(existingBody.pages) && existingBody.pages.length > 0
+    const pages = sameWeek ? existingBody.pages! : await renderAndUploadPages(pdf, week, supabase)
+
+    const body = { imageUrl: pdf, imageUrls: [pdf], imageMode: "plakat", audience: "kunde", source: SOURCE, ...(pages.length > 0 ? { pages } : {}) }
+
     // Archive any duplicate kundeavis rows beyond the one we reuse.
     const staleIds = (existingRows ?? []).slice(1).map((r) => r.id)
     if (staleIds.length > 0) {
@@ -120,6 +158,7 @@ export async function GET(req: Request) {
       week,
       year,
       pdf,
+      pages: pages.length,
       sparStores: sparStoreIds.length,
       joker: { url: jokerUrl, note: "Publitas-flyer blokkerer embedding — krever side-bilde-uttrekk (ikke implementert)" },
     })

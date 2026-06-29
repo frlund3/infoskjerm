@@ -323,7 +323,7 @@ export function ContentForm({ stores, tags, initial, audience = "intern" }: { st
   // Live preview model for the structured offer card (chain logo added per store).
   const previewItem: LiveItem = {
     id: "preview", type: "slide", title: offer.varenavn || "", blocks: [],
-    imageUrl: imageUrls[0] ?? null, imageUrls, imageMode: "plakat", isPdf: false,
+    imageUrl: imageUrls[0] ?? null, imageUrls, imageMode: "plakat", isPdf: false, pages: [],
     validFrom: validFrom || null, validTo: validTo || null,
     author: "", date: "", contactPerson: null, applyUrl: null,
     statsValue: null, statsChange: null, offer, avdeling, bgColor: null, textColor: null,
