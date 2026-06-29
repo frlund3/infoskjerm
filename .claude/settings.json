@@ -117,7 +117,9 @@
       "Bash(curl -s https://api.resend.com/domains -H 'Authorization: Bearer __TRACKED_VAR__')",
       "Bash(node -e \"const p=require\\('./node_modules/pdf-to-img/package.json'\\); console.log\\('deps:', JSON.stringify\\(p.dependencies||{},null,1\\)\\); console.log\\('main:', p.main, 'type:', p.type\\)\")",
       "Bash(node /private/tmp/claude-501/-Users-frlund3-Documents-GitHub-infoskjerm/02221b57-3217-4346-90d7-96e557ed6cf6/scratchpad/test-pdf.mjs)",
-      "Bash(node scripts/_tmp-test-pdf.mjs)"
+      "Bash(node scripts/_tmp-test-pdf.mjs)",
+      "Bash(node -e \"const p=require\\('./node_modules/pdf-to-img/package.json'\\); console.log\\(JSON.stringify\\({opt:p.optionalDependencies,peer:p.peerDependencies},null,1\\)\\)\")",
+      "Bash(node -e \"const p=require\\('./node_modules/.pnpm/pdfjs-dist@5.6.205/node_modules/pdfjs-dist/package.json'\\); console.log\\(JSON.stringify\\({opt:p.optionalDependencies,peer:p.peerDependencies},null,1\\)\\)\")"
     ],
     "additionalDirectories": [
       "/Users/frlund3/Documents/GitHub/infoskjerm/src/app/preview/[id]",

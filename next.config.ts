@@ -28,7 +28,7 @@ const nextConfig: NextConfig = {
   // Keep the server-side PDF rasteriser (kundeavis pre-render) out of the bundle
   // so its pdfjs/canvas internals load natively at runtime instead of being
   // webpacked (which breaks them).
-  serverExternalPackages: ["pdf-to-img"],
+  serverExternalPackages: ["pdf-to-img", "pdfjs-dist", "@napi-rs/canvas"],
   async headers() {
     return [
       {
