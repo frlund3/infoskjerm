@@ -203,7 +203,32 @@ function Card({ item, qrUrl }: { item: LiveItem; qrUrl?: string }) {
   return <StandardCard item={item} />
 }
 
-export function NewsRotator({ items, qr }: { items: LiveItem[]; qr: Record<string, string> }) {
+const TICKER_HEIGHT = 96
+
+/** Bottom ticker overlay — only rendered when there are active messages. */
+function TickerOverlay({ messages }: { messages: string[] }) {
+  const line = messages.join("    ·    ")
+  return (
+    <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: TICKER_HEIGHT, display: "flex", alignItems: "center", overflow: "hidden", background: "#16a34a", color: "#fff" }}>
+      <style>{`
+        @keyframes gr-pulse{0%{box-shadow:0 0 0 0 rgba(255,255,255,.65)}70%{box-shadow:0 0 0 16px rgba(255,255,255,0)}100%{box-shadow:0 0 0 0 rgba(255,255,255,0)}}
+        @keyframes gr-scroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+      `}</style>
+      <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "0 28px", height: "100%", flex: "0 0 auto", background: "#16a34a", zIndex: 2, fontWeight: 900, fontSize: 26, letterSpacing: 3 }}>
+        <span style={{ width: 15, height: 15, borderRadius: 9999, background: "#ef4444", flex: "0 0 auto", animation: "gr-pulse 1.4s ease-out infinite" }} />
+        <span>NYTT</span>
+      </div>
+      <div style={{ flex: "1 1 auto", overflow: "hidden", position: "relative", height: "100%" }}>
+        <div style={{ position: "absolute", top: 0, left: 0, height: "100%", display: "flex", alignItems: "center", whiteSpace: "nowrap", fontSize: 30, fontWeight: 600, animation: "gr-scroll 30s linear infinite", willChange: "transform" }}>
+          <span style={{ paddingRight: 80 }}>{line}</span>
+          <span style={{ paddingRight: 80 }}>{line}</span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export function NewsRotator({ items, qr, ticker }: { items: LiveItem[]; qr: Record<string, string>; ticker: string[] }) {
   const [i, setI] = useState(0)
   useEffect(() => {
     if (items.length <= 1) return
@@ -220,19 +245,23 @@ export function NewsRotator({ items, qr }: { items: LiveItem[]; qr: Record<strin
   }, [])
 
   const item = items.length ? items[i % items.length] : null
+  const hasTicker = ticker.length > 0
+  // Reserve space at the bottom for the ticker only when it is showing.
+  const contentInset: CSSProperties = hasTicker ? { position: "absolute", top: 0, left: 0, right: 0, bottom: TICKER_HEIGHT } : { position: "absolute", inset: 0 }
 
   return (
     <main style={frame}>
       <style>{"@keyframes grFade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}"}</style>
       {!item ? (
-        <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", color: "rgba(255,255,255,.4)", fontSize: 34 }}>
+        <div style={{ ...contentInset, display: "flex", alignItems: "center", justifyContent: "center", color: "rgba(255,255,255,.4)", fontSize: 34 }}>
           Ingen publiserte nyheter
         </div>
       ) : (
-        <div key={item.id} style={{ position: "absolute", inset: 0, animation: "grFade .6s ease-out" }}>
+        <div key={item.id} style={{ ...contentInset, overflow: "hidden", animation: "grFade .6s ease-out" }}>
           <Card item={item} qrUrl={qr[item.id]} />
         </div>
       )}
+      {hasTicker && <TickerOverlay messages={ticker} />}
     </main>
   )
 }

@@ -23,7 +23,11 @@ function normalizeUrl(raw: string): string {
 
 export default async function NewsWidgetPage({ searchParams }: { searchParams: Promise<{ store?: string }> }) {
   const { store } = await searchParams
-  const items = await fetchLiveContent(store ?? null, CARD_TYPES)
+  const [items, tickerItems] = await Promise.all([
+    fetchLiveContent(store ?? null, CARD_TYPES),
+    fetchLiveContent(store ?? null, ["ticker"]),
+  ])
+  const ticker = tickerItems.map((t) => t.title.trim()).filter(Boolean)
 
   // Pre-generate QR codes (PNG data URLs) for job ads with an application link.
   const qr: Record<string, string> = {}
@@ -41,5 +45,5 @@ export default async function NewsWidgetPage({ searchParams }: { searchParams: P
     }
   }
 
-  return <NewsRotator items={items as LiveItem[]} qr={qr} />
+  return <NewsRotator items={items as LiveItem[]} qr={qr} ticker={ticker} />
 }

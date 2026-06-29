@@ -101,9 +101,12 @@ async function getDraftId(api, layoutId) {
 }
 
 /**
- * (Re)builds the four-zone signage layout on the given published layout id.
+ * (Re)builds the three-zone signage layout on the given published layout id.
+ * The ticker is NOT a separate region — it is an overlay rendered inside the
+ * news webpage, shown only when there are active ticker messages, so the news
+ * fills the full height otherwise.
  * Idempotent: checks out, wipes regions, rebuilds, publishes.
- * opts: { newsUri, weatherUri, tickerUri }
+ * opts: { newsUri, weatherUri }
  */
 export async function buildLayout(api, layoutId, opts) {
   const draftId = await getDraftId(api, layoutId)
@@ -112,8 +115,8 @@ export async function buildLayout(api, layoutId, opts) {
     await api(`/region/${r.regionId}`, { method: "DELETE" })
   }
 
-  // 1. News (app-rendered webpage).
-  const newsPl = await addRegion(api, draftId, { width: 1340, height: 872, top: 40, left: 40 })
+  // 1. News + ticker overlay (app-rendered webpage), full height.
+  const newsPl = await addRegion(api, draftId, { width: 1340, height: 1000, top: 40, left: 40 })
   await addWebpage(api, newsPl, opts.newsUri, { transparency: 0 })
 
   // 2. Digital clock + date.
@@ -124,13 +127,9 @@ export async function buildLayout(api, layoutId, opts) {
     form: { format: CLOCK_FORMAT, lang: "nb", duration: PERSIST_SECONDS, useDuration: 1 },
   })
 
-  // 3. Yr weather (webpage).
-  const weatherPl = await addRegion(api, draftId, { width: 480, height: 592, top: 300, left: 1400 })
+  // 3. Yr weather (webpage), full height.
+  const weatherPl = await addRegion(api, draftId, { width: 480, height: 740, top: 300, left: 1400 })
   await addWebpage(api, weatherPl, opts.weatherUri, { transparency: 1 })
-
-  // 4. Ticker (webpage; transparent so it vanishes when there are no messages).
-  const tickerPl = await addRegion(api, draftId, { width: 1840, height: 96, top: 944, left: 40 })
-  await addWebpage(api, tickerPl, opts.tickerUri, { transparency: 1 })
 
   await api(`/layout/publish/${layoutId}`, { method: "PUT", form: { publishNow: 1 } })
 }
