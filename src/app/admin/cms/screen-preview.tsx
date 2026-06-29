@@ -25,6 +25,9 @@ export interface PreviewStore {
   hasOffers: boolean
 }
 
+// Top strip height on the internal landscape stage (store name + clock + weather).
+const STRIP_H = 150
+
 // Customer screens are always portrait (1080×1920); internal/back-room landscape.
 const AVDELINGER = [
   { key: "felles", label: "Hele butikken" },
@@ -81,6 +84,11 @@ export function ScreenPreview({
   const kpiSrc = `/widget/butikk-kpi?store=${store.id}`
   const oversiktSrc = `/widget/kpi-oversikt`
   const internInnholdSrc = `/widget/nyheter?store=${store.id}&flate=intern`
+  const topbarSrc = `/widget/topbar?butikk=${encodeURIComponent(store.name)}&lat=${store.lat ?? ""}&lon=${store.lon ?? ""}&navn=${encodeURIComponent(store.city ?? "")}`
+  // Internal "innhold" screen carries the top strip (store name + clock + date +
+  // weather) above the rotating news + ticker — like the real bakrom layout.
+  const showStrip = view === "intern-innhold"
+  const internContentSrc = view === "intern-kpi" ? kpiSrc : view === "intern-innhold" ? internInnholdSrc : oversiktSrc
 
   // Kunde = ett portrett-skjermbilde (toppstripe + tilbud/avis). Intern = 3 faner.
   const subTabs: { key: View; label: string }[] =
@@ -145,11 +153,19 @@ export function ScreenPreview({
       {/* Scaled stage — portrait for customer, landscape for internal */}
       <div ref={wrapRef} className="relative rounded-2xl overflow-hidden border border-zinc-200 bg-black shadow-sm mx-auto" style={{ aspectRatio: portrait ? "9 / 16" : "16 / 9", width: "100%", maxWidth: portrait ? 400 : undefined }}>
         <div style={{ position: "absolute", top: 0, left: 0, width: STAGE_W, height: STAGE_H, transform: `scale(${scale})`, transformOrigin: "top left" }}>
+          {flate === "intern" && showStrip && (
+            <iframe
+              title="topbar"
+              src={topbarSrc}
+              scrolling="no"
+              style={{ position: "absolute", top: 0, left: 0, width: STAGE_W, height: STRIP_H, border: "none" }}
+            />
+          )}
           <iframe
             title={view}
-            src={flate === "kunde" ? tilbudSrc : view === "intern-kpi" ? kpiSrc : view === "intern-innhold" ? internInnholdSrc : oversiktSrc}
+            src={flate === "kunde" ? tilbudSrc : internContentSrc}
             scrolling="no"
-            style={{ position: "absolute", top: 0, left: 0, width: STAGE_W, height: STAGE_H, border: "none" }}
+            style={{ position: "absolute", top: flate === "intern" && showStrip ? STRIP_H : 0, left: 0, width: STAGE_W, height: flate === "intern" && showStrip ? STAGE_H - STRIP_H : STAGE_H, border: "none" }}
           />
         </div>
       </div>

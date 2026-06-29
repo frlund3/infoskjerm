@@ -77,14 +77,22 @@ export async function GET(req: Request) {
 
     const body = { imageUrl: pdf, imageUrls: [pdf], imageMode: "plakat", audience: "kunde", source: SOURCE }
 
-    // 3. Upsert the single SPAR kundeavis item (find by body marker).
-    const { data: existing } = await supabase
+    // 3. Upsert the single SPAR kundeavis item (find by body marker). A new week
+    // MUST deactivate the previous avis: we keep ONE row and archive any extras,
+    // so a stale week can never linger live alongside the current one.
+    const { data: existingRows } = await supabase
       .from("content_items")
-      .select("id")
+      .select("id, created_at")
       .filter("body->>source", "eq", SOURCE)
-      .maybeSingle()
+      .order("created_at", { ascending: true })
 
-    let itemId = existing?.id
+    let itemId = existingRows?.[0]?.id
+    // Archive any duplicate kundeavis rows beyond the one we reuse.
+    const staleIds = (existingRows ?? []).slice(1).map((r) => r.id)
+    if (staleIds.length > 0) {
+      await supabase.from("content_items").update({ status: "archived" }).in("id", staleIds)
+      await supabase.from("content_targets").delete().in("content_item_id", staleIds)
+    }
     if (itemId) {
       await supabase
         .from("content_items")

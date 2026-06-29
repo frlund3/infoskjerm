@@ -6,7 +6,7 @@ import type { LiveItem, OfferFields } from "@/lib/content/live"
  *   • middle: product image, full width, with a tilted red price/discount circle
  *     and a tilted badge ribbon laid over it
  *   • bottom: multi-buy + before-price + fine print, period, and the chain logo
- * Sized in `vmin` so it scales on the portrait customer screens. A generic
+ * Sized in `cqmin` so it scales on the portrait customer screens. A generic
  * "Gange-Rolv" name is never shown to customers — only the chain logo.
  */
 
@@ -43,20 +43,20 @@ function PriceCircle({ offer }: { offer: OfferFields }) {
   return (
     <div
       style={{
-        position: "absolute", bottom: "1vmin", right: "0vmin",
-        width: "42vmin", height: "42vmin", borderRadius: "50%",
+        position: "absolute", bottom: "1cqmin", right: "0cqmin",
+        width: "42cqmin", height: "42cqmin", borderRadius: "50%",
         background: RED, color: "#fff", display: "flex", flexDirection: "column",
         alignItems: "center", justifyContent: "center", textAlign: "center",
-        transform: "rotate(-8deg)", boxShadow: "0 1.5vmin 5vmin rgba(0,0,0,.22)",
-        padding: "0 2vmin", boxSizing: "border-box",
+        transform: "rotate(-8deg)", boxShadow: "0 1.5cqmin 5cqmin rgba(0,0,0,.22)",
+        padding: "0 2cqmin", boxSizing: "border-box",
       }}
     >
       {offer.rabatt ? (
-        <span style={{ fontSize: "16vmin", fontWeight: 900, lineHeight: 0.85, letterSpacing: "-0.6vmin" }}>{offer.rabatt}</span>
+        <span style={{ fontSize: "16cqmin", fontWeight: 900, lineHeight: 0.85, letterSpacing: "-0.6cqmin" }}>{offer.rabatt}</span>
       ) : (
         <div style={{ display: "flex", alignItems: "flex-start", lineHeight: 0.8 }}>
-          <span style={{ fontSize: `${krSize}vmin`, fontWeight: 900, letterSpacing: "-0.6vmin" }}>{kr}</span>
-          {ore && <span style={{ fontSize: `${oreSize}vmin`, fontWeight: 900, marginTop: "1.5vmin" }}>{ore}</span>}
+          <span style={{ fontSize: `${krSize}cqmin`, fontWeight: 900, letterSpacing: "-0.6cqmin" }}>{kr}</span>
+          {ore && <span style={{ fontSize: `${oreSize}cqmin`, fontWeight: 900, marginTop: "1.5cqmin" }}>{ore}</span>}
         </div>
       )}
     </div>
@@ -67,12 +67,12 @@ function BrandFooter({ chain }: { chain: ChainBrand | null }) {
   if (!chain || (!chain.logoUrl && !chain.name)) return null
   const accent = chain.color || GREEN
   return (
-    <div style={{ flex: "0 0 auto", marginTop: "3vmin", marginLeft: "-5vmin", marginRight: "-5vmin", borderTop: `0.8vmin solid ${accent}`, background: "#fff", display: "flex", alignItems: "center", justifyContent: "flex-start", padding: "2.5vmin 5vmin", minHeight: "9vmin", boxSizing: "border-box" }}>
+    <div style={{ flex: "0 0 auto", marginTop: "3cqmin", marginLeft: "-5cqmin", marginRight: "-5cqmin", borderTop: `0.8cqmin solid ${accent}`, background: "#fff", display: "flex", alignItems: "center", justifyContent: "flex-start", padding: "2.5cqmin 5cqmin", minHeight: "9cqmin", boxSizing: "border-box" }}>
       {chain.logoUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={chain.logoUrl} alt={chain.name} style={{ maxHeight: "11vmin", maxWidth: "60%", objectFit: "contain" }} />
+        <img src={chain.logoUrl} alt={chain.name} style={{ maxHeight: "11cqmin", maxWidth: "60%", objectFit: "contain" }} />
       ) : (
-        <span style={{ color: accent, fontWeight: 900, letterSpacing: "0.5vmin", fontSize: "5vmin", textTransform: "uppercase" }}>{chain.name}</span>
+        <span style={{ color: accent, fontWeight: 900, letterSpacing: "0.5cqmin", fontSize: "5cqmin", textTransform: "uppercase" }}>{chain.name}</span>
       )}
     </div>
   )
@@ -86,18 +86,22 @@ export function OfferCard({ item, chain = null }: { item: LiveItem; chain?: Chai
   const fine = [offer.pant ? "+ pant" : null, offer.maks, offer.enhetspris].filter(Boolean) as string[]
 
   return (
-    <div style={{ position: "absolute", inset: 0, background: "#fff", color: INK, display: "flex", flexDirection: "column", padding: "5vmin 5vmin 0", boxSizing: "border-box", fontFamily: "Arial, Helvetica, sans-serif", overflow: "hidden" }}>
+    // Outer establishes a size container so the card scales to its box (full
+    // screen on signage, a small box in the CMS live preview) — cqmin == vmin
+    // when it fills the viewport, so the on-screen look is unchanged.
+    <div style={{ position: "absolute", inset: 0, background: "#fff", containerType: "size" }}>
+    <div style={{ position: "absolute", inset: 0, background: "#fff", color: INK, display: "flex", flexDirection: "column", padding: "5cqmin 5cqmin 0", boxSizing: "border-box", fontFamily: "Arial, Helvetica, sans-serif", overflow: "hidden" }}>
       {/* Top: name + info, full width */}
       <div style={{ flex: "0 0 auto" }}>
-        <h1 style={{ fontSize: "11vmin", fontWeight: 900, margin: 0, lineHeight: 0.98, letterSpacing: "-0.4vmin" }}>{offer.varenavn}</h1>
-        {offer.vareinfo && <p style={{ fontSize: "4.6vmin", color: MUTED, margin: "1.8vmin 0 0", fontWeight: 600 }}>{offer.vareinfo}</p>}
+        <h1 style={{ fontSize: "11cqmin", fontWeight: 900, margin: 0, lineHeight: 0.98, letterSpacing: "-0.4cqmin" }}>{offer.varenavn}</h1>
+        {offer.vareinfo && <p style={{ fontSize: "4.6cqmin", color: MUTED, margin: "1.8cqmin 0 0", fontWeight: 600 }}>{offer.vareinfo}</p>}
       </div>
 
       {/* Middle: full-width image with badge ribbon + price circle over it */}
-      <div style={{ flex: "1 1 auto", minHeight: 0, position: "relative", margin: "3vmin 0" }}>
+      <div style={{ flex: "1 1 auto", minHeight: 0, position: "relative", margin: "3cqmin 0" }}>
         {img && <div style={{ position: "absolute", inset: 0, backgroundImage: `url('${img}')`, backgroundSize: "contain", backgroundPosition: "center", backgroundRepeat: "no-repeat" }} />}
         {offer.badge && (
-          <div style={{ position: "absolute", top: "9vmin", left: "-1vmin", background: RED, color: "#fff", fontWeight: 900, fontSize: "5.5vmin", letterSpacing: "0.3vmin", padding: "1.6vmin 4.5vmin", borderRadius: "1.5vmin", textTransform: "uppercase", transform: "rotate(-4deg)", boxShadow: "0 1vmin 3vmin rgba(0,0,0,.18)" }}>
+          <div style={{ position: "absolute", top: "9cqmin", left: "-1cqmin", background: RED, color: "#fff", fontWeight: 900, fontSize: "5.5cqmin", letterSpacing: "0.3cqmin", padding: "1.6cqmin 4.5cqmin", borderRadius: "1.5cqmin", textTransform: "uppercase", transform: "rotate(-4deg)", boxShadow: "0 1cqmin 3cqmin rgba(0,0,0,.18)" }}>
             {offer.badge}
           </div>
         )}
@@ -105,16 +109,17 @@ export function OfferCard({ item, chain = null }: { item: LiveItem; chain?: Chai
       </div>
 
       {/* Bottom: multi-buy + before-price + fine print + period */}
-      <div style={{ flex: "0 0 auto", display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: "4vmin" }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: "1.8vmin", minWidth: 0, alignItems: "flex-start" }}>
-          {offer.tag && <span style={{ background: GREEN, color: "#fff", fontWeight: 900, fontSize: "5vmin", padding: "1.4vmin 3.6vmin", borderRadius: "1.6vmin", textTransform: "uppercase", letterSpacing: "0.2vmin", lineHeight: 1 }}>{offer.tag}</span>}
-          {offer.forpris && <span style={{ fontSize: "4vmin", color: "#9aa0a6", fontWeight: 700 }}>Førpris <span style={{ textDecoration: "line-through" }}>{offer.forpris}</span></span>}
-          {fine.length > 0 && <span style={{ fontSize: "3.6vmin", color: MUTED, fontWeight: 600 }}>{fine.join("  ·  ")}</span>}
+      <div style={{ flex: "0 0 auto", display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: "4cqmin" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "1.8cqmin", minWidth: 0, alignItems: "flex-start" }}>
+          {offer.tag && <span style={{ background: GREEN, color: "#fff", fontWeight: 900, fontSize: "5cqmin", padding: "1.4cqmin 3.6cqmin", borderRadius: "1.6cqmin", textTransform: "uppercase", letterSpacing: "0.2cqmin", lineHeight: 1 }}>{offer.tag}</span>}
+          {offer.forpris && <span style={{ fontSize: "4cqmin", color: "#9aa0a6", fontWeight: 700 }}>Førpris <span style={{ textDecoration: "line-through" }}>{offer.forpris}</span></span>}
+          {fine.length > 0 && <span style={{ fontSize: "3.6cqmin", color: MUTED, fontWeight: 600 }}>{fine.join("  ·  ")}</span>}
         </div>
-        {period && <span style={{ flex: "0 0 auto", background: GREEN, color: "#fff", fontWeight: 800, fontSize: "3.6vmin", padding: "1.4vmin 3.4vmin", borderRadius: "100vmin" }}>{period}</span>}
+        {period && <span style={{ flex: "0 0 auto", background: GREEN, color: "#fff", fontWeight: 800, fontSize: "3.6cqmin", padding: "1.4cqmin 3.4cqmin", borderRadius: "100cqmin" }}>{period}</span>}
       </div>
 
       <BrandFooter chain={chain} />
+    </div>
     </div>
   )
 }

@@ -59,6 +59,10 @@ export interface LiveItem {
   offer: OfferFields | null
   /** Department/category, e.g. "frukt"/"ferskvare". "felles" = whole store. */
   avdeling: string
+  /** Optional card background colour (text cards). null = default dark theme. */
+  bgColor: string | null
+  /** Optional card text colour. null = default light-on-dark. */
+  textColor: string | null
 }
 
 interface Body {
@@ -72,6 +76,8 @@ interface Body {
   statsChange?: string | null
   offer?: OfferFields | null
   avdeling?: string | null
+  bgColor?: string | null
+  textColor?: string | null
 }
 
 interface Target {
@@ -218,6 +224,8 @@ export async function fetchLiveContent(storeId: string | null, types: string[], 
       statsChange: body.statsChange ?? null,
       offer: body.offer && body.offer.varenavn ? body.offer : null,
       avdeling: body.avdeling || "felles",
+      bgColor: body.bgColor ?? null,
+      textColor: body.textColor ?? null,
     }
   })
 }
