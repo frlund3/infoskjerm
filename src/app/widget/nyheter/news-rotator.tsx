@@ -281,7 +281,7 @@ function StatsCard({ item }: { item: LiveItem }) {
  * vibrant gradient, floating confetti, a tilted "KONKURRANSE" badge, a moving
  * shine sweep and a pulsing CTA. Honors a custom bg/text colour when set.
  */
-function CompetitionCard({ item }: { item: LiveItem }) {
+function CompetitionCard({ item, qrUrl }: { item: LiveItem; qrUrl?: string }) {
   const fg = item.textColor ?? "#fff"
   const hasImg = !!item.imageUrl
   return (
@@ -300,7 +300,15 @@ function CompetitionCard({ item }: { item: LiveItem }) {
             <h1 style={{ fontSize: hasImg ? 76 : 98, fontWeight: 900, margin: "14px 0 0", lineHeight: 1.0, letterSpacing: -2, textShadow: "0 6px 30px rgba(0,0,0,.25)" }}>{item.title}</h1>
             {item.blocks.length > 0 && <div style={{ marginTop: 22, opacity: 0.96, maxHeight: 440, overflow: "hidden" }}><RichBlocks blocks={item.blocks} /></div>}
           </div>
-          <div style={{ alignSelf: "flex-start", background: "#fff", color: "#9d174d", fontWeight: 900, fontSize: 32, padding: "16px 40px", borderRadius: 9999, animation: "grcPulse 2s ease-in-out infinite", boxShadow: "0 14px 44px rgba(0,0,0,.3)" }}>Bli med og vinn!</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 28 }}>
+            <div style={{ background: "#fff", color: "#9d174d", fontWeight: 900, fontSize: 32, padding: "16px 40px", borderRadius: 9999, animation: "grcPulse 2s ease-in-out infinite", boxShadow: "0 14px 44px rgba(0,0,0,.3)" }}>{qrUrl ? "Skann og delta!" : "Bli med og vinn!"}</div>
+            {qrUrl && (
+              <div style={{ background: "#fff", padding: 14, borderRadius: 18, boxShadow: "0 14px 44px rgba(0,0,0,.3)" }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={qrUrl} alt="QR-kode for å delta" width={130} height={130} style={{ display: "block" }} />
+              </div>
+            )}
+          </div>
         </div>
         {hasImg && (
           <div style={{ flex: "0 0 40%", minWidth: 0, borderRadius: 28, overflow: "hidden", boxShadow: "0 20px 60px rgba(0,0,0,.35)", background: "rgba(255,255,255,.1)" }}>
@@ -331,7 +339,7 @@ function SlideCard({ item }: { item: LiveItem }) {
 }
 
 function Card({ item, qrUrl }: { item: LiveItem; qrUrl?: string }) {
-  if (item.type === "competition") return <CompetitionCard item={item} />
+  if (item.type === "competition") return <CompetitionCard item={item} qrUrl={qrUrl} />
   if (item.type === "slide") return <SlideCard item={item} />
   if (item.type === "stats") return <StatsCard item={item} />
   if (item.type === "job") return <JobCard item={item} qrUrl={qrUrl} />

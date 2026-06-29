@@ -115,8 +115,10 @@ export function ContentListClient({ items, stores, tags, newHref = "/admin/innho
       if (search && !it.title.toLowerCase().includes(search.toLowerCase())) return false
       if (statusF !== "all" && (it.status ?? "draft") !== statusF) return false
       if (typeF && it.type !== typeF) return false
-      if (storeF && !it.storeIds.includes(storeF)) return false
-      if (tagF && !it.tagIds.includes(tagF)) return false
+      // "Alle butikker"-innhold (target_all) treffer ethvert butikk-/tag-filter,
+      // siden det faktisk vises på alle butikker.
+      if (storeF && it.target.mode !== "all" && !it.storeIds.includes(storeF)) return false
+      if (tagF && it.target.mode !== "all" && !it.tagIds.includes(tagF)) return false
       return true
     })
   }, [items, search, statusF, typeF, storeF, tagF])
@@ -245,7 +247,7 @@ export function ContentListClient({ items, stores, tags, newHref = "/admin/innho
                     </div>
                   ) : item.imageUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={item.imageUrl} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                    <img src={item.imageUrl} alt="" className="w-full h-full object-contain bg-zinc-50 p-1" />
                   ) : (
                     <div className={`w-full h-full bg-gradient-to-br ${tm.gradient} flex items-center justify-center`}>
                       <TypeIcon className="w-10 h-10 text-white/40" />

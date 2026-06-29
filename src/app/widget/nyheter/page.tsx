@@ -40,7 +40,7 @@ export default async function NewsWidgetPage({ searchParams }: { searchParams: P
   // Pre-generate QR codes (PNG data URLs) for job ads with an application link.
   const qr: Record<string, string> = {}
   for (const it of items) {
-    if (it.type === "job" && it.applyUrl?.trim()) {
+    if ((it.type === "job" || it.type === "competition") && it.applyUrl?.trim()) {
       try {
         qr[it.id] = await QRCode.toDataURL(normalizeUrl(it.applyUrl), {
           margin: 1,

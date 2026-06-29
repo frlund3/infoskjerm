@@ -69,6 +69,7 @@ function buildBody(input: ContentInput): Json {
     imageMode: input.imageMode ?? "bakgrunn",
     audience: input.audience ?? audienceForType(input.type),
     ...(input.type === "job" ? { contactPerson: input.contactPerson ?? null, applyUrl: input.applyUrl ?? null } : {}),
+    ...(input.type === "competition" ? { applyUrl: input.applyUrl ?? null } : {}),
     ...(input.type === "stats" ? { statsValue: input.statsValue ?? null, statsChange: input.statsChange ?? null } : {}),
     ...(input.type === "slide" && input.offer ? { offer: input.offer } : {}),
     ...(input.type === "slide" ? { avdeling: input.avdeling || "felles" } : {}),

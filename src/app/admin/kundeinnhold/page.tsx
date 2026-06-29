@@ -16,7 +16,7 @@ export default async function CustomerContentListPage() {
         subtitle="Tilbud, annonser og plakater til kundene i butikken"
         actions={
           <Link href="/admin/kundeinnhold/ny" className="flex items-center gap-1.5 text-xs font-semibold text-white px-3.5 py-2 rounded-lg" style={{ backgroundColor: "var(--brand-primary)" }}>
-            <Plus className="w-4 h-4" /> Ny kundeannonse
+            <Plus className="w-4 h-4" /> Nytt kundeinnhold
           </Link>
         }
       />

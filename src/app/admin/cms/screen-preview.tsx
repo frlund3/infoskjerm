@@ -57,6 +57,7 @@ export function ScreenPreview({
   const [storeId, setStoreId] = useState(stores[0]?.id ?? "")
   const [avdeling, setAvdeling] = useState("felles")
   const [view, setView] = useState<View>("intern-innhold")
+  const [oversiktPeriode, setOversiktPeriode] = useState<"uke" | "ar">("uke")
   const wrapRef = useRef<HTMLDivElement>(null)
   const [scale, setScale] = useState(0.5)
   const flate = view.startsWith("kunde") ? "kunde" : "intern"
@@ -88,7 +89,8 @@ export function ScreenPreview({
   // Internal "innhold" screen carries the top strip (store name + clock + date +
   // weather) above the rotating news + ticker — like the real bakrom layout.
   const showStrip = view === "intern-innhold"
-  const internContentSrc = view === "intern-kpi" ? kpiSrc : view === "intern-innhold" ? internInnholdSrc : oversiktSrc
+  const oversiktFull = oversiktPeriode === "ar" ? `${oversiktSrc}?periode=ar` : oversiktSrc
+  const internContentSrc = view === "intern-kpi" ? kpiSrc : view === "intern-innhold" ? internInnholdSrc : oversiktFull
 
   // Kunde = ett portrett-skjermbilde (toppstripe + tilbud/avis). Intern = 3 faner.
   const subTabs: { key: View; label: string }[] =
@@ -141,6 +143,16 @@ export function ScreenPreview({
             </div>
             <span className="text-xs text-zinc-400">Stående — tilbud/kundeavis i full skjerm. Ticker kun når den er laget for kundeskjerm.</span>
           </>
+        )}
+        {view === "intern-oversikt" && (
+          <div className="inline-flex rounded-lg border border-zinc-200 p-0.5 bg-zinc-50 ml-1">
+            {([["uke", "Denne uka"], ["ar", "Hittil i år"]] as const).map(([key, label]) => (
+              <button key={key} onClick={() => setOversiktPeriode(key)}
+                className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all ${oversiktPeriode === key ? "bg-zinc-900 text-white" : "text-zinc-600"}`}>
+                {label}
+              </button>
+            ))}
+          </div>
         )}
         {flate === "intern" && (
           <span className="text-xs text-zinc-400">Bakrom/ansatte — vises aldri til kunder.</span>
