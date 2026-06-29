@@ -21,7 +21,7 @@ export default async function EditContentPage({ params }: { params: Promise<{ id
   if (!item) notFound()
 
   const body = (item.body ?? {}) as {
-    html?: string; imageUrl?: string | null; imageMode?: "plakat" | "bakgrunn"
+    html?: string; imageUrl?: string | null; imageUrls?: string[]; imageMode?: "plakat" | "bakgrunn"
     contactPerson?: string | null; applyUrl?: string | null; statsValue?: string | null; statsChange?: string | null
   }
   const targetRows = targets ?? []
@@ -36,6 +36,7 @@ export default async function EditContentPage({ params }: { params: Promise<{ id
     type: item.type as ContentType,
     bodyHtml: body.html ?? "",
     imageUrl: body.imageUrl ?? null,
+    imageUrls: body.imageUrls?.length ? body.imageUrls : body.imageUrl ? [body.imageUrl] : [],
     targetMode,
     storeIds: targetRows.filter((t) => t.store_id).map((t) => t.store_id as string),
     tagIds: targetRows.filter((t) => t.tag_id).map((t) => t.tag_id as string),

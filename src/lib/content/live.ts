@@ -21,6 +21,8 @@ export interface LiveItem {
   title: string
   blocks: Block[]
   imageUrl: string | null
+  /** All attached images (≥1). 2+ → rendered full-page, side by side. */
+  imageUrls: string[]
   imageMode: ImageMode
   isPdf: boolean
   validFrom: string | null
@@ -36,6 +38,7 @@ export interface LiveItem {
 interface Body {
   html?: string
   imageUrl?: string | null
+  imageUrls?: string[]
   imageMode?: ImageMode
   contactPerson?: string | null
   applyUrl?: string | null
@@ -147,14 +150,17 @@ export async function fetchLiveContent(storeId: string | null, types: string[]):
 
   return visible.map((it) => {
     const body = (it.body ?? {}) as Body
+    const imageUrls = (body.imageUrls?.length ? body.imageUrls : body.imageUrl ? [body.imageUrl] : []).filter(Boolean)
+    const firstImage = imageUrls[0] ?? null
     return {
       id: it.id,
       type: it.type,
       title: it.title,
       blocks: htmlToBlocks(body.html ?? ""),
-      imageUrl: body.imageUrl ?? null,
+      imageUrl: firstImage,
+      imageUrls,
       imageMode: body.imageMode === "plakat" ? "plakat" : "bakgrunn",
-      isPdf: (body.imageUrl ?? "").toLowerCase().split("?")[0].endsWith(".pdf"),
+      isPdf: (firstImage ?? "").toLowerCase().split("?")[0].endsWith(".pdf"),
       validFrom: it.valid_from,
       validTo: it.valid_to,
       author: it.created_by ? authorName.get(it.created_by) ?? "" : "",

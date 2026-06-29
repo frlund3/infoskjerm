@@ -17,6 +17,8 @@ export interface ContentInput {
   type: ContentType
   bodyHtml: string
   imageUrl: string | null
+  /** All attached images. 2+ → rendered full-page, side by side (no dimmed bg). */
+  imageUrls?: string[]
   imageMode?: ImageMode
   targetMode: TargetMode
   storeIds: string[]
@@ -46,9 +48,11 @@ async function effectiveTenant(supabase: AdminSupabase, tenantId: string): Promi
 
 /** Builds the content_items.body payload, including type-specific fields. */
 function buildBody(input: ContentInput): Json {
+  const imageUrls = (input.imageUrls ?? (input.imageUrl ? [input.imageUrl] : [])).filter(Boolean)
   return JSON.parse(JSON.stringify({
     html: input.bodyHtml,
-    imageUrl: input.imageUrl ?? null,
+    imageUrl: imageUrls[0] ?? input.imageUrl ?? null,
+    imageUrls,
     imageMode: input.imageMode ?? "bakgrunn",
     ...(input.type === "job" ? { contactPerson: input.contactPerson ?? null, applyUrl: input.applyUrl ?? null } : {}),
     ...(input.type === "stats" ? { statsValue: input.statsValue ?? null, statsChange: input.statsChange ?? null } : {}),
