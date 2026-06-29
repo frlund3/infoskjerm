@@ -155,14 +155,6 @@ export default async function KpiOverviewPage({ searchParams }: { searchParams: 
           <Row key={row.storeName} row={row} rank={i + 1} />
         ))}
       </section>
-
-      {/* Footer: the complementary period for context */}
-      <footer style={{ display: "flex", gap: 40, alignItems: "center", borderTop: "1px solid rgba(255,255,255,.1)", paddingTop: 18, flex: "0 0 auto" }}>
-        <span style={{ fontSize: 24, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", color: MUTED }}>{ytd ? `Siste uke (${data.latestWeek}) · kjeden` : "Hittil i år · kjeden"}</span>
-        <span style={{ fontSize: 38, fontWeight: 900 }}>{kr(ytd ? t.omsetning : t.ytdOmsetning)} kr</span>
-        <span style={{ fontSize: 26, color: MUTED }}>vs budsjett <Delta value={ytd ? diffPct(t.omsetning, t.budsjett) : diffPct(t.ytdOmsetning, t.ytdBudsjett)} /></span>
-        <span style={{ fontSize: 26, color: MUTED }}>vs i fjor <Delta value={ytd ? diffPct(t.omsetning, t.fjor) : diffPct(t.ytdOmsetning, t.ytdFjor)} /></span>
-      </footer>
     </main>
   )
 }
