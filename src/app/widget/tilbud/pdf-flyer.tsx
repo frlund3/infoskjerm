@@ -22,7 +22,9 @@ export function PdfFlyer({ url, title }: { url: string; title?: string }) {
     ;(async () => {
       const pdfjs = await import("pdfjs-dist")
       pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs"
-      const doc = await pdfjs.getDocument({ url }).promise
+      // Flyer CDNs don't send CORS headers — fetch through our same-origin proxy.
+      const src = `/api/kundeavis-pdf?url=${encodeURIComponent(url)}`
+      const doc = await pdfjs.getDocument({ url: src }).promise
       const n = Math.min(MAX_PAGES, doc.numPages)
       const out: string[] = []
       for (let p = 1; p <= n && !cancelled; p++) {
