@@ -27,50 +27,51 @@ White-label digital signage-CMS for **Gange-Rolv** (16 SPAR/EUROSPAR/JOKER-butik
 
 ---
 
-## FERDIG (dynamisk modell + per-butikk — 10/10)
+## ARKITEKTUR (gjeldende)
 
-### ✅ 1. Den dynamiske modellen
-`src/lib/xibo/sync.ts` upserter nå **én RAD i DataSet «Nyheter» (id 1)** per publisering (match på `contentId`), sletter rad ved avpublisering/sletting. `saveContent`/`deleteContent` bruker modellen. Bevist end-to-end i prod.
+Publisering skriver til **Supabase `content_items`** (kilden). Skjermene viser innhold via **app-rendrede webpage-widgets** som Xibo embedder — full designkontroll i Next.js, ikke Xibos stive DataSet/maler. Xibo står for skjermstyring + planlegging.
 
-### ✅ 2. Base-malen (campaign 8) rebygd
-Digital klokke + dato, Yr-vær (webpage-widget `/widget/vaer`), DataSet View-nyhetssone (roterer + autoscroll lang tekst), ticker (`/widget/ticker`, scroll + rød puls). Bygges av `scripts/xibo/build-base-template.mjs` (delt logikk i `scripts/xibo/lib.mjs`). 16 butikker har fått lat/long.
+**Widgets (offentlige, leser live fra Supabase via service role):**
+- `/widget/nyheter?store=<id>` — roterende nyhetskort + **ticker-overlay nederst** (kun når aktiv). Per-type kort: nyhet/konkurranse/tilbud/gratulerer (plakat- eller bakgrunnsbilde), **stilling** (QR «skann for å søke» + kontaktperson), **salgstall** (KPI-kort med ▲/▼). Autoscroll for lang tekst. Innhold parses til tekstblokker server-side (ingen rå-HTML → ingen XSS). Auto-refresh hvert 10. min.
+- `/widget/vaer?lat=&lon=&navn=` — Yr-vær per butikk.
 
-### ✅ 3. Per-butikk-laget + planlegging
-`scripts/xibo/build-store-layouts.mjs` lager **16 butikk-spesifikke layouts** (campaign 12–27): vær på butikkens koordinater + nyhetssone filtrert på `butikker`-kolonnen (ALLE eller butikknavn) + **dato-vindu** (`fra`/`til`). Hver er **planlagt** til sin display-gruppe (5–20, Always-daypart). Idempotent.
+**Xibo-layout (3 soner, full høyde):** nyheter (1340×1000) · digital klokke+dato (480×230) · vær (480×740). Ingen egen ticker-region — ticker er overlay i nyhets-widgeten (ingen tom boks når den er tom).
 
-### ✅ Ekstra polish
-- Nyhetskort: **publiseringsdato + forfatter** (byline) via DataSet-kolonner `dato`/`forfatter`.
-- **Type-merkelapp** som kicker (GANGE-ROLV / KONKURRANSE / TILBUD / STILLING LEDIG) via kolonne `merkelapp`.
-- `/widget/*` rammbar fra hvor som helst (CSP `frame-ancestors *`) — offentlig display-innhold.
+- **Base-mal:** campaign 8 (`scripts/xibo/build-base-template.mjs`).
+- **16 butikk-layouts:** campaign 12–27 (`scripts/xibo/build-store-layouts.mjs`), vær på butikkens koordinater + `?store=`-filtrert nyhets-/ticker-feed, **planlagt** til display-gruppe 5–20 (Always). Idempotent.
+- Delt byggelogikk: `scripts/xibo/lib.mjs`. Endre design → rediger relevante widget-komponenter (app) + evt. `lib.mjs`, deploy, kjør builderne på nytt.
 
-### ✅ Stillingsannonser + bursdagshilsen
-Ny `content_type 'job'` (migrasjon 015, kontaktperson + søknadslenke, «STILLING LEDIG») og `'birthday'` (migrasjon 016, «GRATULERER»).
-
-### ✅ Per-rolle datafiltrering
-Innholdslista filtreres per rolle: kjede-/plattformadmin ser alt; enhets-/områderoller ser kun innhold som treffer butikkene de har tilgang til (`user_stores`), innhold målrettet alle, eller egne utkast.
-
-### ✅ GDPR
-Registrert i Framtid Tech AS art.30-protokoll (v1.9) som databehandler-prosjekt; Xibo/Hetzner som underdatabehandler.
-
-> DataSet 1-kolonner nå: tittel, tekst, bilde, type, butikker, fra, til, contentId, **dato, forfatter, merkelapp**.
-> Endre maldesign: rediger `scripts/xibo/lib.mjs` → kjør base- + butikk-builderne på nytt (idempotent).
+## FERDIG
+- ✅ App-rendret nyhetssone med rike per-type-kort, plakat/bakgrunn-bildevalg, QR for stilling, KPI for salgstall, autoscroll, dato+forfatter-byline, type-merkelapp.
+- ✅ CMS-drevet ticker-overlay (egen `ticker`-type), skjules når tom.
+- ✅ Per-butikk vær + innholdsfiltrering (målretting + dato-vindu) + planlegging til display-grupper.
+- ✅ Innholdstyper: nyhet, konkurranse, tilbud, **stilling** (kontaktperson + søknadslenke), **gratulerer** (bryllup/jubileum/bursdag), **salgstall** (manuelt KPI), **ticker**.
+- ✅ Per-rolle datafiltrering (enhetsadmin ser kun egne butikkers innhold).
+- ✅ GDPR art.30 (v1.9) — databehandler-prosjekt, Xibo/Hetzner underdatabehandler.
+- ✅ `/widget/*` rammbar fra hvor som helst (CSP `frame-ancestors *`).
 
 ---
 
 ## DET SOM GJENSTÅR
 
+### 🟢 Raspberry Pi-klargjøring (alt er klart på CMS-siden)
+De 16 butikk-layoutene er **planlagt** til display-gruppene (5–20). Når en Pi melder seg inn og legges i riktig gruppe, vises butikkens layout automatisk. For å koble på en skjerm:
+1. Flash Raspberry Pi OS (64-bit) på en Pi 4/5.
+2. Installer Xibo-spiller for Pi (**Arexibo**, anbefalt) eller `xibo-player`.
+3. Sett CMS-adresse `https://xibo.framtidtech.no` + **CMS-nøkkel** (Xibo → Innstillinger → CMS Secret Key) i spilleren.
+4. I Xibo CMS → **Displays**: godkjenn (authorise) den nye skjermen.
+5. Legg skjermen i butikkens **display-gruppe** (samme navn som butikken). Da pulles og vises butikkens planlagte layout (Always) automatisk.
+6. (Valgfritt) Sett base-malen (campaign 8) som **global default-layout** i Xibo-innstillinger, så uplasserte skjermer viser noe med en gang.
+
 ### 🟡 Resten
-- **Raspberry Pi:** Arexibo-spiller når maskinvare finnes. Ingen displays registrert i Xibo ennå → de 16 planleggingene «venter» på at en Pi melder seg inn i riktig display-gruppe. Da vises butikkens layout automatisk.
 - **DPA Framtid Tech ↔ Gange-Rolv** + org.nr i art.30-protokollen (markert `[FYLL INN]`).
-- Eventuelt: QR-kode for søknadslenke på stillingskort; per-butikk redaktør-begrensning også i RLS (i dag filtrert i UI/server).
+- Automatisk salgstall fra kassesystem (i dag manuelt KPI-kort) — egen integrasjon.
+- Per-butikk redaktør-begrensning også i RLS (i dag filtrert i UI/server).
 
 ---
 
 ## Xibo-API-oppskrifter (verifisert v4.4)
-**Lag layout:** `POST /layout {name,resolutionId:1}` → parent. `GET /layout?parentId={id}&embed=regions,playlists` → draft. `POST /region/{draft} {type:frame,width,height,top,left}` → `regionPlaylist.playlistId`. `POST /playlist/widget/{type}/{playlistId}` (type: text/clock/datasetview/embedded). `PUT /playlist/widget/{widgetId} {...}`. `PUT /layout/publish/{parent} {publishNow:1}`.
-**Forhåndsvis:** `/campaign/{campaignId}/preview` (finn campaignId: `GET /layout?length=100&embed=campaigns`).
-**DataSet-rad:** `GET/POST /dataset/data/{dataSetId}`, `PUT/DELETE /dataset/data/{dataSetId}/{rowId}`.
-Layout-id endres ved publisering; gjør checkout→edit→publish sammenhengende.
-
-## Definition of done for #1+#2
-Publiser 2-3 nyheter → rader i DataSet 1 → malen roterer gjennom dem med digital klokke+dato, Yr-vær og ticker. Ingen «én layout per nyhet».
+**Lag/rebygg layout:** `POST /layout {name,resolutionId:1}` → parent. `PUT /layout/checkout/{id}` → draft (via `GET /layout?parentId={id}`). `POST /region/{draft} {type:frame,width,height,top,left}` → `regionPlaylist.playlistId`. `POST /playlist/widget/{type}/{playlistId}` (clock-digital/webpage/text/dataset). `PUT /playlist/widget/{widgetId} {...}`. `PUT /layout/publish/{parent} {publishNow:1}`. Layout-id endres ved publisering — adresser via **campaign-id** (stabil).
+**Webpage-widget:** `{uri, transparency, modeid:"1", isPreNavigate:1, duration, useDuration:1}`.
+**Planlegg:** `POST /schedule {eventTypeId:1, campaignId, displayGroupIds[], dayPartId:2 (Always)}`.
+**Forhåndsvis:** `/campaign/{campaignId}/preview`.
