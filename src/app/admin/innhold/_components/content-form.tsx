@@ -79,6 +79,8 @@ export function ContentForm({ stores, tags, initial }: { stores: StoreOption[]; 
 
   const usesImage = IMAGE_TYPES.includes(type)
   const usesBody = type !== "ticker"
+  // Tilbud/annonser må alltid ha en gyldig periode (fra + til).
+  const periodRequired = type === "slide"
   const isPdfUrl = (imageUrls[0] ?? "").toLowerCase().split("?")[0].endsWith(".pdf")
   const MAX_IMAGES = 4
   const isMulti = imageUrls.length >= 2
@@ -93,8 +95,13 @@ export function ContentForm({ stores, tags, initial }: { stores: StoreOption[]; 
     if (!title.trim()) { toast.error("Skriv en tittel først"); return }
     if (targetMode === "stores" && storeIds.length === 0) { toast.error("Velg minst én butikk"); return }
     if (targetMode === "tags" && tagIds.length === 0) { toast.error("Velg minst én tagg"); return }
-    // Myk bekreftelse: publisering uten sluttdato = vises til det fjernes manuelt.
-    if (publish && !validTo) { setConfirmNoEndDate(true); return }
+    // Tilbud/annonser MÅ ha både fra- og til-dato — de skal aldri gå evig.
+    if (publish && periodRequired && (!validFrom || !validTo)) {
+      toast.error("Tilbud må ha både fra- og til-dato")
+      return
+    }
+    // Andre typer: myk bekreftelse ved publisering uten sluttdato.
+    if (publish && !periodRequired && !validTo) { setConfirmNoEndDate(true); return }
     doSave(publish)
   }
 
@@ -296,15 +303,15 @@ export function ContentForm({ stores, tags, initial }: { stores: StoreOption[]; 
 
           {/* Period */}
           <section className="rounded-xl border border-zinc-200 bg-white p-4">
-            <h3 className="flex items-center gap-1.5 text-xs font-semibold text-zinc-600 mb-2.5"><Calendar className="w-3.5 h-3.5" /> Periode <span className="font-normal text-zinc-400">(valgfritt)</span></h3>
+            <h3 className="flex items-center gap-1.5 text-xs font-semibold text-zinc-600 mb-2.5"><Calendar className="w-3.5 h-3.5" /> Periode <span className={`font-normal ${periodRequired ? "text-red-500" : "text-zinc-400"}`}>{periodRequired ? "(påkrevd)" : "(valgfritt)"}</span></h3>
             <div className="space-y-2">
               <div>
-                <label className="block text-[10px] text-zinc-400 mb-1">Fra</label>
-                <input type="date" value={validFrom} onChange={(e) => setValidFrom(e.target.value)} className="w-full text-xs border border-zinc-200 rounded-lg px-2.5 py-1.5 focus:outline-none" />
+                <label className="block text-[10px] text-zinc-400 mb-1">Fra{periodRequired && <span className="text-red-500"> *</span>}</label>
+                <input type="date" value={validFrom} onChange={(e) => setValidFrom(e.target.value)} className={`w-full text-xs border rounded-lg px-2.5 py-1.5 focus:outline-none ${periodRequired && !validFrom ? "border-red-300" : "border-zinc-200"}`} />
               </div>
               <div>
-                <label className="block text-[10px] text-zinc-400 mb-1">Til</label>
-                <input type="date" value={validTo} onChange={(e) => setValidTo(e.target.value)} className="w-full text-xs border border-zinc-200 rounded-lg px-2.5 py-1.5 focus:outline-none" />
+                <label className="block text-[10px] text-zinc-400 mb-1">Til{periodRequired && <span className="text-red-500"> *</span>}</label>
+                <input type="date" value={validTo} onChange={(e) => setValidTo(e.target.value)} className={`w-full text-xs border rounded-lg px-2.5 py-1.5 focus:outline-none ${periodRequired && !validTo ? "border-red-300" : "border-zinc-200"}`} />
               </div>
             </div>
           </section>
