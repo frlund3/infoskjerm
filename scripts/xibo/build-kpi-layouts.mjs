@@ -74,9 +74,9 @@ for (const store of stores) {
 }
 
 // All-stores overview — two periods (siste uke + hittil i år). Both roterer på
-// HK/ledelse-skjermen OG på hver butikks bakrom, så alle butikksjefer ser hvordan
-// egen butikk ligger an mot resten av kjeden.
-const ledelseGroupId = await findOrCreateGroup("Ledelse – Oversikt")
+// sentral-skjermen «Gange-Rolv Bakrom» OG på hver butikks bakrom, så alle
+// butikksjefer ser hvordan egen butikk ligger an mot resten av kjeden.
+const ledelseGroupId = await findOrCreateGroup("Gange-Rolv Bakrom")
 const overviewTargets = [...bakromGroupIds, ledelseGroupId]
 const OVERVIEWS = [
   { name: "Gange-Rolv KPI – Alle butikker (uke)", uri: `${APP_URL}/widget/kpi-oversikt` },
