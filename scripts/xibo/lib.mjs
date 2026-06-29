@@ -133,3 +133,22 @@ export async function buildLayout(api, layoutId, opts) {
 
   await api(`/layout/publish/${layoutId}`, { method: "PUT", form: { publishNow: 1 } })
 }
+
+/**
+ * (Re)builds a single full-screen webpage layout (one region covering the whole
+ * 1920×1080 canvas). Used for the staff KPI dashboard. Idempotent.
+ */
+export async function buildFullscreenWebpage(api, layoutId, uri) {
+  const draftId = await getDraftId(api, layoutId)
+  const draft = (await api(`/layout?layoutId=${draftId}&embed=regions,playlists`))[0]
+  for (const r of draft.regions || []) {
+    await api(`/region/${r.regionId}`, { method: "DELETE" })
+  }
+  const pl = await addRegion(api, draftId, { width: 1920, height: 1080, top: 0, left: 0 })
+  await addWebpage(api, pl, uri, { transparency: 0 })
+  await api(`/layout/publish/${layoutId}`, { method: "PUT", form: { publishNow: 1 } })
+}
+
+export function kpiUri(appUrl, storeId) {
+  return `${appUrl}/widget/butikk-kpi?store=${storeId}`
+}
