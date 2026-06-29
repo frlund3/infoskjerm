@@ -16,12 +16,16 @@ Mål: en butikkleder ser om skjermen lever, hva den viser, og kan tvinge oppdate
 
 Filer: `src/lib/xibo/client.ts`, `src/lib/xibo/screens.ts`, `src/app/admin/cms/{page,screen-preview,actions}.tsx`, `src/app/admin/cms/skjermbilde/[displayId]/route.ts`.
 
-## Sprint 2 — Fleksibilitet: spesial-widget-rammeverk + dayparts
-Mål: «butikk X trenger en egen side» blir timer, ikke dager.
+## Sprint 2 — Fleksibilitet: generisk spesial-widget-bygger ✅
+Mål: «butikk X trenger en egen side» blir én kommando, ikke dager.
 
-- **B1 — `WidgetShell`** delt komponent (toppstripe, ticker-overlay, auto-refresh, autoscroll, XSS-trygg blokk-render) som nye widgets arver.
-- **Generisk `scripts/xibo/build-widget-layout.mjs`** `{ widgetPath, displayGroup, schedule }` → oppretter Xibo-layout som embedder en vilkårlig widget-URL og planlegger til én butikks gruppe.
-- **B2 — Dayparts** (`/daypart` + `schedule dayPartId`): morgen/lunsj/kveld-innhold automatisk.
+- **Generisk provisjonering i `lib.mjs`:** `findOrCreateLayout`, `findDisplayGroupId`, `scheduleCampaignToGroup` (idempotent), `provisionWidgetLayout` — additivt, rører ikke eksisterende byggere.
+- **`scripts/xibo/build-widget-layout.mjs`** — CLI: `--widget=/widget/<navn> --store="<butikk>" --name="<layout>" [--daypart=<id>] [--query=…] [--no-schedule]`. Slår opp butikk-id, embedder widgeten i en fullskjerm-layout og planlegger til butikkens skjermgruppe.
+- **B2 — Dayparts:** eksponert via `--daypart=<id>` (Always = 2). Egendefinerte tidssoner (morgen/lunsj/kveld) opprettes i Xibo `/daypart` og sendes inn med id.
+
+**Slik legger man til en spesialside for én butikk nå:** (1) lag `/widget/<navn>` i Next (leser fra Supabase), (2) kjør `build-widget-layout.mjs` mot butikkens gruppe. Ferdig.
+
+> NB: build-scriptet muterer delt Xibo-state (prod) — kjøres bevisst, ikke i CI. Verifisert her med `node --check` + ren modul-import; ikke kjørt mot prod.
 
 ## Sprint 3 — Innsikt: proof-of-play + feilvarsler
 - **`GET /stats`** proof-of-play → ekte «hva ble vist, når, hvor lenge» (erstatter slettet `play_log`).
@@ -30,6 +34,6 @@ Mål: «butikk X trenger en egen side» blir timer, ikke dager.
 ---
 
 ### Status
-- [ ] Sprint 1
-- [ ] Sprint 2
-- [ ] Sprint 3
+- [x] Sprint 1 — driftsverktøy i /admin/cms
+- [x] Sprint 2 — generisk spesial-widget-bygger
+- [ ] Sprint 3 — proof-of-play + feilvarsler

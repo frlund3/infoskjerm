@@ -158,3 +158,77 @@ export function topbarUri(appUrl, { butikk, lat, lon, navn }) {
   })
   return `${appUrl}/widget/topbar?${p.toString()}`
 }
+
+// ---------- generic special-widget provisioning ----------
+//
+// Lets a brand-new per-store page become a real screen with one call: build a
+// full-screen layout that embeds any /widget/* URL, then schedule it onto one
+// store's display group. This is how a store-specific "special module" ships —
+// a React widget + this provisioning, no bespoke Xibo work each time.
+
+export const ALWAYS_DAYPART_ID = 2
+
+/** Find a published (parentId===null) layout by exact name, or create it. */
+export async function findOrCreateLayout(api, name) {
+  const capped = name.slice(0, 50)
+  const found = ((await api(`/layout?layout=${encodeURIComponent(capped)}&length=50`)) || []).find(
+    (l) => l.layout === capped && l.parentId === null
+  )
+  if (found) return { layoutId: found.layoutId, campaignId: found.campaignId }
+  const created = await api(`/layout`, { method: "POST", form: { name: capped, resolutionId: 1 } })
+  const fresh = (await api(`/layout?layoutId=${created.layoutId}`))[0]
+  return { layoutId: created.layoutId, campaignId: fresh.campaignId }
+}
+
+/** displayGroupId for a real (non display-specific) group by exact name, or null. */
+export async function findDisplayGroupId(api, name) {
+  const groups = (await api(`/displaygroup?isDisplaySpecific=0&length=1000`)) || []
+  const g = groups.find((x) => x.displayGroup === name)
+  return g ? g.displayGroupId : null
+}
+
+/**
+ * Schedule a campaign onto a display group if it isn't already. Idempotent.
+ * dayPartId 2 = Always. Returns "scheduled" | "exists".
+ */
+export async function scheduleCampaignToGroup(api, campaignId, displayGroupId, opts = {}) {
+  const events = (await api(`/schedule?length=2000`)) || []
+  const exists = events.some(
+    (e) => e.campaignId === campaignId && (e.displayGroups || []).some((g) => g.displayGroupId === displayGroupId)
+  )
+  if (exists) return "exists"
+  await api(`/schedule`, {
+    method: "POST",
+    form: {
+      eventTypeId: 1,
+      campaignId,
+      "displayGroupIds[]": displayGroupId,
+      dayPartId: opts.dayPartId ?? ALWAYS_DAYPART_ID,
+      syncTimezone: 0,
+      isPriority: opts.isPriority ?? 0,
+      displayOrder: 0,
+      fromDt: opts.fromDt ?? "",
+      toDt: opts.toDt ?? "",
+    },
+  })
+  return "scheduled"
+}
+
+/**
+ * One-call provisioning of a special full-screen widget page for a store: build
+ * (or rebuild) a full-screen layout embedding `widgetUri`, then (unless
+ * schedule===false) schedule it onto the store's display group.
+ * opts: { layoutName, widgetUri, displayGroupName, dayPartId?, schedule? }
+ */
+export async function provisionWidgetLayout(api, opts) {
+  const { layoutName, widgetUri, displayGroupName, dayPartId, schedule = true } = opts
+  const { layoutId, campaignId } = await findOrCreateLayout(api, layoutName)
+  await buildFullscreenWebpage(api, layoutId, widgetUri)
+  let scheduling = "skipped"
+  if (schedule && displayGroupName) {
+    const dgId = await findDisplayGroupId(api, displayGroupName)
+    if (!dgId) throw new Error(`Fant ingen skjermgruppe «${displayGroupName}» i Xibo`)
+    scheduling = await scheduleCampaignToGroup(api, campaignId, dgId, { dayPartId })
+  }
+  return { layoutId, campaignId, scheduling }
+}
