@@ -35,6 +35,11 @@ function PriceCircle({ offer }: { offer: OfferFields }) {
   // Whole kroner → "00" øre (best practice: 99 shows as 99⁰⁰).
   const [kr, oreRaw] = (offer.pris ?? "").split(/[.,]/)
   const ore = (oreRaw ?? "00").padEnd(2, "0").slice(0, 2)
+  // Scale the kroner down as it grows so "999" or "1299" still fit the circle
+  // (this chain caps prices at 4 kroner digits).
+  const krDigits = kr.replace(/\D/g, "").length
+  const krSize = krDigits >= 4 ? 13 : krDigits === 3 ? 17 : 22
+  const oreSize = krDigits >= 4 ? 6 : krDigits === 3 ? 7.5 : 9
   return (
     <div
       style={{
@@ -43,14 +48,15 @@ function PriceCircle({ offer }: { offer: OfferFields }) {
         background: RED, color: "#fff", display: "flex", flexDirection: "column",
         alignItems: "center", justifyContent: "center", textAlign: "center",
         transform: "rotate(-8deg)", boxShadow: "0 1.5vmin 5vmin rgba(0,0,0,.22)",
+        padding: "0 2vmin", boxSizing: "border-box",
       }}
     >
       {offer.rabatt ? (
         <span style={{ fontSize: "16vmin", fontWeight: 900, lineHeight: 0.85, letterSpacing: "-0.6vmin" }}>{offer.rabatt}</span>
       ) : (
         <div style={{ display: "flex", alignItems: "flex-start", lineHeight: 0.8 }}>
-          <span style={{ fontSize: "22vmin", fontWeight: 900, letterSpacing: "-0.6vmin" }}>{kr}</span>
-          {ore && <span style={{ fontSize: "9vmin", fontWeight: 900, marginTop: "2vmin" }}>{ore}</span>}
+          <span style={{ fontSize: `${krSize}vmin`, fontWeight: 900, letterSpacing: "-0.6vmin" }}>{kr}</span>
+          {ore && <span style={{ fontSize: `${oreSize}vmin`, fontWeight: 900, marginTop: "1.5vmin" }}>{ore}</span>}
         </div>
       )}
     </div>
@@ -100,9 +106,9 @@ export function OfferCard({ item, chain = null }: { item: LiveItem; chain?: Chai
 
       {/* Bottom: multi-buy + before-price + fine print + period */}
       <div style={{ flex: "0 0 auto", display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: "4vmin" }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: "1vmin", minWidth: 0 }}>
-          {offer.mengde && <span style={{ fontSize: "9vmin", fontWeight: 900, color: INK, lineHeight: 1 }}>{offer.mengde}</span>}
-          {offer.forpris && <span style={{ fontSize: "4vmin", color: "#9aa0a6", fontWeight: 700 }}>Førpris <span style={{ textDecoration: "line-through" }}>{/[.,]/.test(offer.forpris) ? offer.forpris : `${offer.forpris},00`}</span></span>}
+        <div style={{ display: "flex", flexDirection: "column", gap: "1.8vmin", minWidth: 0, alignItems: "flex-start" }}>
+          {offer.tag && <span style={{ background: GREEN, color: "#fff", fontWeight: 900, fontSize: "5vmin", padding: "1.4vmin 3.6vmin", borderRadius: "1.6vmin", textTransform: "uppercase", letterSpacing: "0.2vmin", lineHeight: 1 }}>{offer.tag}</span>}
+          {offer.forpris && <span style={{ fontSize: "4vmin", color: "#9aa0a6", fontWeight: 700 }}>Førpris <span style={{ textDecoration: "line-through" }}>{offer.forpris}</span></span>}
           {fine.length > 0 && <span style={{ fontSize: "3.6vmin", color: MUTED, fontWeight: 600 }}>{fine.join("  ·  ")}</span>}
         </div>
         {period && <span style={{ flex: "0 0 auto", background: GREEN, color: "#fff", fontWeight: 800, fontSize: "3.6vmin", padding: "1.4vmin 3.4vmin", borderRadius: "100vmin" }}>{period}</span>}

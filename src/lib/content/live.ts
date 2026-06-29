@@ -27,8 +27,8 @@ export interface OfferFields {
   rabatt: string | null
   /** Before-price (strikethrough), e.g. "59,90". */
   forpris: string | null
-  /** Multi-buy text, e.g. "2 for 50". */
-  mengde: string | null
+  /** Optional decorative tag/sticker, e.g. "Sommervibber". */
+  tag: string | null
   /** Unit price, e.g. "kr 79,80/kg". */
   enhetspris: string | null
   /** Max per customer, e.g. "Maks 5 per kunde". */

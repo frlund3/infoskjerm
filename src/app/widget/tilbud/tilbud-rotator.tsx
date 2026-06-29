@@ -191,18 +191,8 @@ export function TilbudRotator({ items, ticker, storeName, chain = null }: { item
           <OfferCard item={item} chain={chain} />
         </div>
       ) : item.isPdf && item.imageUrl ? (
-        // Kundeavis / PDF → show the whole FRONT PAGE, full-bleed. No side panel
-        // (it would crop the page to half), and only page 1 so a multi-page flyer
-        // shows its front page rather than scrolling.
-        <div key={item.id} style={{ ...inset, background: "#fff", animation: "grFade .6s ease-out" }}>
-          <iframe
-            title={item.title}
-            src={`${item.imageUrl}#page=1&view=Fit&toolbar=0&navpanes=0&scrollbar=0`}
-            style={{ width: "100%", height: "100%", border: "none", display: "block" }}
-          />
-        </div>
-      ) : item.isPdf && item.imageUrl ? (
-        // PDF flyer (kundeavis) → full-bleed page-by-page rotation.
+        // Kundeavis / PDF → rasterised page-by-page (pdf.js), full-bleed, under a
+        // bold heading. No native PDF viewer chrome (toolbar/scrollbars).
         <div key={item.id} style={{ ...inset, animation: "grFade .6s ease-out" }}>
           <PdfFlyer url={item.imageUrl} title={item.title} />
         </div>

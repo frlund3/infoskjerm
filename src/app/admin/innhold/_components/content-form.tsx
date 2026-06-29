@@ -44,7 +44,7 @@ export interface ContentInitial {
 
 const EMPTY_OFFER: OfferFields = {
   varenavn: "", vareinfo: null, badge: null, pris: null, rabatt: null, forpris: null,
-  mengde: null, enhetspris: null, maks: null, pant: false,
+  tag: null, enhetspris: null, maks: null, pant: false,
 }
 
 const BADGES = ["TILBUD", "KNALLPRIS", "NYHET", "SUPERPRIS", "KAMPANJE"]
@@ -65,7 +65,7 @@ const OFFER_GRID: { k: keyof OfferFields; label: string; ph: string }[] = [
   { k: "pris", label: "Pris", ph: "39,90" },
   { k: "forpris", label: "Førpris", ph: "59,90" },
   { k: "rabatt", label: "Rabatt", ph: "-30 %" },
-  { k: "mengde", label: "Mengde", ph: "2 for 50" },
+  { k: "tag", label: "Tag (valgfri)", ph: "Sommervibber" },
   { k: "enhetspris", label: "Enhetspris", ph: "kr 79,80/kg" },
   { k: "maks", label: "Maks per kunde", ph: "Maks 5" },
 ]
