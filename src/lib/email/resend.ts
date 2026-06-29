@@ -1,8 +1,8 @@
 import { Resend } from "resend"
 
 // Avsender for system-e-post (invitasjon, passord-tilbakestilling).
-// gangerolv.no er verifisert i Resend; kan overstyres via env uten kodeendring.
-const FROM = process.env.INVITE_FROM_EMAIL ?? "Infoskjerm <skjerm@gangerolv.no>"
+// framtidtech.no er verifisert i Resend; kan overstyres via env uten kodeendring.
+const FROM = process.env.RESEND_FROM_EMAIL ?? "Framtid Tech <noreply@framtidtech.no>"
 
 function getResend(): Resend {
   const key = process.env.RESEND_API_KEY
