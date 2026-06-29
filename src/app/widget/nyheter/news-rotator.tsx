@@ -160,11 +160,14 @@ function StandardCard({ item }: { item: LiveItem }) {
 /** Several images shown full-page, side by side (no dimmed background). */
 function Gallery({ urls }: { urls: string[] }) {
   const cols = urls.length >= 4 ? 2 : urls.length // 2/3 in a row; 4 → 2×2
+  const rows = Math.ceil(urls.length / cols)
   return (
-    <div style={{ flex: "1 1 auto", minHeight: 0, display: "grid", gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: 18 }}>
+    <div style={{ flex: "1 1 auto", minHeight: 0, display: "grid", gridTemplateColumns: `repeat(${cols}, 1fr)`, gridTemplateRows: `repeat(${rows}, 1fr)`, gap: 18 }}>
       {urls.map((url, i) => (
-        // NB: backgroundColor (ikke background-shorthand) — shorthand nullstiller backgroundImage.
-        <div key={i} style={{ backgroundImage: `url('${url}')`, backgroundSize: "contain", backgroundPosition: "center", backgroundRepeat: "no-repeat", borderRadius: 16, backgroundColor: "rgba(255,255,255,.04)" }} />
+        <div key={i} style={{ minHeight: 0, borderRadius: 16, overflow: "hidden", backgroundColor: "rgba(255,255,255,.04)", display: "flex" }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={url} alt="" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+        </div>
       ))}
     </div>
   )
