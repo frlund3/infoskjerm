@@ -13,7 +13,9 @@ const GREEN = "#16a34a"
 const MAX_PAGES = 6
 const PAGE_SECONDS = 7
 
-export function PdfFlyer({ url, title }: { url: string; title?: string }) {
+export function PdfFlyer({ url, title, color, fg }: { url: string; title?: string; color?: string | null; fg?: string | null }) {
+  const headBg = color || GREEN
+  const headFg = fg || "#fff"
   const [pages, setPages] = useState<string[]>([])
   const [i, setI] = useState(0)
 
@@ -56,7 +58,7 @@ export function PdfFlyer({ url, title }: { url: string; title?: string }) {
   return (
     <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", background: "#fff", overflow: "hidden", fontFamily: "Arial, Helvetica, sans-serif" }}>
       {title && (
-        <div style={{ flex: "0 0 auto", background: GREEN, color: "#fff", textAlign: "center", padding: "3vmin 4vmin", fontWeight: 900, fontSize: "6vmin", letterSpacing: "0.3vmin", textTransform: "uppercase", lineHeight: 1 }}>
+        <div style={{ flex: "0 0 auto", background: headBg, color: headFg, textAlign: "center", padding: "3vmin 4vmin", fontWeight: 900, fontSize: "6vmin", letterSpacing: "0.3vmin", textTransform: "uppercase", lineHeight: 1 }}>
           {title}
         </div>
       )}
@@ -71,7 +73,7 @@ export function PdfFlyer({ url, title }: { url: string; title?: string }) {
       {pages.length > 1 && (
         <div style={{ flex: "0 0 auto", display: "flex", gap: "1.6vmin", justifyContent: "center", padding: "0 0 2.5vmin" }}>
           {pages.map((_, p) => (
-            <span key={p} style={{ width: "2vmin", height: "2vmin", borderRadius: "50%", background: p === i % pages.length ? GREEN : "#d1d5db" }} />
+            <span key={p} style={{ width: "2vmin", height: "2vmin", borderRadius: "50%", background: p === i % pages.length ? headBg : "#d1d5db" }} />
           ))}
         </div>
       )}
