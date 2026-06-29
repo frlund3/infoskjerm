@@ -91,7 +91,8 @@
       "Bash(cat)",
       "Bash(node sptest.mjs)",
       "Bash(curl -s -I \"https://publ.joker.no/digital-avis-uke-27\")",
-      "Bash(python3 -c \"import sys,json;print\\(len\\(json.load\\(sys.stdin\\)\\),'targets'\\)\")"
+      "Bash(python3 -c \"import sys,json;print\\(len\\(json.load\\(sys.stdin\\)\\),'targets'\\)\")",
+      "Bash(node scripts/xibo/build-portrait-customer.mjs)"
     ],
     "additionalDirectories": [
       "/Users/frlund3/Documents/GitHub/infoskjerm/src/app/preview/[id]",

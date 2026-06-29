@@ -43,10 +43,7 @@ for (const store of stores) {
   const layoutName = `Gange-Rolv Kunde – ${store.name}`
 
   const { layoutId, campaignId } = await findOrCreateLayout(api, layoutName, PORTRAIT_RESOLUTION_ID)
-  await buildPortraitCustomer(api, layoutId, {
-    topbarUri: topbarUri(APP_URL, { butikk: store.name, lat, lon, navn: store.city || store.name }),
-    contentUri: tilbudUri(APP_URL, store.id),
-  })
+  await buildPortraitCustomer(api, layoutId, { contentUri: tilbudUri(APP_URL, store.id) })
 
   const dgId = await findDisplayGroupId(api, store.name)
   let msg = "ingen display-gruppe"
