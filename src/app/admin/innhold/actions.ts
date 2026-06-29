@@ -47,6 +47,8 @@ export interface ContentInput {
   textColor?: string | null
   /** Customer-club invite (slide): editable headline + subtext. */
   klubb?: { headline: string; subtext: string } | null
+  /** Optional per-item display time in seconds. */
+  durationSeconds?: number | null
 }
 
 export interface SaveResult {
@@ -78,6 +80,7 @@ function buildBody(input: ContentInput): Json {
     ...(input.bgColor ? { bgColor: input.bgColor } : {}),
     ...(input.textColor ? { textColor: input.textColor } : {}),
     ...(input.type === "slide" && input.klubb ? { klubb: input.klubb } : {}),
+    ...(input.durationSeconds ? { durationSeconds: input.durationSeconds } : {}),
   })) as Json
 }
 

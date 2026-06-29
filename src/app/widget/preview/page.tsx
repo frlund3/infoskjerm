@@ -35,7 +35,7 @@ interface PreviewData {
   contactPerson?: string | null
   statsValue?: string | null
   statsChange?: string | null
-  klubb?: { headline: string; subtext: string } | null
+  klubb?: { headline: string; subtext: string; url?: string } | null
   chain?: { name: string; logoUrl: string | null; color: string; brandFg: string | null } | null
 }
 
@@ -65,6 +65,8 @@ export default async function PreviewWidgetPage({ searchParams }: { searchParams
     imageUrls,
     imageMode: data.imageMode === "plakat" ? "plakat" : data.imageMode === "liten" ? "liten" : "bakgrunn",
     isPdf: (firstImage ?? "").toLowerCase().split("?")[0].endsWith(".pdf"),
+    isVideo: /\.(mp4|webm|mov|m4v)$/.test((firstImage ?? "").toLowerCase().split("?")[0]),
+    durationSeconds: null,
     pages: [],
     validFrom: data.validFrom || null,
     validTo: data.validTo || null,
@@ -90,8 +92,8 @@ export default async function PreviewWidgetPage({ searchParams }: { searchParams
   }
   if (item.klubb) {
     try {
-      const base = await getBaseUrl()
-      qr.preview = await QRCode.toDataURL(`${base}/klubb/forhandsvisning`, { margin: 1, width: 700, color: { dark: "#0a0a0a", light: "#ffffff" } })
+      const target = data.klubb?.url?.trim() ? normalizeUrl(data.klubb.url) : `${await getBaseUrl()}/klubb/forhandsvisning`
+      qr.preview = await QRCode.toDataURL(target, { margin: 1, width: 700, color: { dark: "#0a0a0a", light: "#ffffff" } })
     } catch { /* best-effort */ }
   }
 

@@ -38,7 +38,7 @@ interface StoreChainRow {
 function klubbLiveItem(headline: string, subtext: string): LiveItem {
   return {
     id: "kundeklubb", type: "slide", title: headline, blocks: [], imageUrl: null, imageUrls: [],
-    imageMode: "plakat", isPdf: false, pages: [], validFrom: null, validTo: null, author: "", date: "",
+    imageMode: "plakat", isPdf: false, isVideo: false, durationSeconds: null, pages: [], validFrom: null, validTo: null, author: "", date: "",
     contactPerson: null, applyUrl: null, statsValue: null, statsChange: null, offer: null,
     avdeling: "felles", bgColor: null, textColor: null, klubb: { headline, subtext },
   }

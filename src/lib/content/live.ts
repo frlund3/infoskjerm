@@ -47,6 +47,10 @@ export interface LiveItem {
   imageUrls: string[]
   imageMode: ImageMode
   isPdf: boolean
+  /** First media is a video (mp4/webm) → rendered as autoplay/muted/loop. */
+  isVideo: boolean
+  /** Optional per-item display time in seconds (overrides the type default). */
+  durationSeconds: number | null
   /** Pre-rendered flyer page images (kundeavis) — shown instead of client PDF. */
   pages: string[]
   validFrom: string | null
@@ -84,6 +88,7 @@ interface Body {
   textColor?: string | null
   pages?: string[]
   klubb?: { headline: string; subtext: string; url?: string } | null
+  durationSeconds?: number | null
 }
 
 interface Target {
@@ -220,6 +225,8 @@ export async function fetchLiveContent(storeId: string | null, types: string[], 
       imageUrls,
       imageMode: body.imageMode === "plakat" ? "plakat" : body.imageMode === "liten" ? "liten" : "bakgrunn",
       isPdf: (firstImage ?? "").toLowerCase().split("?")[0].endsWith(".pdf"),
+      isVideo: /\.(mp4|webm|mov|m4v)$/.test((firstImage ?? "").toLowerCase().split("?")[0]),
+      durationSeconds: typeof body.durationSeconds === "number" && body.durationSeconds > 0 ? body.durationSeconds : null,
       pages: Array.isArray(body.pages) ? body.pages.filter(Boolean) : [],
       validFrom: it.valid_from,
       validTo: it.valid_to,

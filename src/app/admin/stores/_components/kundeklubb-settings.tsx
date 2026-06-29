@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { updateStoreKundeklubb } from "../actions"
+import { LivePreview } from "../../innhold/_components/live-preview"
 import { toast } from "sonner"
 import { Loader2, QrCode } from "lucide-react"
 
@@ -75,6 +76,13 @@ export function KundeklubbSettings({
       <button onClick={save} disabled={saving} className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold text-white disabled:opacity-60" style={{ backgroundColor: "var(--brand-primary)" }}>
         {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Lagre kundeklubb"}
       </button>
+
+      {enabled && (
+        <div>
+          <p className="text-[10px] text-zinc-400 uppercase tracking-wide mb-2">Forhåndsvisning</p>
+          <LivePreview portrait data={{ type: "slide", audience: "kunde", klubb: { headline, subtext, url } }} />
+        </div>
+      )}
     </div>
   )
 }
