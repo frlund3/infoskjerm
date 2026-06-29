@@ -18,14 +18,13 @@ export default async function TilbudWidgetPage({ searchParams }: { searchParams:
   const { store } = await searchParams
   const supabase = createAdminClient()
 
-  const [items, tickerItems, storeRow] = await Promise.all([
-    fetchLiveContent(store ?? null, ["slide"]),
-    fetchLiveContent(store ?? null, ["ticker"]),
+  const [items, storeRow] = await Promise.all([
+    fetchLiveContent(store ?? null, ["slide"], "kunde"),
     store ? supabase.from("stores").select("name").eq("id", store).maybeSingle() : Promise.resolve({ data: null }),
   ])
 
-  const ticker = tickerItems.map((t) => t.title.trim()).filter(Boolean)
+  // Customer screens never show the ticker.
   const storeName = (storeRow.data as { name: string } | null)?.name ?? null
 
-  return <TilbudRotator items={items as LiveItem[]} ticker={ticker} storeName={storeName} />
+  return <TilbudRotator items={items as LiveItem[]} ticker={[]} storeName={storeName} />
 }

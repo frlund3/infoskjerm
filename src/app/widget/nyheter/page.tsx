@@ -13,8 +13,9 @@ import { NewsRotator } from "./news-rotator"
 
 export const dynamic = "force-dynamic"
 
-// Offers (slide) are intentionally excluded — they have their own full-screen
-// "Tilbud" layout (/widget/tilbud) so they don't show in two places.
+// This widget renders the CUSTOMER content region. Offers (slide) have their own
+// full-screen "Tilbud" layout, and internal types (+ ticker) must never reach a
+// customer screen — so we fetch only customer-audience cards and no ticker.
 const CARD_TYPES = ["news", "competition", "job", "birthday"]
 
 function normalizeUrl(raw: string): string {
@@ -25,11 +26,9 @@ function normalizeUrl(raw: string): string {
 
 export default async function NewsWidgetPage({ searchParams }: { searchParams: Promise<{ store?: string }> }) {
   const { store } = await searchParams
-  const [items, tickerItems] = await Promise.all([
-    fetchLiveContent(store ?? null, CARD_TYPES),
-    fetchLiveContent(store ?? null, ["ticker"]),
-  ])
-  const ticker = tickerItems.map((t) => t.title.trim()).filter(Boolean)
+  // Customer screens: customer-audience content only, and never the ticker.
+  const items = await fetchLiveContent(store ?? null, CARD_TYPES, "kunde")
+  const ticker: string[] = []
 
   // Pre-generate QR codes (PNG data URLs) for job ads with an application link.
   const qr: Record<string, string> = {}

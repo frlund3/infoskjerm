@@ -46,7 +46,7 @@ export function OfferCard({ item }: { item: LiveItem }) {
   if (!offer) return null
   const period = formatPeriod(item.validFrom, item.validTo)
   const img = item.imageUrl
-  const fine = [offer.enhetspris, offer.medlemspris ? `Medlemspris ${offer.medlemspris}` : null, offer.maks, offer.pant ? "+ pant" : null].filter(Boolean) as string[]
+  const fine = [offer.enhetspris, offer.maks, offer.pant ? "+ pant" : null].filter(Boolean) as string[]
 
   return (
     <div style={{ position: "absolute", inset: 0, background: "#fff", color: INK, display: "flex", flexDirection: "column", padding: "6vmin 6vmin 0", boxSizing: "border-box", fontFamily: "Arial, Helvetica, sans-serif", overflow: "hidden" }}>

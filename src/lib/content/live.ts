@@ -31,8 +31,6 @@ export interface OfferFields {
   mengde: string | null
   /** Unit price, e.g. "kr 79,80/kg". */
   enhetspris: string | null
-  /** Member/loyalty price. */
-  medlemspris: string | null
   /** Max per customer, e.g. "Maks 5 per kunde". */
   maks: string | null
   /** "+ pant" note. */
@@ -128,9 +126,14 @@ function withinWindow(from: string | null, to: string | null, now: number): bool
  * @param storeId  Supabase store id, or null for the all-stores base feed.
  * @param types    content_type values to include.
  */
-export async function fetchLiveContent(storeId: string | null, types: string[]): Promise<LiveItem[]> {
+export async function fetchLiveContent(storeId: string | null, types: string[], audience?: "kunde" | "intern"): Promise<LiveItem[]> {
   const supabase = createAdminClient()
   const now = Date.now()
+
+  const audienceOf = (type: string, body: { audience?: string } | null): "kunde" | "intern" => {
+    const a = body?.audience
+    return a === "kunde" || a === "intern" ? a : type === "slide" ? "kunde" : "intern"
+  }
 
   const { data: items } = await supabase
     .from("content_items")
@@ -165,7 +168,12 @@ export async function fetchLiveContent(storeId: string | null, types: string[]):
     return false
   }
 
-  const visible = items.filter((it) => withinWindow(it.valid_from, it.valid_to, now) && targets(it))
+  const visible = items.filter(
+    (it) =>
+      withinWindow(it.valid_from, it.valid_to, now) &&
+      targets(it) &&
+      (!audience || audienceOf(it.type, it.body as { audience?: string } | null) === audience)
+  )
 
   // Resolve author names in one batch.
   const authorIds = Array.from(new Set(visible.map((i) => i.created_by).filter(Boolean))) as string[]

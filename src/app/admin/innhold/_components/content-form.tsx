@@ -42,7 +42,7 @@ export interface ContentInitial {
 
 const EMPTY_OFFER: OfferFields = {
   varenavn: "", vareinfo: null, badge: null, pris: null, rabatt: null, forpris: null,
-  mengde: null, enhetspris: null, medlemspris: null, maks: null, pant: false,
+  mengde: null, enhetspris: null, maks: null, pant: false,
 }
 
 const BADGES = ["TILBUD", "KNALLPRIS", "NYHET", "SUPERPRIS", "KAMPANJE"]
@@ -53,7 +53,6 @@ const OFFER_GRID: { k: keyof OfferFields; label: string; ph: string }[] = [
   { k: "rabatt", label: "Rabatt", ph: "-30 %" },
   { k: "mengde", label: "Mengde", ph: "2 for 50" },
   { k: "enhetspris", label: "Enhetspris", ph: "kr 79,80/kg" },
-  { k: "medlemspris", label: "Medlemspris", ph: "34,90" },
   { k: "maks", label: "Maks per kunde", ph: "Maks 5" },
 ]
 
@@ -71,7 +70,8 @@ const IMAGE_TYPES: ContentType[] = ["news", "competition", "slide", "job", "birt
 // Which content types belong to each audience/menu.
 const AUDIENCE_TYPES: Record<Audience, ContentType[]> = {
   kunde: ["slide"],
-  intern: ["news", "competition", "job", "birthday", "ticker"],
+  // Internt kan også vise tilbud/plakat (f.eks. ukens tilbud til betjeningen).
+  intern: ["news", "competition", "job", "birthday", "ticker", "slide"],
 }
 
 export function ContentForm({ stores, tags, initial, audience = "intern" }: { stores: StoreOption[]; tags: TagOption[]; initial?: ContentInitial; audience?: Audience }) {
@@ -149,7 +149,7 @@ export function ContentForm({ stores, tags, initial, audience = "intern" }: { st
         imageUrls: usesImage ? imageUrls : [],
         offer: isOfferStruktur ? offer : null,
         // 2+ images always render full-page (side by side), so force plakat-style.
-        imageMode: usesImage ? (isMulti ? "plakat" : imageMode) : "bakgrunn",
+        imageMode: usesImage ? (type === "slide" || isMulti ? "plakat" : imageMode) : "bakgrunn",
         targetMode, storeIds, tagIds,
         validFrom: validFrom || null, validTo: validTo || null, publish,
         contactPerson: type === "job" ? contactPerson || null : null,
@@ -229,7 +229,7 @@ export function ContentForm({ stores, tags, initial, audience = "intern" }: { st
               </div>
               <div>
                 <label className="block text-[10px] text-zinc-400 mb-1">Merkelapp</label>
-                <div className="flex flex-wrap gap-1.5">
+                <div className="flex flex-wrap gap-1.5 mb-2">
                   {BADGES.map((b) => (
                     <button key={b} type="button" onClick={() => setOffer((p) => ({ ...p, badge: p.badge === b ? null : b }))}
                       className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold border transition-all ${offer.badge === b ? "border-red-600 bg-red-600 text-white" : "border-zinc-200 text-zinc-600 hover:border-zinc-300"}`}>
@@ -237,6 +237,8 @@ export function ContentForm({ stores, tags, initial, audience = "intern" }: { st
                     </button>
                   ))}
                 </div>
+                <input value={offer.badge ?? ""} onChange={(e) => setOf("badge", e.target.value)} placeholder="…eller skriv egen merkelapp"
+                  className="w-full text-sm border border-zinc-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-zinc-300" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 {OFFER_GRID.map(({ k, label, ph }) => (
@@ -289,7 +291,7 @@ export function ContentForm({ stores, tags, initial, audience = "intern" }: { st
                   </div>
 
                   {/* Visningsvalg: kun relevant for ett enkelt bilde. */}
-                  {!isPdfUrl && !isMulti && (
+                  {!isPdfUrl && !isMulti && type !== "slide" && (
                     <div>
                       <label className="block text-[10px] text-zinc-400 mb-1">Bildevisning</label>
                       <div className="flex gap-1.5">
@@ -308,12 +310,12 @@ export function ContentForm({ stores, tags, initial, audience = "intern" }: { st
 
                   {canAddMore && (
                     <div className="max-w-md">
-                      <MediaUploader maxFiles={MAX_IMAGES - imageUrls.length} accept={["image/jpeg", "image/png", "image/webp", "image/gif"]} onUpload={(files) => addImages(files.map((f) => f.url))} />
+                      <MediaUploader maxFiles={MAX_IMAGES - imageUrls.length} accept={["image/jpeg", "image/png", "image/webp", "image/gif", "image/avif"]} onUpload={(files) => addImages(files.map((f) => f.url))} />
                     </div>
                   )}
                 </div>
               ) : (
-                <MediaUploader maxFiles={MAX_IMAGES} accept={["image/jpeg", "image/png", "image/webp", "image/gif", "application/pdf"]} onUpload={(files) => addImages(files.map((f) => f.url))} />
+                <MediaUploader maxFiles={MAX_IMAGES} accept={["image/jpeg", "image/png", "image/webp", "image/gif", "image/avif", "application/pdf"]} onUpload={(files) => addImages(files.map((f) => f.url))} />
               )}
             </div>
           )}

@@ -4,7 +4,6 @@ import { useEffect, useRef, useState, type CSSProperties } from "react"
 import type { LiveItem, Block } from "@/lib/content/live"
 
 const KICKER: Record<string, string> = {
-  news: "GANGE-ROLV",
   competition: "KONKURRANSE",
   slide: "TILBUD",
   job: "STILLING LEDIG",
@@ -147,7 +146,7 @@ function StandardCard({ item }: { item: LiveItem }) {
     <>
       {item.imageUrl && <div style={bgImage(item.imageUrl)} />}
       <div style={{ position: "absolute", inset: 0, padding: 70, boxSizing: "border-box", display: "flex", flexDirection: "column" }}>
-        <Kicker>{KICKER[item.type] ?? "GANGE-ROLV"}</Kicker>
+        {KICKER[item.type] && <Kicker>{KICKER[item.type]}</Kicker>}
         <h1 style={{ fontSize: 78, fontWeight: 900, margin: "0 0 14px", lineHeight: 1.03 }}>{item.title}</h1>
         <Byline item={item} />
         <PeriodChip item={item} />
@@ -183,7 +182,7 @@ function SplitCard({ item }: { item: LiveItem }) {
   return (
     <div style={{ position: "absolute", inset: 0, padding: 60, boxSizing: "border-box", display: "flex", gap: 44, alignItems: "stretch" }}>
       <div style={{ flex: multi ? "0 0 40%" : "1 1 auto", minWidth: 0, display: "flex", flexDirection: "column" }}>
-        <Kicker>{KICKER[item.type] ?? "GANGE-ROLV"}</Kicker>
+        {KICKER[item.type] && <Kicker>{KICKER[item.type]}</Kicker>}
         <h1 style={{ fontSize: 60, fontWeight: 900, margin: "0 0 12px", lineHeight: 1.04 }}>{item.title}</h1>
         <Byline item={item} />
         <PeriodChip item={item} />
@@ -200,7 +199,7 @@ function PosterCard({ item }: { item: LiveItem }) {
   return (
     <div style={{ position: "absolute", inset: 0, padding: 50, boxSizing: "border-box", display: "flex", flexDirection: "column", gap: 16 }}>
       <div style={{ flex: "0 0 auto", display: "flex", flexDirection: "column" }}>
-        <Kicker>{KICKER[item.type] ?? "GANGE-ROLV"}</Kicker>
+        {KICKER[item.type] && <Kicker>{KICKER[item.type]}</Kicker>}
         <h1 style={{ fontSize: 58, fontWeight: 900, margin: "0 0 12px", lineHeight: 1.04 }}>{item.title}</h1>
         <PeriodChip item={item} />
       </div>
