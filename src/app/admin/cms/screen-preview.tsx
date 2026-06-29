@@ -1,12 +1,16 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
-import { Monitor, ImageIcon, ChevronDown } from "lucide-react"
+import { useEffect, useRef, useState, useTransition } from "react"
+import { Monitor, ImageIcon, ChevronDown, RefreshCw, Camera, Wifi, WifiOff } from "lucide-react"
+import type { StoreScreen, ScreenSync } from "@/lib/xibo/screens"
+import { pushToScreen, requestNewScreenshot } from "./actions"
 
 /**
  * Live, in-app preview of exactly what plays on a store's screen — composed from
  * the same widgets Xibo embeds (topbar strip + news), shown at true 16:9 scale.
- * A second tab previews the full-screen offer page. CMS users never touch Xibo.
+ * A second tab previews the full-screen offer page. Above it, an ops panel shows
+ * live player status (online / sync / current layout), a "push now" button, and
+ * the real screenshot from the player. CMS users never touch Xibo directly.
  *
  * NB: keep the zone geometry (STRIP_H / STAGE_*) in sync with the Xibo layout in
  * scripts/xibo/lib.mjs buildLayout — otherwise this preview drifts from reality.
@@ -25,7 +29,20 @@ const STAGE_W = 1920
 const STAGE_H = 1080
 const STRIP_H = 180
 
-export function ScreenPreview({ stores }: { stores: PreviewStore[] }) {
+const SYNC_BADGE: Record<ScreenSync, { label: string; cls: string }> = {
+  ok: { label: "Oppdatert", cls: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+  downloading: { label: "Laster ned", cls: "bg-amber-50 text-amber-700 border-amber-200" },
+  stale: { label: "Utdatert", cls: "bg-red-50 text-red-700 border-red-200" },
+  unknown: { label: "Ukjent", cls: "bg-zinc-50 text-zinc-500 border-zinc-200" },
+}
+
+export function ScreenPreview({
+  stores,
+  screens,
+}: {
+  stores: PreviewStore[]
+  screens: Record<string, StoreScreen[]>
+}) {
   const [storeId, setStoreId] = useState(stores[0]?.id ?? "")
   const [tab, setTab] = useState<"skjerm" | "tilbud">("skjerm")
   const wrapRef = useRef<HTMLDivElement>(null)
@@ -44,6 +61,7 @@ export function ScreenPreview({ stores }: { stores: PreviewStore[] }) {
   const store = stores.find((s) => s.id === storeId) ?? stores[0]
   if (!store) return <p className="text-sm text-zinc-500">Ingen butikker ennå.</p>
 
+  const storeScreens = screens[store.id] ?? []
   const navn = store.city || store.name
   const topbarSrc = `/widget/topbar?butikk=${encodeURIComponent(store.name)}&lat=${store.lat ?? ""}&lon=${store.lon ?? ""}&navn=${encodeURIComponent(navn)}`
   const newsSrc = `/widget/nyheter?store=${store.id}`
@@ -83,6 +101,9 @@ export function ScreenPreview({ stores }: { stores: PreviewStore[] }) {
         )}
       </div>
 
+      {/* Ops panel — live player status, push-now, real screenshot */}
+      <ScreenStatus key={store.id} storeName={store.name} screens={storeScreens} />
+
       {/* 16:9 stage, scaled to the real 1920×1080 screen */}
       <div ref={wrapRef} className="relative w-full rounded-2xl overflow-hidden border border-zinc-200 bg-black shadow-sm" style={{ aspectRatio: "16 / 9" }}>
         <div style={{ position: "absolute", top: 0, left: 0, width: STAGE_W, height: STAGE_H, transform: `scale(${scale})`, transformOrigin: "top left" }}>
@@ -101,5 +122,114 @@ export function ScreenPreview({ stores }: { stores: PreviewStore[] }) {
         Live forhåndsvisning — nøyaktig de samme elementene som vises på skjermen i butikken. Skjermen veksler automatisk mellom innhold{store.hasOffers ? " og tilbud" : ""}.
       </p>
     </div>
+  )
+}
+
+function ScreenStatus({ storeName, screens }: { storeName: string; screens: StoreScreen[] }) {
+  const [pending, startTransition] = useTransition()
+  const [note, setNote] = useState<{ kind: "ok" | "err"; text: string } | null>(null)
+
+  if (screens.length === 0) {
+    return (
+      <div className="rounded-xl border border-dashed border-zinc-200 bg-zinc-50/60 px-4 py-3 flex items-center gap-3">
+        <WifiOff className="w-4 h-4 text-zinc-400 shrink-0" />
+        <p className="text-xs text-zinc-500">
+          Ingen skjerm tilkoblet ennå. En Raspberry Pi-spiller vises her automatisk når den meldes inn i skjermgruppen «{storeName}».
+        </p>
+      </div>
+    )
+  }
+
+  const groupId = screens[0].displayGroupId
+
+  const handlePush = () => {
+    setNote(null)
+    startTransition(async () => {
+      const res = await pushToScreen(groupId)
+      setNote(res.ok ? { kind: "ok", text: "Skjermene henter nytt innhold nå." } : { kind: "err", text: res.error })
+    })
+  }
+
+  return (
+    <div className="rounded-xl border border-zinc-200 bg-white">
+      <div className="flex items-center justify-between gap-3 px-4 py-2.5 border-b border-zinc-100">
+        <span className="text-xs font-semibold text-zinc-700">
+          {screens.length === 1 ? "1 skjerm" : `${screens.length} skjermer`} i butikken
+        </span>
+        <button
+          onClick={handlePush}
+          disabled={pending}
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border border-zinc-200 text-zinc-700 hover:border-zinc-300 disabled:opacity-50 transition-all"
+        >
+          <RefreshCw className={`w-3.5 h-3.5 ${pending ? "animate-spin" : ""}`} /> Oppdater skjermen nå
+        </button>
+      </div>
+      {note && (
+        <p className={`px-4 py-1.5 text-xs ${note.kind === "ok" ? "text-emerald-700" : "text-red-600"}`}>{note.text}</p>
+      )}
+      <ul className="divide-y divide-zinc-100">
+        {screens.map((s) => (
+          <ScreenRow key={s.displayId} screen={s} />
+        ))}
+      </ul>
+    </div>
+  )
+}
+
+function ScreenRow({ screen }: { screen: StoreScreen }) {
+  const [pending, startTransition] = useTransition()
+  const [bust, setBust] = useState(0)
+  const [shotError, setShotError] = useState(false)
+  const badge = SYNC_BADGE[screen.sync]
+
+  const handleShot = () => {
+    startTransition(async () => {
+      await requestNewScreenshot(screen.displayId)
+      // The player uploads on its next collection — reload the image shortly after.
+      setShotError(false)
+      setTimeout(() => setBust((n) => n + 1), 4000)
+    })
+  }
+
+  return (
+    <li className="px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-3">
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          {screen.online ? <Wifi className="w-3.5 h-3.5 text-emerald-500" /> : <WifiOff className="w-3.5 h-3.5 text-zinc-400" />}
+          <span className="text-sm font-medium text-zinc-800 truncate">{screen.name}</span>
+          <span className={`text-[11px] px-1.5 py-0.5 rounded border ${badge.cls}`}>{badge.label}</span>
+        </div>
+        <p className="mt-1 text-xs text-zinc-500">
+          {screen.online ? "Online" : "Offline"}
+          {screen.currentLayout ? ` · viser «${screen.currentLayout}»` : ""}
+          {screen.lastSeen ? ` · sist sett ${screen.lastSeen}` : ""}
+          {screen.clientVersion ? ` · spiller v${screen.clientVersion}` : ""}
+        </p>
+      </div>
+
+      <div className="flex items-center gap-2 shrink-0">
+        <div className="w-32 aspect-video rounded-md border border-zinc-200 bg-zinc-100 overflow-hidden flex items-center justify-center">
+          {shotError ? (
+            <span className="text-[10px] text-zinc-400 px-1 text-center">Ingen skjermbilde ennå</span>
+          ) : (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={`/admin/cms/skjermbilde/${screen.displayId}?t=${bust}`}
+              alt={`Skjermbilde fra ${screen.name}`}
+              className="w-full h-full object-cover"
+              onError={() => setShotError(true)}
+            />
+          )}
+        </div>
+        <button
+          onClick={handleShot}
+          disabled={pending}
+          title="Be om nytt skjermbilde"
+          className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-medium border border-zinc-200 text-zinc-600 hover:border-zinc-300 disabled:opacity-50 transition-all"
+        >
+          <Camera className={`w-3.5 h-3.5 ${pending ? "animate-pulse" : ""}`} /> Nytt
+        </button>
+      </div>
+    </li>
   )
 }

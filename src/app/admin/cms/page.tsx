@@ -1,6 +1,7 @@
 import { Topbar } from "@/components/admin/topbar"
 import { requireRole } from "@/lib/admin/require-role"
 import { fetchLiveContent } from "@/lib/content/live"
+import { fetchScreensByStore, type StoreScreen } from "@/lib/xibo/screens"
 import { ScreenPreview, type PreviewStore } from "./screen-preview"
 
 /**
@@ -22,10 +23,14 @@ export default async function CmsDashboardPage() {
     .order("name")
 
   const list = stores ?? []
-  // Flag stores that currently have active offers (so the Tilbud tab is labelled).
-  const hasOffers = await Promise.all(
-    list.map((s) => fetchLiveContent(s.id, ["slide"]).then((r) => r.length > 0).catch(() => false))
-  )
+  // Flag stores that currently have active offers (so the Tilbud tab is labelled),
+  // and read live screen status per store from the engine (empty until Pis connect).
+  const [hasOffers, screensByStore] = await Promise.all([
+    Promise.all(
+      list.map((s) => fetchLiveContent(s.id, ["slide"]).then((r) => r.length > 0).catch(() => false))
+    ),
+    fetchScreensByStore(list).catch(() => new Map<string, StoreScreen[]>()),
+  ])
   const previewStores: PreviewStore[] = list.map((s, i) => ({
     id: s.id,
     name: s.name,
@@ -34,15 +39,19 @@ export default async function CmsDashboardPage() {
     lon: s.longitude,
     hasOffers: hasOffers[i],
   }))
+  // Plain object for the client boundary (Map isn't serializable).
+  const screens: Record<string, StoreScreen[]> = Object.fromEntries(
+    list.map((s) => [s.id, screensByStore.get(s.id) ?? []])
+  )
 
   return (
     <div className="flex flex-col flex-1">
-      <Topbar title="Skjermsystem" subtitle="Forhåndsvis hva som vises på hver butikks skjerm" />
+      <Topbar title="Skjermsystem" subtitle="Forhåndsvis og styr hva som vises på hver butikks skjerm" />
       <div className="flex-1 p-6 max-w-5xl">
         {previewStores.length === 0 ? (
           <p className="text-sm text-zinc-500">Ingen butikker er satt opp ennå.</p>
         ) : (
-          <ScreenPreview stores={previewStores} />
+          <ScreenPreview stores={previewStores} screens={screens} />
         )}
       </div>
     </div>

@@ -133,6 +133,13 @@ export interface XiboDisplay {
   loggedIn: number
   lastAccessed: string | null
   defaultLayoutId: number | null
+  /** 1 = up to date, 2 = downloading, 3 = out of date. */
+  mediaInventoryStatus?: number | null
+  /** Layout the player reports it is showing right now. */
+  currentLayoutId?: number | null
+  clientVersion?: string | null
+  /** 1 if the last command Xibo sent the player succeeded. */
+  lastCommandSuccess?: number | null
 }
 
 export async function listDisplayGroups(): Promise<XiboDisplayGroup[]> {
@@ -159,4 +166,52 @@ export interface XiboAbout {
 
 export async function xiboAbout(): Promise<XiboAbout> {
   return xiboFetch<XiboAbout>("/about")
+}
+
+export interface XiboLayoutRef {
+  layoutId: number
+  layout: string
+}
+
+/** Map of layoutId → human layout name, for resolving what a player shows now. */
+export async function fetchLayoutNames(): Promise<Map<number, string>> {
+  const layouts = await xiboFetch<XiboLayoutRef[]>("/layout", { query: { length: 1000 } })
+  return new Map((layouts ?? []).map((l) => [l.layoutId, l.layout]))
+}
+
+/**
+ * Force a display group's players to fetch updates now, instead of waiting for
+ * the next collection interval. Used as a "push to screen now" after publishing.
+ */
+export async function collectNow(displayGroupId: number): Promise<void> {
+  await xiboFetch(`/displaygroup/${displayGroupId}/action/collectNow`, { method: "POST" })
+}
+
+/**
+ * Ask a player to capture a fresh screenshot on its next collection. The image
+ * itself is fetched separately via fetchDisplayScreenshot once uploaded.
+ */
+export async function requestScreenshot(displayId: number): Promise<void> {
+  await xiboFetch(`/display/requestscreenshot/${displayId}`, { method: "PUT" })
+}
+
+export interface XiboBinary {
+  buffer: ArrayBuffer
+  contentType: string
+}
+
+/**
+ * Low-level binary GET against Xibo (e.g. a display screenshot), reusing the
+ * cached OAuth token. Returns null on any non-2xx (e.g. no screenshot yet), so
+ * a proxy route can answer 404 without crashing.
+ */
+export async function xiboFetchBinary(path: string): Promise<XiboBinary | null> {
+  assertConfigured()
+  const token = await getAccessToken()
+  const url = `${XIBO_API_URL}/api${path.startsWith("/") ? path : `/${path}`}`
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" })
+  if (!res.ok) return null
+  const buffer = await res.arrayBuffer()
+  if (buffer.byteLength === 0) return null
+  return { buffer, contentType: res.headers.get("content-type") || "image/jpeg" }
 }
