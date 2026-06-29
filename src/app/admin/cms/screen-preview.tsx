@@ -26,6 +26,17 @@ export interface PreviewStore {
 }
 
 // Customer screens are always portrait (1080×1920); internal/back-room landscape.
+const AVDELINGER = [
+  { key: "felles", label: "Hele butikken" },
+  { key: "frukt", label: "Frukt & grønt" },
+  { key: "ferskvare", label: "Ferskvare" },
+  { key: "frys", label: "Frys" },
+  { key: "bakeri", label: "Bakeri" },
+  { key: "kjott-fisk", label: "Kjøtt & fisk" },
+  { key: "kasse", label: "Kasse" },
+  { key: "inngang", label: "Inngang" },
+]
+
 const SYNC_BADGE: Record<ScreenSync, { label: string; cls: string }> = {
   ok: { label: "Oppdatert", cls: "bg-emerald-50 text-emerald-700 border-emerald-200" },
   downloading: { label: "Laster ned", cls: "bg-amber-50 text-amber-700 border-amber-200" },
@@ -41,6 +52,7 @@ export function ScreenPreview({
   screens: Record<string, StoreScreen[]>
 }) {
   const [storeId, setStoreId] = useState(stores[0]?.id ?? "")
+  const [avdeling, setAvdeling] = useState("felles")
   const [view, setView] = useState<View>("intern-innhold")
   const wrapRef = useRef<HTMLDivElement>(null)
   const [scale, setScale] = useState(0.5)
@@ -65,7 +77,7 @@ export function ScreenPreview({
   if (!store) return <p className="text-sm text-zinc-500">Ingen butikker ennå.</p>
 
   const storeScreens = screens[store.id] ?? []
-  const tilbudSrc = `/widget/tilbud?store=${store.id}`
+  const tilbudSrc = `/widget/tilbud?store=${store.id}&avdeling=${avdeling}`
   const kpiSrc = `/widget/butikk-kpi?store=${store.id}`
   const oversiktSrc = `/widget/kpi-oversikt`
   const internInnholdSrc = `/widget/nyheter?store=${store.id}&flate=intern`
@@ -111,7 +123,16 @@ export function ScreenPreview({
           </button>
         ))}
         {flate === "kunde" && (
-          <span className="text-xs text-zinc-400">Stående kundeskjerm — tilbud/kundeavis i full skjerm. Aldri interne nyheter eller ticker.</span>
+          <>
+            <div className="relative">
+              <select value={avdeling} onChange={(e) => setAvdeling(e.target.value)}
+                className="appearance-none text-xs font-medium text-zinc-700 bg-white border border-zinc-200 rounded-lg pl-2.5 pr-7 py-1.5 focus:outline-none focus:ring-1 focus:ring-zinc-300">
+                {AVDELINGER.map((a) => <option key={a.key} value={a.key}>Avdeling: {a.label}</option>)}
+              </select>
+              <ChevronDown className="w-3.5 h-3.5 text-zinc-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+            </div>
+            <span className="text-xs text-zinc-400">Stående — tilbud/kundeavis i full skjerm. Aldri interne nyheter/ticker.</span>
+          </>
         )}
         {flate === "intern" && (
           <span className="text-xs text-zinc-400">Bakrom/ansatte — vises aldri til kunder.</span>

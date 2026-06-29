@@ -32,7 +32,9 @@ function formatPeriod(from: string | null, to: string | null): string | null {
 
 /** Red circle over the image: a discount ("-30%") or a kr/øre price. */
 function PriceCircle({ offer }: { offer: OfferFields }) {
-  const [kr, ore] = (offer.pris ?? "").split(/[.,]/)
+  // Whole kroner → "00" øre (best practice: 99 shows as 99⁰⁰).
+  const [kr, oreRaw] = (offer.pris ?? "").split(/[.,]/)
+  const ore = (oreRaw ?? "00").padEnd(2, "0").slice(0, 2)
   return (
     <div
       style={{
@@ -89,7 +91,7 @@ export function OfferCard({ item, chain = null }: { item: LiveItem; chain?: Chai
       <div style={{ flex: "1 1 auto", minHeight: 0, position: "relative", margin: "3vmin 0" }}>
         {img && <div style={{ position: "absolute", inset: 0, backgroundImage: `url('${img}')`, backgroundSize: "contain", backgroundPosition: "center", backgroundRepeat: "no-repeat" }} />}
         {offer.badge && (
-          <div style={{ position: "absolute", top: "1vmin", left: "-1vmin", background: RED, color: "#fff", fontWeight: 900, fontSize: "5.5vmin", letterSpacing: "0.3vmin", padding: "1.6vmin 4.5vmin", borderRadius: "1.5vmin", textTransform: "uppercase", transform: "rotate(-4deg)", boxShadow: "0 1vmin 3vmin rgba(0,0,0,.18)" }}>
+          <div style={{ position: "absolute", top: "9vmin", left: "-1vmin", background: RED, color: "#fff", fontWeight: 900, fontSize: "5.5vmin", letterSpacing: "0.3vmin", padding: "1.6vmin 4.5vmin", borderRadius: "1.5vmin", textTransform: "uppercase", transform: "rotate(-4deg)", boxShadow: "0 1vmin 3vmin rgba(0,0,0,.18)" }}>
             {offer.badge}
           </div>
         )}
@@ -100,7 +102,7 @@ export function OfferCard({ item, chain = null }: { item: LiveItem; chain?: Chai
       <div style={{ flex: "0 0 auto", display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: "4vmin" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: "1vmin", minWidth: 0 }}>
           {offer.mengde && <span style={{ fontSize: "9vmin", fontWeight: 900, color: INK, lineHeight: 1 }}>{offer.mengde}</span>}
-          {offer.forpris && <span style={{ fontSize: "4vmin", color: "#9aa0a6", fontWeight: 700 }}>Førpris <span style={{ textDecoration: "line-through" }}>{offer.forpris}</span></span>}
+          {offer.forpris && <span style={{ fontSize: "4vmin", color: "#9aa0a6", fontWeight: 700 }}>Førpris <span style={{ textDecoration: "line-through" }}>{/[.,]/.test(offer.forpris) ? offer.forpris : `${offer.forpris},00`}</span></span>}
           {fine.length > 0 && <span style={{ fontSize: "3.6vmin", color: MUTED, fontWeight: 600 }}>{fine.join("  ·  ")}</span>}
         </div>
         {period && <span style={{ flex: "0 0 auto", background: GREEN, color: "#fff", fontWeight: 800, fontSize: "3.6vmin", padding: "1.4vmin 3.4vmin", borderRadius: "100vmin" }}>{period}</span>}
