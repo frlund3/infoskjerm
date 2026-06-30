@@ -20,7 +20,7 @@ export default async function ContentListPage() {
           </Link>
         }
       />
-      <div className="flex-1 p-6 max-w-6xl">
+      <div className="flex-1 p-4 sm:p-6 max-w-6xl">
         <ContentListClient items={rows} stores={stores} tags={tags} newHref="/admin/innhold/ny" />
       </div>
     </div>

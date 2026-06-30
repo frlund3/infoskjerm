@@ -46,7 +46,7 @@ export default async function StoreDetailPage({ params }: PageProps) {
         }
       />
 
-      <div className="flex-1 p-6 space-y-6">
+      <div className="flex-1 p-4 sm:p-6 space-y-6">
         {/* Store info */}
         <Card>
           <CardContent className="p-5 space-y-4">

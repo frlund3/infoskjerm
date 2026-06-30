@@ -105,11 +105,11 @@ export function ScreenPreview({
     <div className="space-y-4">
       {/* Store + flate (kunde vs intern) */}
       <div className="flex flex-wrap items-center gap-3">
-        <div className="relative">
+        <div className="relative w-full sm:w-auto">
           <select
             value={storeId}
             onChange={(e) => setStoreId(e.target.value)}
-            className="appearance-none text-sm font-semibold text-zinc-900 bg-white border border-zinc-200 rounded-lg pl-3 pr-9 py-2 focus:outline-none focus:ring-1 focus:ring-zinc-300"
+            className="w-full sm:w-auto appearance-none text-sm font-semibold text-zinc-900 bg-white border border-zinc-200 rounded-lg pl-3 pr-9 py-2 focus:outline-none focus:ring-1 focus:ring-zinc-300"
           >
             {stores.map((s) => (
               <option key={s.id} value={s.id}>{s.name}{s.hasOffers ? "  • tilbud aktivt" : ""}</option>
@@ -117,12 +117,12 @@ export function ScreenPreview({
           </select>
           <ChevronDown className="w-4 h-4 text-zinc-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
         </div>
-        <div className="inline-flex rounded-lg border border-zinc-200 p-0.5 bg-zinc-50">
-          <button onClick={() => setView("kunde-skjerm")} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${flate === "kunde" ? "bg-zinc-900 text-white" : "text-zinc-600"}`}>
-            <Megaphone className="w-3.5 h-3.5" /> Kundeskjerm
+        <div className="flex w-full sm:w-auto sm:inline-flex rounded-lg border border-zinc-200 p-0.5 bg-zinc-50">
+          <button onClick={() => setView("kunde-skjerm")} className={`flex flex-1 sm:flex-none items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${flate === "kunde" ? "bg-zinc-900 text-white" : "text-zinc-600"}`}>
+            <Megaphone className="w-3.5 h-3.5 shrink-0" /> Kundeskjerm
           </button>
-          <button onClick={() => setView("intern-innhold")} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${flate === "intern" ? "bg-zinc-900 text-white" : "text-zinc-600"}`}>
-            <Monitor className="w-3.5 h-3.5" /> Internskjerm (bakrom)
+          <button onClick={() => setView("intern-innhold")} className={`flex flex-1 sm:flex-none items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${flate === "intern" ? "bg-zinc-900 text-white" : "text-zinc-600"}`}>
+            <Monitor className="w-3.5 h-3.5 shrink-0" /> <span className="truncate">Internskjerm <span className="hidden sm:inline">(bakrom)</span></span>
           </button>
         </div>
       </div>

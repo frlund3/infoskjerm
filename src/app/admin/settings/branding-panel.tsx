@@ -158,7 +158,7 @@ export function BrandingPanel({ chains }: BrandingPanelProps) {
 
             <LogoUploader chainId={chain.id} name={chain.name} initialUrl={chain.logo_url} />
 
-            <div className="grid grid-cols-3 gap-4 mb-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-4">
               <ColorSwatch label="Primærfarge" value={v.color} onChange={(val) => update(chain.id, "color", val)} />
               <ColorSwatch label="Lysfarge" value={v.brand_light} onChange={(val) => update(chain.id, "brand_light", val)} />
               <ColorSwatch label="Forgrunnsfarger (tekst)" value={v.brand_fg} onChange={(val) => update(chain.id, "brand_fg", val)} />

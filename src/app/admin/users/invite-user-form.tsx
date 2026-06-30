@@ -93,7 +93,7 @@ export function InviteUserForm({ stores }: { stores: Store[] }) {
   return (
     <>
       <div className="fixed inset-0 bg-black/40 z-40" onClick={() => setOpen(false)} />
-      <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-md bg-white rounded-2xl shadow-xl p-6">
+      <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[calc(100%-2rem)] max-w-md max-h-[calc(100dvh-2rem)] overflow-y-auto bg-white rounded-2xl shadow-xl p-5 sm:p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-base font-bold text-zinc-900">Inviter ny bruker</h2>
           <button onClick={() => setOpen(false)} className="text-zinc-400 hover:text-zinc-700">

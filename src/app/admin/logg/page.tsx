@@ -23,7 +23,7 @@ export default async function LoggPage() {
   return (
     <div className="flex flex-col flex-1">
       <Topbar title="Logg" subtitle="Aktivitetslogg — innlogginger, endringer, publiseringer og slettinger" />
-      <div className="flex-1 p-6 max-w-4xl w-full">
+      <div className="flex-1 p-4 sm:p-6 max-w-4xl w-full">
         <LoggClient rows={(data ?? []) as LogRow[]} />
       </div>
     </div>

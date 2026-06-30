@@ -73,7 +73,7 @@ function formatPeriod(from: string | null, to: string | null): string | null {
 
 const PAGE_SIZE = 12
 
-const selectCls = "text-xs bg-white border border-zinc-200 rounded-lg px-2.5 py-2 text-zinc-600 focus:outline-none focus:ring-1 focus:ring-zinc-300"
+const selectCls = "w-full sm:w-auto text-xs bg-white border border-zinc-200 rounded-lg px-2.5 py-2.5 sm:py-2 text-zinc-600 focus:outline-none focus:ring-1 focus:ring-zinc-300"
 
 export function ContentListClient({ items, stores, tags, newHref = "/admin/innhold/ny", editBase = "/admin/innhold" }: { items: ContentRow[]; stores: Option[]; tags: Option[]; newHref?: string; editBase?: string }) {
   const router = useRouter()
@@ -150,17 +150,18 @@ export function ContentListClient({ items, stores, tags, newHref = "/admin/innho
   return (
     <div className="space-y-4">
       {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="relative flex-1 min-w-[180px]">
+      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+        <div className="relative w-full sm:flex-1 sm:min-w-[180px]">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
           <input
             type="text"
             placeholder="Søk i tittel..."
             value={search}
             onChange={(e) => resetPage(setSearch)(e.target.value)}
-            className="w-full text-sm bg-white border border-zinc-200 rounded-lg pl-8 pr-3 py-2 focus:outline-none focus:ring-1 focus:ring-zinc-300"
+            className="w-full text-sm bg-white border border-zinc-200 rounded-lg pl-8 pr-3 py-2.5 sm:py-2 focus:outline-none focus:ring-1 focus:ring-zinc-300"
           />
         </div>
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
         <select value={statusF} onChange={(e) => resetPage(setStatusF)(e.target.value)} className={selectCls}>
           <option value="all">Alle statuser</option>
           <option value="live">Publisert</option>
@@ -189,8 +190,9 @@ export function ContentListClient({ items, stores, tags, newHref = "/admin/innho
           <option value="">Alle avdelinger</option>
           {AVDELINGER.map((a) => <option key={a.key} value={a.key}>{a.label}</option>)}
         </select>
+        </div>
         {hasFilters && (
-          <button onClick={() => { setSearch(""); setStatusF("all"); setTypeF(""); setStoreF(""); setTagF(""); setAvdelingF(""); setPage(0) }} className="text-xs text-zinc-400 hover:text-zinc-700 px-2">Nullstill</button>
+          <button onClick={() => { setSearch(""); setStatusF("all"); setTypeF(""); setStoreF(""); setTagF(""); setAvdelingF(""); setPage(0) }} className="text-xs text-zinc-400 hover:text-zinc-700 px-2 self-start py-1">Nullstill</button>
         )}
       </div>
 

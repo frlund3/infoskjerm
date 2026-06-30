@@ -192,19 +192,21 @@ export function BulkImport({ stores, tags }: { stores: StoreOption[]; tags: TagO
   return (
     <div className="flex flex-col flex-1">
       {/* Topbar */}
-      <div className="flex items-center gap-3 px-6 h-14 bg-white border-b border-zinc-200 sticky top-0 z-10">
-        <Link href="/admin/kundeinnhold" className="p-1.5 rounded-lg hover:bg-zinc-100 text-zinc-400 hover:text-zinc-700"><ChevronLeft className="w-4 h-4" /></Link>
-        <h1 className="text-sm font-semibold text-zinc-900">Masseimport tilbud</h1>
-        {rows.length > 0 && <span className="text-xs text-zinc-400">{ready.length} klare · {rows.filter((r) => r.status === "failed" && !r.offer.varenavn.trim()).length} mangler</span>}
-        <div className="ml-auto flex items-center gap-2">
-          <button onClick={() => save(false)} disabled={saving || rows.length === 0} className="flex items-center gap-1.5 text-xs font-medium border border-zinc-200 rounded-lg px-3 py-2 text-zinc-700 hover:border-zinc-300 disabled:opacity-50"><Save className="w-3.5 h-3.5" /> Lagre utkast</button>
-          <button onClick={() => save(true)} disabled={saving || rows.length === 0} className="flex items-center gap-1.5 text-xs font-semibold text-white rounded-lg px-3 py-2 disabled:opacity-50" style={{ backgroundColor: "var(--brand-primary)" }}>
+      <div className="flex flex-col gap-2 px-4 py-2.5 bg-white border-b border-zinc-200 sticky top-0 z-10 sm:flex-row sm:items-center sm:gap-3 sm:px-6 sm:h-14 sm:py-0">
+        <div className="flex items-center gap-2 min-w-0">
+          <Link href="/admin/kundeinnhold" className="p-1.5 -ml-1.5 rounded-lg hover:bg-zinc-100 text-zinc-400 hover:text-zinc-700 shrink-0"><ChevronLeft className="w-4 h-4" /></Link>
+          <h1 className="text-sm font-semibold text-zinc-900 truncate">Masseimport tilbud</h1>
+          {rows.length > 0 && <span className="text-xs text-zinc-400 whitespace-nowrap shrink-0">{ready.length} klare · {rows.filter((r) => r.status === "failed" && !r.offer.varenavn.trim()).length} mangler</span>}
+        </div>
+        <div className="flex items-center gap-2 sm:ml-auto [&>*]:flex-1 sm:[&>*]:flex-none">
+          <button onClick={() => save(false)} disabled={saving || rows.length === 0} className="flex items-center justify-center gap-1.5 text-xs font-medium border border-zinc-200 rounded-lg px-3 py-2.5 sm:py-2 text-zinc-700 hover:border-zinc-300 disabled:opacity-50"><Save className="w-3.5 h-3.5" /> Lagre utkast</button>
+          <button onClick={() => save(true)} disabled={saving || rows.length === 0} className="flex items-center justify-center gap-1.5 text-xs font-semibold text-white rounded-lg px-3 py-2.5 sm:py-2 disabled:opacity-50" style={{ backgroundColor: "var(--brand-primary)" }}>
             {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />} Publiser alle ({ready.length})
           </button>
         </div>
       </div>
 
-      <div className="flex-1 p-6 space-y-5 max-w-6xl w-full">
+      <div className="flex-1 p-4 sm:p-6 space-y-5 max-w-6xl w-full">
         {/* Paste box */}
         <section className="rounded-xl border border-zinc-200 bg-white p-4">
           <h3 className="text-xs font-semibold text-zinc-600 mb-2">Lim inn spar.no-lenker eller GTIN — én per linje</h3>
@@ -215,7 +217,7 @@ export function BulkImport({ stores, tags }: { stores: StoreOption[]; tags: TagO
         </section>
 
         {/* Shared defaults */}
-        <section className="rounded-xl border border-zinc-200 bg-white p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+        <section className="rounded-xl border border-zinc-200 bg-white p-4 grid grid-cols-1 lg:grid-cols-3 gap-4">
           <div>
             <h3 className="text-xs font-semibold text-zinc-600 mb-2">Periode (alle)</h3>
             <div className="flex gap-1.5 mb-2">

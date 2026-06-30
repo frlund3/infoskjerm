@@ -357,10 +357,12 @@ export function ContentForm({ stores, tags, initial, audience = "intern" }: { st
   return (
     <div className="flex flex-col flex-1">
       {/* Topbar */}
-      <div className="flex items-center gap-3 px-6 h-14 bg-white border-b border-zinc-200 sticky top-0 z-10">
-        <Link href={listHref} className="p-1.5 rounded-lg hover:bg-zinc-100 text-zinc-400 hover:text-zinc-700"><ChevronLeft className="w-4 h-4" /></Link>
-        <h1 className="text-sm font-semibold text-zinc-900">{initial ? "Rediger innhold" : "Nytt innhold"}</h1>
-        <div className="ml-auto flex items-center gap-2">
+      <div className="flex flex-col gap-2 px-4 py-2.5 bg-white border-b border-zinc-200 sticky top-0 z-10 sm:flex-row sm:items-center sm:gap-3 sm:px-6 sm:h-14 sm:py-0">
+        <div className="flex items-center gap-2 min-w-0">
+          <Link href={listHref} className="p-1.5 -ml-1.5 rounded-lg hover:bg-zinc-100 text-zinc-400 hover:text-zinc-700 shrink-0"><ChevronLeft className="w-4 h-4" /></Link>
+          <h1 className="text-sm font-semibold text-zinc-900 truncate">{initial ? "Rediger innhold" : "Nytt innhold"}</h1>
+        </div>
+        <div className="flex items-center gap-2 sm:ml-auto [&>*]:flex-1 sm:[&>*]:flex-none">
           <Button variant="outline" size="sm" onClick={() => handleSave(false)} disabled={saving}>
             <Save className="w-3.5 h-3.5 mr-1.5" /> Lagre utkast
           </Button>
@@ -385,7 +387,7 @@ export function ContentForm({ stores, tags, initial, audience = "intern" }: { st
         </div>
       )}
 
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6 px-6 pb-6 pt-4 max-w-6xl">
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-4 px-4 pb-6 pt-4 sm:gap-6 sm:px-6 max-w-6xl">
         {/* Main column */}
         <div className="lg:col-span-2 space-y-5">
           {restored && (

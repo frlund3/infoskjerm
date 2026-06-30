@@ -23,12 +23,41 @@ const roleConfig: Record<UserRole, { label: string; icon: React.ElementType; col
   store_employee: { label: ROLE_LABELS.store_employee, icon: UserCircle, color: "text-zinc-600", bg: "bg-zinc-50" },
 }
 
+function AccessCell({
+  role,
+  userId,
+  allStores,
+  storeIds,
+}: {
+  role: UserRole
+  userId: string
+  allStores: { id: string; name: string }[]
+  storeIds: string[]
+}) {
+  if (role === "super_admin" || role === "chain_manager") {
+    return <span className="text-xs text-zinc-500">Alle butikker</span>
+  }
+  if (STORE_SCOPED.includes(role)) {
+    return <UserStoreAccess userId={userId} allStores={allStores} currentStoreIds={storeIds} />
+  }
+  return <span className="text-xs text-zinc-400">Ingen tilgang satt</span>
+}
+
 export default async function UsersPage() {
   await requireRole(["super_admin", "chain_manager"])
   const supabase = await createClient()
   const users = await getUsersWithDetails(supabase)
   const { data: storesData } = await supabase.from("stores").select("id, name").order("name")
   const allStores = (storesData ?? []) as { id: string; name: string }[]
+
+  const rows = users.map((user) => {
+    const role = (user.role ?? "store_employee") as UserRole
+    const cfg = roleConfig[role] ?? roleConfig.store_employee
+    const userStores = (user.user_stores as unknown as Array<{ stores: { id: string; name: string } | null }>) ?? []
+    const storeIds = userStores.map((us) => us.stores?.id).filter((x): x is string => !!x)
+    const displayName = user.full_name ?? user.email ?? "Ukjent"
+    return { user, role, cfg, Icon: cfg.icon, displayName, storeIds }
+  })
 
   return (
     <div className="flex flex-col flex-1">
@@ -37,32 +66,27 @@ export default async function UsersPage() {
         subtitle={`${users.length} brukere`}
         actions={<InviteUserForm stores={allStores} />}
       />
-      <div className="flex-1 p-6">
+      <div className="flex-1 p-4 sm:p-6">
         {users.length === 0 ? (
           <div className="flex items-center justify-center h-48">
             <p className="text-zinc-400 text-sm">Ingen brukere funnet.</p>
           </div>
         ) : (
-          <Card>
-            <CardContent className="p-0">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-zinc-100">
-                    <th className="text-left text-xs font-semibold text-zinc-400 uppercase tracking-wide px-5 py-3">Bruker</th>
-                    <th className="text-left text-xs font-semibold text-zinc-400 uppercase tracking-wide px-4 py-3">Rolle</th>
-                    <th className="text-left text-xs font-semibold text-zinc-400 uppercase tracking-wide px-4 py-3">Tilgang</th>
-                    <th className="px-4 py-3" />
-                  </tr>
-                </thead>
-                <tbody>
-                  {users.map((user) => {
-                    const role = (user.role ?? "store_employee") as UserRole
-                    const cfg = roleConfig[role] ?? roleConfig.store_employee
-                    const Icon = cfg.icon
-                    const userStores = (user.user_stores as unknown as Array<{ stores: { id: string; name: string } | null }>) ?? []
-                    const displayName = user.full_name ?? user.email ?? "Ukjent"
-
-                    return (
+          <>
+            {/* Desktop: tabell */}
+            <Card className="hidden lg:block">
+              <CardContent className="p-0">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-zinc-100">
+                      <th className="text-left text-xs font-semibold text-zinc-400 uppercase tracking-wide px-5 py-3">Bruker</th>
+                      <th className="text-left text-xs font-semibold text-zinc-400 uppercase tracking-wide px-4 py-3">Rolle</th>
+                      <th className="text-left text-xs font-semibold text-zinc-400 uppercase tracking-wide px-4 py-3">Tilgang</th>
+                      <th className="px-4 py-3" />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rows.map(({ user, role, cfg, Icon, displayName, storeIds }) => (
                       <tr key={user.id} className="border-b border-zinc-50 hover:bg-zinc-50/50">
                         <td className="px-5 py-3.5">
                           <div className="flex items-center gap-3">
@@ -82,17 +106,7 @@ export default async function UsersPage() {
                           </div>
                         </td>
                         <td className="px-4 py-3.5">
-                          {role === "super_admin" || role === "chain_manager" ? (
-                            <span className="text-xs text-zinc-500">Alle butikker</span>
-                          ) : STORE_SCOPED.includes(role) ? (
-                            <UserStoreAccess
-                              userId={user.id}
-                              allStores={allStores}
-                              currentStoreIds={userStores.map((us) => us.stores?.id).filter((x): x is string => !!x)}
-                            />
-                          ) : (
-                            <span className="text-xs text-zinc-400">Ingen tilgang satt</span>
-                          )}
+                          <AccessCell role={role} userId={user.id} allStores={allStores} storeIds={storeIds} />
                         </td>
                         <td className="px-4 py-3.5">
                           <div className="flex items-center gap-2">
@@ -101,12 +115,47 @@ export default async function UsersPage() {
                           </div>
                         </td>
                       </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </CardContent>
-          </Card>
+                    ))}
+                  </tbody>
+                </table>
+              </CardContent>
+            </Card>
+
+            {/* Mobil + nettbrett: kort */}
+            <div className="space-y-3 lg:hidden">
+              {rows.map(({ user, role, cfg, Icon, displayName, storeIds }) => (
+                <Card key={user.id}>
+                  <CardContent className="p-4 space-y-3">
+                    <div className="flex items-start gap-3">
+                      <div className={`w-10 h-10 rounded-full ${cfg.bg} flex items-center justify-center flex-shrink-0`}>
+                        <span className={`text-sm font-bold ${cfg.color}`}>{displayName.charAt(0).toUpperCase()}</span>
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-zinc-900 truncate">{displayName}</p>
+                        <p className="text-xs text-zinc-400 truncate">{user.email}</p>
+                      </div>
+                      <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${cfg.bg} ${cfg.color} flex-shrink-0`}>
+                        <Icon className="w-3 h-3" />
+                        {cfg.label}
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wide">Tilgang</p>
+                      <AccessCell role={role} userId={user.id} allStores={allStores} storeIds={storeIds} />
+                    </div>
+
+                    <div className="flex items-center gap-2 pt-1 border-t border-zinc-50">
+                      <div className="flex-1 min-w-0">
+                        <UserRoleSelect userId={user.id} currentRole={role} />
+                      </div>
+                      <UserDeleteButton userId={user.id} />
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </>
         )}
       </div>
     </div>

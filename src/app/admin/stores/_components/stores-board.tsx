@@ -234,7 +234,7 @@ export function StoresBoard({ chains, allTags }: StoresBoardProps) {
           )}
         </div>
       ) : (
-        <div className="flex-1 space-y-8 p-6">
+        <div className="flex-1 space-y-8 p-4 sm:p-6">
           {filteredChains.map((chain) => (
             <section key={chain.id}>
               <div className="mb-4 flex items-center gap-3">
