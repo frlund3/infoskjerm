@@ -26,7 +26,6 @@ export function KundeklubbSettings({
   const [saving, setSaving] = useState(false)
 
   const save = async () => {
-    if (enabled && !url.trim()) { toast.error("Legg inn URL-en QR-koden skal peke til"); return }
     setSaving(true)
     const res = await updateStoreKundeklubb(storeId, { enabled, url, headline, subtext, cta })
     setSaving(false)
@@ -56,13 +55,16 @@ export function KundeklubbSettings({
       </div>
 
       <p className="text-xs text-zinc-500">
-        Når den er på, viser kundeskjermen et QR-kort som tar kunden til lenken under. Lenken kan være ulik per butikk.
+        Når den er på, viser kundeskjermen et QR-kort. Lar du lenka stå tom, går QR-koden
+        til den <strong>innebygde påmeldingssiden</strong> — kunden registrerer seg der og
+        havner i medlemslista. Vil du heller bruke en ekstern side, legg inn lenka under.
       </p>
 
       <div className={enabled ? "space-y-3" : "space-y-3 opacity-50 pointer-events-none"}>
         <div>
-          <label className="block text-[10px] text-zinc-400 mb-1 uppercase tracking-wide">QR-lenke (URL)</label>
-          <input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://kundeklubb.dinbutikk.no/meld-deg-inn" className={field} inputMode="url" />
+          <label className="block text-[10px] text-zinc-400 mb-1 uppercase tracking-wide">QR-lenke (valgfri)</label>
+          <input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="Tom = innebygd påmeldingsside" className={field} inputMode="url" />
+          <p className="text-[10px] text-zinc-400 mt-1">{url.trim() ? "QR-koden peker til denne lenken." : "QR-koden bruker den innebygde påmeldingssiden (/klubb)."}</p>
         </div>
         <div>
           <label className="block text-[10px] text-zinc-400 mb-1 uppercase tracking-wide">Overskrift</label>

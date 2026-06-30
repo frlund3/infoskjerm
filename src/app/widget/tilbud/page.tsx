@@ -1,6 +1,7 @@
 import QRCode from "qrcode"
 import { fetchLiveContent, type LiveItem } from "@/lib/content/live"
 import { createAdminClient } from "@/lib/supabase/server"
+import { getBaseUrl } from "@/lib/base-url"
 import { TilbudRotator } from "./tilbud-rotator"
 import type { ChainBrand } from "./offer-card"
 
@@ -76,16 +77,18 @@ export default async function TilbudWidgetPage({ searchParams }: { searchParams:
   }
   const row = storeRow.data as unknown as StoreChainRow | null
 
-  // Per-store customer club: when enabled with a URL, inject a QR card pointing
-  // to THAT store's own sign-up link (set in Butikker → store → Kundeklubb).
-  if (row?.kundeklubb_enabled && row.kundeklubb_url?.trim()) {
+  // Per-store customer club: when enabled, inject a QR card. The QR points to a
+  // custom link if one is set, otherwise to the built-in sign-up page for this
+  // store (/klubb/<store> → registers the customer in kundeklubb_members).
+  if (row?.kundeklubb_enabled && store) {
     const klubbItem = klubbLiveItem(
       row.kundeklubb_headline || "Bli medlem – det er gratis",
       row.kundeklubb_subtext || "Medlemspriser, bonus og ukens beste tilbud.",
       row.kundeklubb_cta,
     )
+    const target = row.kundeklubb_url?.trim() ? normalizeUrl(row.kundeklubb_url) : `${await getBaseUrl()}/klubb/${store}`
     items.push(klubbItem)
-    qr[klubbItem.id] = await QRCode.toDataURL(normalizeUrl(row.kundeklubb_url), { margin: 1, width: 700, color: { dark: "#0a0a0a", light: "#ffffff" } }).catch(() => "")
+    qr[klubbItem.id] = await QRCode.toDataURL(target, { margin: 1, width: 700, color: { dark: "#0a0a0a", light: "#ffffff" } }).catch(() => "")
   }
 
   const storeName = row?.name ?? null
