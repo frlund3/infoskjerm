@@ -280,6 +280,11 @@ export function ContentForm({ stores, tags, initial, audience = "intern", defaul
 
   const usesImage = IMAGE_TYPES.includes(type) && !isKlubb
   const usesBody = type !== "ticker" && type !== "gallery" && !isOfferStruktur && !isKlubb
+  // Standard visningstid per type/flate (matcher rotatorene). Vises til brukeren
+  // så de vet hva «tom = standard» faktisk betyr.
+  const defaultDuration = audience === "kunde"
+    ? 18
+    : ({ stats: 12, job: 20, competition: 16, invitation: 18, gallery: 30 } as Record<string, number>)[type] ?? 16
   // Tilbud/annonser må alltid ha en gyldig periode (fra + til).
   const periodRequired = type === "slide" && !isKlubb
   const isPdfUrl = (imageUrls[0] ?? "").toLowerCase().split("?")[0].endsWith(".pdf")
@@ -880,11 +885,11 @@ export function ContentForm({ stores, tags, initial, audience = "intern", defaul
             <section className="rounded-xl border border-zinc-200 bg-white p-4">
               <h3 className="text-xs font-semibold text-zinc-600 mb-2.5">Visningstid</h3>
               <div className="flex items-center gap-2">
-                <input type="number" min={3} max={600} value={durationSeconds} onChange={(e) => setDurationSeconds(e.target.value)} placeholder="auto"
+                <input type="number" min={3} max={600} value={durationSeconds} onChange={(e) => setDurationSeconds(e.target.value)} placeholder={`${defaultDuration}`}
                   className="w-24 text-sm border border-zinc-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-zinc-300" />
                 <span className="text-xs text-zinc-500">sekunder</span>
               </div>
-              <p className="text-[10px] text-zinc-400 mt-1.5">Hvor lenge dette vises før skjermen bytter. Tom = standard for typen.</p>
+              <p className="text-[10px] text-zinc-400 mt-1.5">Hvor lenge dette vises før skjermen bytter. Tom = standard for denne typen (<strong>{defaultDuration} sek</strong>).</p>
             </section>
           )}
 
