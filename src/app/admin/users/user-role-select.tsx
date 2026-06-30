@@ -4,12 +4,12 @@ import { useState } from "react"
 import { updateUserRole } from "./actions"
 import { type UserRole, ROLE_LABELS } from "@/lib/roles"
 
+// Redaktør (store_employee) er utfaset — ikke lenger tildelbar.
 const roleOptions: { value: UserRole; label: string }[] = [
   { value: "super_admin", label: ROLE_LABELS.super_admin },
   { value: "chain_manager", label: ROLE_LABELS.chain_manager },
   { value: "area_manager", label: ROLE_LABELS.area_manager },
   { value: "store_manager", label: ROLE_LABELS.store_manager },
-  { value: "store_employee", label: ROLE_LABELS.store_employee },
 ]
 
 export function UserRoleSelect({ userId, currentRole }: { userId: string; currentRole: UserRole }) {

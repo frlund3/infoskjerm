@@ -16,4 +16,6 @@ export const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
   store_employee: "Oppretter og redigerer innholdsutkast",
 }
 
-export const INVITABLE_ROLES: UserRole[] = ["chain_manager", "area_manager", "store_manager", "store_employee"]
+// Redaktør (store_employee) er utfaset som tildelbar rolle. Enum-verdien beholdes
+// for typetrygghet/historiske rader, men kan ikke lenger inviteres eller velges.
+export const INVITABLE_ROLES: UserRole[] = ["chain_manager", "area_manager", "store_manager"]
