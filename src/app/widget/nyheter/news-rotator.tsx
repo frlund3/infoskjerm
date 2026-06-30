@@ -5,6 +5,8 @@ import type { LiveItem, Block } from "@/lib/content/live"
 import { OfferCard } from "@/app/widget/tilbud/offer-card"
 import { PdfFlyer } from "@/app/widget/tilbud/pdf-flyer"
 import { CompetitionCard } from "@/app/widget/_shared/competition-card"
+import { InvitationCard } from "@/app/widget/_shared/invitation-card"
+import { GalleryCard } from "@/app/widget/_shared/gallery-card"
 
 const KICKER: Record<string, string> = {
   competition: "KONKURRANSE",
@@ -12,10 +14,11 @@ const KICKER: Record<string, string> = {
   job: "STILLING LEDIG",
   birthday: "GRATULERER",
   stats: "SALGSTALL",
+  invitation: "INVITASJON",
 }
 
 // Seconds per card by type (longer for ones you read/scan).
-const SECONDS: Record<string, number> = { stats: 12, job: 20, competition: 16 }
+const SECONDS: Record<string, number> = { stats: 12, job: 20, competition: 16, invitation: 18, gallery: 30 }
 const DEFAULT_SECONDS = 16
 
 const frame: CSSProperties = {
@@ -307,6 +310,8 @@ function SlideCard({ item }: { item: LiveItem }) {
 
 function Card({ item, qrUrl }: { item: LiveItem; qrUrl?: string }) {
   if (item.type === "competition") return <CompetitionCard item={item} qrUrl={qrUrl} />
+  if (item.type === "invitation") return <InvitationCard item={item} qrUrl={qrUrl} />
+  if (item.type === "gallery") return <GalleryCard item={item} qrUrl={qrUrl} />
   if (item.type === "slide") return <SlideCard item={item} />
   if (item.type === "stats") return <StatsCard item={item} />
   if (item.type === "job") return <JobCard item={item} qrUrl={qrUrl} />

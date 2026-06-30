@@ -82,6 +82,9 @@ export function ScreenPreview({
   if (!store) return <p className="text-sm text-zinc-500">Ingen butikker ennå.</p>
 
   const storeScreens = screens[store.id] ?? []
+  // Filter the screen list to the selected flate: Kundeskjerm → customer-facing
+  // (kunde + avdeling); Internskjerm → bakrom only.
+  const visibleScreens = storeScreens.filter((s) => (flate === "intern" ? s.role === "bakrom" : s.role !== "bakrom"))
   const sid = encodeURIComponent(store.id)
   const tilbudSrc = `/widget/tilbud?store=${sid}&avdeling=${encodeURIComponent(avdeling)}`
   const kpiSrc = `/widget/butikk-kpi?store=${sid}`
@@ -171,8 +174,8 @@ export function ScreenPreview({
         )}
       </div>
 
-      {/* Ops panel — live player status, push-now, real screenshot */}
-      {flate === "kunde" && <ScreenStatus key={store.id} storeName={store.name} screens={storeScreens} />}
+      {/* Ops panel — live player status, push-now, real screenshot (rolle-filtrert) */}
+      <ScreenStatus key={`${store.id}-${flate}`} storeName={store.name} screens={visibleScreens} />
 
       {/* Scaled stage — portrait for customer, landscape for internal */}
       <div ref={wrapRef} className="relative rounded-2xl overflow-hidden border border-zinc-200 bg-black shadow-sm mx-auto" style={{ aspectRatio: portrait ? "9 / 16" : "16 / 9", width: "100%", maxWidth: portrait ? 400 : undefined }}>
@@ -186,6 +189,7 @@ export function ScreenPreview({
             />
           )}
           <iframe
+            key={flate === "kunde" ? kundeSrc : internContentSrc}
             title={view}
             src={flate === "kunde" ? kundeSrc : internContentSrc}
             scrolling="no"

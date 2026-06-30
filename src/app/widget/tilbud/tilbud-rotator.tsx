@@ -6,6 +6,7 @@ import { OfferCard, type ChainBrand } from "./offer-card"
 import { PdfFlyer } from "./pdf-flyer"
 import { CompetitionCard } from "@/app/widget/_shared/competition-card"
 import { KundeklubbCard } from "@/app/widget/_shared/kundeklubb-card"
+import { GalleryCard } from "@/app/widget/_shared/gallery-card"
 
 /**
  * Full-screen offer presentation: a left side panel with the heading, period and
@@ -178,7 +179,7 @@ export function TilbudRotator({ items, ticker, storeName, chain = null, qr = {} 
 
   return (
     <main style={frame}>
-      <style>{"@keyframes grFade{from{opacity:0}to{opacity:1}}@keyframes grTbKen{from{transform:scale(1)}to{transform:scale(1.07)}}"}</style>
+      <style>{"@keyframes grFade{from{opacity:0}to{opacity:1}}@keyframes grTbKen{from{transform:scale(1)}to{transform:scale(1.07)}}@keyframes grTbPop{from{opacity:0;transform:scale(.85) translateY(20px)}to{opacity:1;transform:scale(1) translateY(0)}}"}</style>
       {!item ? (
         <div style={{ ...inset, display: "flex", alignItems: "center", justifyContent: "center", color: "rgba(255,255,255,.4)", fontSize: 34 }}>
           Ingen aktive tilbud
@@ -193,6 +194,11 @@ export function TilbudRotator({ items, ticker, storeName, chain = null, qr = {} 
         <div key={item.id} style={{ ...inset, animation: "grFade .6s ease-out" }}>
           <CompetitionCard item={item} qrUrl={qr[item.id]} portrait />
         </div>
+      ) : item.type === "gallery" ? (
+        // Gallery (catering/meny) → full-bleed portrait gallery card with QR.
+        <div key={item.id} style={{ ...inset, animation: "grFade .6s ease-out" }}>
+          <GalleryCard item={item} qrUrl={qr[item.id]} portrait />
+        </div>
       ) : item.offer ? (
         // Structured offer → full-bleed price card (no side panel).
         <div key={item.id} style={{ ...inset, animation: "grFade .6s ease-out" }}>
@@ -205,12 +211,20 @@ export function TilbudRotator({ items, ticker, storeName, chain = null, qr = {} 
           <PdfFlyer url={item.imageUrl} title={item.title} color={chain?.color} fg={chain?.brandFg} pages={item.pages} />
         </div>
       ) : (
-        // Customer poster/PDF slide → text on TOP, image/PDF below (portrait).
+        // Customer poster/article slide → text on TOP, image below (portrait).
+        // A QR card (bottom-right) appears when the article carries a link (applyUrl).
         <div key={item.id} style={{ ...inset, display: "flex", flexDirection: "column", animation: "grFade .6s ease-out", background: item.bgColor ?? undefined, color: item.textColor ?? undefined }}>
           <PosterHeader item={item} storeName={storeName} />
           <div style={{ flex: "1 1 auto", minHeight: 0, display: "flex", padding: "0 54px 54px", boxSizing: "border-box" }}>
             <Media item={item} />
           </div>
+          {qr[item.id] && (
+            <div style={{ position: "absolute", right: 48, bottom: 48, background: "#fff", borderRadius: 26, padding: "24px 24px 18px", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, boxShadow: "0 22px 60px rgba(0,0,0,.4)", animation: "grTbPop .6s cubic-bezier(.16,1,.3,1)" }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={qr[item.id]} alt="QR" style={{ width: 210, height: 210, display: "block", borderRadius: 8 }} />
+              <span style={{ color: "#0a0a0a", fontWeight: 900, fontSize: 23, letterSpacing: 1, textTransform: "uppercase" }}>Skann for mer</span>
+            </div>
+          )}
         </div>
       )}
       {hasTicker && <TickerOverlay messages={ticker} />}

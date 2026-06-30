@@ -11,8 +11,42 @@ type AdminSupabase = Awaited<ReturnType<typeof requireRole>>["supabase"]
 
 const AUTHOR_ROLES = ["super_admin", "chain_manager", "area_manager", "store_manager", "store_employee"] as const
 
-export type ContentType = "news" | "competition" | "stats" | "weather" | "slide" | "job" | "birthday" | "ticker"
+export type ContentType = "news" | "competition" | "stats" | "weather" | "slide" | "job" | "birthday" | "ticker" | "invitation" | "gallery"
+
+/** En vare i et galleri (rett, meny, ansattilbud). */
+export interface GalleryItem {
+  name: string
+  /** Pris, f.eks. "149,-". */
+  price: string | null
+  /** Prisinfo/enhet, f.eks. "/pers", "/kg", "personalpris". */
+  priceInfo: string | null
+  imageUrl: string | null
+}
+
+/** Galleri (catering/meny/ansattilbud): overskrift + varer som veksler + valgfri QR. */
+export interface GalleryFields {
+  theme: "catering" | "meny" | "ansattilbud"
+  items: GalleryItem[]
+  /** Lenke QR-koden skal peke til (f.eks. bestillingsside). Tom = ingen QR. */
+  qrUrl: string | null
+  /** Tekst over QR-koden, f.eks. "Bestill her". */
+  qrLabel: string | null
+}
 export type TargetMode = "all" | "stores" | "tags"
+
+/** Invitasjon (arrangement): dato/sted + påmelding via QR-kode. */
+export interface InvitationFields {
+  /** ISO datetime (datetime-local) for når arrangementet starter. */
+  eventDate: string | null
+  /** Sted / lokale. */
+  eventPlace: string | null
+  /** Vis QR for påmelding på skjermen. */
+  signupEnabled: boolean
+  /** Påmeldingsfrist (ISO date), valgfri — vises på skjerm og landingsside. */
+  signupDeadline: string | null
+  /** Egen lenke QR-koden skal peke til. Tom → innebygd påmeldingsside (/pamelding/<id>). */
+  signupUrl: string | null
+}
 export type ImageMode = "plakat" | "bakgrunn" | "liten"
 export type { Audience } from "./audience"
 
@@ -47,6 +81,10 @@ export interface ContentInput {
   textColor?: string | null
   /** Customer-club invite (slide): editable headline + subtext. */
   klubb?: { headline: string; subtext: string } | null
+  /** Invitation only: event date/place + built-in signup config. */
+  invitation?: InvitationFields | null
+  /** Gallery only: theme + items (image/price/info) + optional QR. */
+  gallery?: GalleryFields | null
   /** Optional per-item display time in seconds. */
   durationSeconds?: number | null
 }
@@ -74,12 +112,15 @@ function buildBody(input: ContentInput): Json {
     audience: input.audience ?? audienceForType(input.type),
     ...(input.type === "job" ? { contactPerson: input.contactPerson ?? null, applyUrl: input.applyUrl ?? null } : {}),
     ...(input.type === "competition" ? { applyUrl: input.applyUrl ?? null } : {}),
+    ...(input.type === "news" ? { applyUrl: input.applyUrl ?? null } : {}),
     ...(input.type === "stats" ? { statsValue: input.statsValue ?? null, statsChange: input.statsChange ?? null } : {}),
     ...(input.type === "slide" && input.offer ? { offer: input.offer } : {}),
     ...((input.type === "slide" || input.type === "competition") ? { avdeling: input.avdeling || "felles" } : {}),
     ...(input.bgColor ? { bgColor: input.bgColor } : {}),
     ...(input.textColor ? { textColor: input.textColor } : {}),
     ...(input.type === "slide" && input.klubb ? { klubb: input.klubb } : {}),
+    ...(input.type === "invitation" && input.invitation ? { invitation: input.invitation } : {}),
+    ...(input.type === "gallery" && input.gallery ? { gallery: input.gallery } : {}),
     ...(input.durationSeconds ? { durationSeconds: input.durationSeconds } : {}),
   })) as Json
 }

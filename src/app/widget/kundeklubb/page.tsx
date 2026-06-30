@@ -1,5 +1,6 @@
 import QRCode from "qrcode"
 import { createAdminClient } from "@/lib/supabase/server"
+import { getBaseUrl } from "@/lib/base-url"
 import { KundeklubbCard } from "@/app/widget/_shared/kundeklubb-card"
 
 function normalizeUrl(raw: string): string {
@@ -33,8 +34,14 @@ export default async function KundeklubbWidget({ searchParams }: { searchParams:
   const logo = chain?.logo_url ?? null
   const headline = data?.kundeklubb_headline || "Bli medlem – det er gratis"
   const subtext = data?.kundeklubb_subtext || "Medlemspriser, bonus og ukens beste tilbud."
-  const url = data?.kundeklubb_url ? normalizeUrl(data.kundeklubb_url) : ""
-  const qr = url ? await QRCode.toDataURL(url, { margin: 1, width: 700, color: { dark: "#0a0a0a", light: "#ffffff" } }) : ""
+  // Custom link if set, otherwise the built-in sign-up page for this store
+  // (/klubb/<store> → registers the customer in kundeklubb_members).
+  const target = data?.kundeklubb_url?.trim()
+    ? normalizeUrl(data.kundeklubb_url)
+    : store
+      ? `${await getBaseUrl()}/klubb/${store}`
+      : ""
+  const qr = target ? await QRCode.toDataURL(target, { margin: 1, width: 700, color: { dark: "#0a0a0a", light: "#ffffff" } }) : ""
 
   return (
     <main style={{ margin: 0, width: "100%", height: "100vh", position: "relative", overflow: "hidden" }}>

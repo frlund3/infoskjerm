@@ -13,7 +13,7 @@ import { audienceForType, type Audience } from "../audience"
 
 const AUTHOR_ROLES = ["super_admin", "chain_manager", "area_manager", "store_manager", "store_employee"] as const
 
-export async function EditContentView({ id }: { id: string }) {
+export async function EditContentView({ id, listHref }: { id: string; listHref?: string }) {
   const { supabase } = await requireRole([...AUTHOR_ROLES])
 
   const [{ data: item }, storeOptions, { data: tags }, { data: targets }] = await Promise.all([
@@ -33,6 +33,8 @@ export async function EditContentView({ id }: { id: string }) {
     avdeling?: string | null
     bgColor?: string | null; textColor?: string | null
     klubb?: { headline: string; subtext: string } | null
+    invitation?: { eventDate?: string | null; eventPlace?: string | null; signupEnabled?: boolean; signupDeadline?: string | null; signupUrl?: string | null } | null
+    gallery?: { theme?: "catering" | "meny" | "ansattilbud"; items?: { name?: string; price?: string | null; priceInfo?: string | null; imageUrl?: string | null }[]; qrUrl?: string | null; qrLabel?: string | null } | null
     durationSeconds?: number | null
   }
   const audience: Audience = body.audience === "kunde" || body.audience === "intern" ? body.audience : audienceForType(item.type as ContentType)
@@ -64,8 +66,25 @@ export async function EditContentView({ id }: { id: string }) {
     bgColor: body.bgColor ?? null,
     textColor: body.textColor ?? null,
     klubb: body.klubb ?? null,
+    invitation: body.invitation
+      ? {
+          eventDate: body.invitation.eventDate ?? null,
+          eventPlace: body.invitation.eventPlace ?? null,
+          signupEnabled: body.invitation.signupEnabled ?? true,
+          signupDeadline: body.invitation.signupDeadline ?? null,
+          signupUrl: body.invitation.signupUrl ?? null,
+        }
+      : null,
+    gallery: body.gallery
+      ? {
+          theme: body.gallery.theme === "meny" ? "meny" : body.gallery.theme === "ansattilbud" ? "ansattilbud" : "catering",
+          items: (body.gallery.items ?? []).map((x) => ({ name: x.name ?? "", price: x.price ?? null, priceInfo: x.priceInfo ?? null, imageUrl: x.imageUrl ?? null })),
+          qrUrl: body.gallery.qrUrl ?? null,
+          qrLabel: body.gallery.qrLabel ?? null,
+        }
+      : null,
     durationSeconds: body.durationSeconds ?? null,
   }
 
-  return <ContentForm stores={storeOptions} tags={(tags ?? []) as TagOption[]} initial={initial} audience={audience} />
+  return <ContentForm stores={storeOptions} tags={(tags ?? []) as TagOption[]} initial={initial} audience={audience} listHref={listHref} />
 }

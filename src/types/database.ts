@@ -75,6 +75,76 @@ export type Database = {
         }
         Relationships: []
       }
+      event_signups: {
+        Row: {
+          comment: string | null
+          consent: boolean
+          content_item_id: string
+          created_at: string
+          department: string | null
+          dietary: string | null
+          email: string | null
+          guests: number
+          id: string
+          name: string
+          phone: string | null
+          store_id: string | null
+          tenant_id: string | null
+        }
+        Insert: {
+          comment?: string | null
+          consent?: boolean
+          content_item_id: string
+          created_at?: string
+          department?: string | null
+          dietary?: string | null
+          email?: string | null
+          guests?: number
+          id?: string
+          name: string
+          phone?: string | null
+          store_id?: string | null
+          tenant_id?: string | null
+        }
+        Update: {
+          comment?: string | null
+          consent?: boolean
+          content_item_id?: string
+          created_at?: string
+          department?: string | null
+          dietary?: string | null
+          email?: string | null
+          guests?: number
+          id?: string
+          name?: string
+          phone?: string | null
+          store_id?: string | null
+          tenant_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_signups_content_item_id_fkey"
+            columns: ["content_item_id"]
+            isOneToOne: false
+            referencedRelation: "content_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_signups_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_signups_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       kundeklubb_members: {
         Row: {
           consent: boolean
@@ -1214,6 +1284,8 @@ export type Database = {
         | "job"
         | "birthday"
         | "ticker"
+        | "invitation"
+        | "gallery"
       screen_status: "active" | "inactive" | "maintenance"
       user_role:
         | "super_admin"
@@ -1370,6 +1442,8 @@ export const Constants = {
         "job",
         "birthday",
         "ticker",
+        "invitation",
+        "gallery",
       ],
       screen_status: ["active", "inactive", "maintenance"],
       user_role: [

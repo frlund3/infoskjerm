@@ -17,14 +17,24 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 9
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: pnpm install --frozen-lockfile --prod=false
-      - run: node scripts/render-kundeavis.mjs
+      # Installer kun det renderen trenger via npm i en egen mappe (npm leser
+      # ikke pnpm-workspace.yaml, som ga "packages field missing" i CI), og kjør
+      # scriptet DER så ESM-import resolver mot den node_modules.
+      - run: |
+          cd "$RUNNER_TEMP"
+          npm init -y >/dev/null 2>&1
+          npm install --no-audit --no-fund pdfjs-dist@^4.10.38 @napi-rs/canvas@^1.0.1
+          cp "$GITHUB_WORKSPACE/scripts/render-kundeavis.mjs" render-kundeavis.mjs
+          node render-kundeavis.mjs
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      # JOKER: Flipsnack-avis (forside + QR). Bare node-innebygde moduler → kjøres
+      # rett fra repoet, ingen install.
+      - run: node scripts/sync-joker-kundeavis.mjs
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}

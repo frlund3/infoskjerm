@@ -21,10 +21,10 @@ import { BakromRotator, type BakromPanel } from "./bakrom-rotator"
 export const dynamic = "force-dynamic"
 
 // Same internal card set the internal /widget/nyheter shows.
-const INTERNAL_CARD_TYPES = ["news", "competition", "job", "birthday", "slide"]
+const INTERNAL_CARD_TYPES = ["news", "competition", "job", "birthday", "slide", "invitation", "gallery"]
 // Per-card seconds — MUST match news-rotator so the computed dwell lets the
 // embedded news widget show every item exactly once before we advance.
-const NEWS_SECONDS: Record<string, number> = { stats: 12, job: 20, competition: 16 }
+const NEWS_SECONDS: Record<string, number> = { stats: 12, job: 20, competition: 16, invitation: 18, gallery: 30 }
 const NEWS_DEFAULT = 16
 const KPI_SECONDS = 10
 

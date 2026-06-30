@@ -1,5 +1,6 @@
 import QRCode from "qrcode"
 import { fetchLiveContent, type LiveItem } from "@/lib/content/live"
+import { getBaseUrl } from "@/lib/base-url"
 import { NewsRotator } from "./news-rotator"
 
 /**
@@ -17,7 +18,7 @@ export const dynamic = "force-dynamic"
 // full-screen layout). Internal/back-room screens additionally show staff
 // "ukens tilbud" slides (poster/PDF/structured offer) + the ticker.
 const CARD_TYPES = ["news", "competition", "job", "birthday"]
-const INTERNAL_CARD_TYPES = [...CARD_TYPES, "slide"]
+const INTERNAL_CARD_TYPES = [...CARD_TYPES, "slide", "invitation", "gallery"]
 
 function normalizeUrl(raw: string): string {
   const v = raw.trim()
@@ -37,19 +38,32 @@ export default async function NewsWidgetPage({ searchParams }: { searchParams: P
   ])
   const ticker = tickerItems.map((t) => t.title.trim()).filter(Boolean)
 
-  // Pre-generate QR codes (PNG data URLs) for job ads with an application link.
+  // Pre-generate QR codes (PNG data URLs). Job ads + competitions use the
+  // authored application link; invitations point to the built-in signup page
+  // (/pamelding/<id>) unless signup is disabled on the item.
+  const base = await getBaseUrl()
   const qr: Record<string, string> = {}
   for (const it of items) {
+    let target: string | null = null
     if ((it.type === "job" || it.type === "competition") && it.applyUrl?.trim()) {
-      try {
-        qr[it.id] = await QRCode.toDataURL(normalizeUrl(it.applyUrl), {
-          margin: 1,
-          width: 320,
-          color: { dark: "#0a0a0a", light: "#ffffff" },
-        })
-      } catch {
-        // best-effort; skip QR on failure
-      }
+      target = normalizeUrl(it.applyUrl)
+    } else if (it.type === "invitation" && it.invitation?.signupEnabled !== false) {
+      // Custom link if given, otherwise the built-in signup page.
+      target = it.invitation?.signupUrl?.trim()
+        ? normalizeUrl(it.invitation.signupUrl)
+        : `${base}/pamelding/${it.id}${store ? `?store=${store}` : ""}`
+    } else if (it.type === "gallery" && it.gallery?.qrUrl?.trim()) {
+      target = normalizeUrl(it.gallery.qrUrl)
+    }
+    if (!target) continue
+    try {
+      qr[it.id] = await QRCode.toDataURL(target, {
+        margin: 1,
+        width: 360,
+        color: { dark: "#0a0a0a", light: "#ffffff" },
+      })
+    } catch {
+      // best-effort; skip QR on failure
     }
   }
 

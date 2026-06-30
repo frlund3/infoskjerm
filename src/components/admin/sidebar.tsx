@@ -4,7 +4,7 @@ import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 import {
-  Store, Monitor, Users, Settings, ChevronRight, LogOut, Newspaper, Megaphone, ScrollText,
+  Store, Monitor, Tv, Users, Settings, ChevronRight, LogOut, Newspaper, Megaphone, ScrollText, Ticket, QrCode,
 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 
@@ -34,9 +34,16 @@ const navGroups: NavGroup[] = [
     ],
   },
   {
+    label: "Kampanjer",
+    items: [
+      { href: "/admin/invitasjoner", label: "Invitasjoner", icon: Ticket, roles: ALL_AUTHORS, matchPrefix: true },
+      { href: "/admin/kundeklubb", label: "Kundeklubb", icon: QrCode, roles: ["super_admin", "chain_manager", "area_manager", "store_manager"], matchPrefix: true },
+    ],
+  },
+  {
     label: "Oversikt",
     items: [
-      { href: "/admin/cms", label: "Skjermsystem", icon: Monitor, roles: ["super_admin", "chain_manager", "area_manager", "store_manager"], matchPrefix: true },
+      { href: "/admin/cms", label: "Forhåndsvisning", icon: Monitor, roles: ["super_admin", "chain_manager", "area_manager", "store_manager"], matchPrefix: true },
     ],
   },
   {
@@ -48,6 +55,7 @@ const navGroups: NavGroup[] = [
   {
     label: "Admin",
     items: [
+      { href: "/admin/skjermer", label: "Skjermer", icon: Tv, roles: ["super_admin", "chain_manager", "area_manager", "store_manager"], matchPrefix: true },
       { href: "/admin/users", label: "Brukere", icon: Users, roles: ["super_admin", "chain_manager"] },
       { href: "/admin/logg", label: "Logg", icon: ScrollText, roles: ["super_admin", "chain_manager"], matchPrefix: true },
       { href: "/admin/settings", label: "Innstillinger", icon: Settings, roles: ["super_admin", "chain_manager", "area_manager", "store_manager"] },

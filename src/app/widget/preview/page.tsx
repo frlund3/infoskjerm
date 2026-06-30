@@ -36,6 +36,8 @@ interface PreviewData {
   statsValue?: string | null
   statsChange?: string | null
   klubb?: { headline: string; subtext: string; url?: string; cta?: string } | null
+  invitation?: { eventDate?: string | null; eventPlace?: string | null; signupEnabled?: boolean; signupDeadline?: string | null; signupUrl?: string | null } | null
+  gallery?: { theme?: string; items?: { name?: string; price?: string | null; priceInfo?: string | null; imageUrl?: string | null }[]; qrUrl?: string | null; qrLabel?: string | null } | null
   chain?: { name: string; logoUrl: string | null; color: string; brandFg: string | null } | null
 }
 
@@ -81,13 +83,41 @@ export default async function PreviewWidgetPage({ searchParams }: { searchParams
     bgColor: data.bgColor ?? null,
     textColor: data.textColor ?? null,
     klubb: data.klubb && data.klubb.headline ? data.klubb : null,
+    invitation: type === "invitation"
+      ? {
+          eventDate: data.invitation?.eventDate ?? null,
+          eventPlace: data.invitation?.eventPlace ?? null,
+          signupEnabled: data.invitation?.signupEnabled ?? true,
+          signupDeadline: data.invitation?.signupDeadline ?? null,
+          signupUrl: data.invitation?.signupUrl ?? null,
+        }
+      : null,
+    gallery: type === "gallery"
+      ? {
+          theme: data.gallery?.theme === "meny" ? "meny" : data.gallery?.theme === "ansattilbud" ? "ansattilbud" : "catering",
+          items: (data.gallery?.items ?? []).filter((x) => x && (x.name || x.imageUrl)).map((x) => ({ name: x.name ?? "", price: x.price ?? null, priceInfo: x.priceInfo ?? null, imageUrl: x.imageUrl ?? null })),
+          qrUrl: data.gallery?.qrUrl ?? null,
+          qrLabel: data.gallery?.qrLabel ?? null,
+        }
+      : null,
   }
 
-  // QR for competitions/jobs (participation link) + kundeklubb (sample sign-up).
+  // QR for competitions/jobs + articles with a link (applyUrl) + kundeklubb.
   const qr: Record<string, string> = {}
-  if ((type === "competition" || type === "job") && data.applyUrl?.trim()) {
+  if ((type === "competition" || type === "job" || type === "news") && data.applyUrl?.trim()) {
     try {
       qr.preview = await QRCode.toDataURL(normalizeUrl(data.applyUrl), { margin: 1, width: 360, color: { dark: "#0a0a0a", light: "#ffffff" } })
+    } catch { /* best-effort */ }
+  }
+  if (type === "invitation" && item.invitation?.signupEnabled !== false) {
+    try {
+      const target = item.invitation?.signupUrl?.trim() ? normalizeUrl(item.invitation.signupUrl) : `${await getBaseUrl()}/pamelding/forhandsvisning`
+      qr.preview = await QRCode.toDataURL(target, { margin: 1, width: 360, color: { dark: "#0a0a0a", light: "#ffffff" } })
+    } catch { /* best-effort */ }
+  }
+  if (type === "gallery" && item.gallery?.qrUrl?.trim()) {
+    try {
+      qr.preview = await QRCode.toDataURL(normalizeUrl(item.gallery.qrUrl), { margin: 1, width: 360, color: { dark: "#0a0a0a", light: "#ffffff" } })
     } catch { /* best-effort */ }
   }
   if (item.klubb) {

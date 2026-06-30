@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { RichTextEditor } from "@/components/admin/rich-text-editor"
 import { MediaUploader } from "@/components/admin/media-uploader"
 import { Button } from "@/components/ui/button"
-import { saveContent, type ContentType, type TargetMode, type ImageMode, type Audience } from "../actions"
+import { saveContent, type ContentType, type TargetMode, type ImageMode, type Audience, type InvitationFields, type GalleryFields, type GalleryItem } from "../actions"
 import { lookupSparProduct } from "../spar-actions"
 import type { OfferFields } from "@/lib/content/live"
 import { LivePreview } from "./live-preview"
@@ -14,7 +14,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog"
 import {
-  Newspaper, Trophy, ImageIcon, Briefcase, PartyPopper, Megaphone, FileText,
+  Newspaper, Trophy, ImageIcon, Briefcase, PartyPopper, Megaphone, FileText, Ticket, MapPin, LayoutGrid, Plus, Trash2, QrCode,
   Store as StoreIcon, Tag, Globe, X, Calendar, Save, Send, ChevronLeft, Image as ImageLucide, Maximize2, PanelRight, CalendarOff, Search,
 } from "lucide-react"
 import Link from "next/link"
@@ -70,8 +70,24 @@ export interface ContentInitial {
   bgColor?: string | null
   textColor?: string | null
   klubb?: { headline: string; subtext: string } | null
+  invitation?: InvitationFields | null
+  gallery?: GalleryFields | null
   durationSeconds?: number | null
 }
+
+const EMPTY_INVITATION: InvitationFields = {
+  eventDate: null, eventPlace: null, signupEnabled: true, signupDeadline: null, signupUrl: null,
+}
+
+const EMPTY_GALLERY: GalleryFields = {
+  theme: "catering", items: [{ name: "", price: null, priceInfo: null, imageUrl: null }], qrUrl: null, qrLabel: null,
+}
+
+const GALLERY_THEMES: { k: GalleryFields["theme"]; label: string }[] = [
+  { k: "catering", label: "Catering" },
+  { k: "meny", label: "Meny" },
+  { k: "ansattilbud", label: "Ansattilbud" },
+]
 
 const EMPTY_OFFER: OfferFields = {
   varenavn: "", vareinfo: null, badge: null, pris: null, rabatt: null, forpris: null,
@@ -107,26 +123,30 @@ const TYPES: { key: ContentType; label: string; icon: React.ElementType }[] = [
   { key: "slide", label: "Tilbud / annet", icon: ImageIcon },
   { key: "job", label: "Stilling", icon: Briefcase },
   { key: "birthday", label: "Gratulerer", icon: PartyPopper },
+  { key: "invitation", label: "Invitasjon", icon: Ticket },
+  { key: "gallery", label: "Galleri", icon: LayoutGrid },
   { key: "ticker", label: "Ticker", icon: Megaphone },
 ]
 
-const IMAGE_TYPES: ContentType[] = ["news", "competition", "slide", "job", "birthday"]
+const IMAGE_TYPES: ContentType[] = ["news", "competition", "slide", "job", "birthday", "invitation"]
 
 // Which content types belong to each audience/menu.
 const AUDIENCE_TYPES: Record<Audience, ContentType[]> = {
-  // Kunde: tilbud, konkurranse, artikkel/egenreklame + valgfri ticker.
-  kunde: ["slide", "competition", "news", "ticker"],
-  // Internt kan også vise tilbud/plakat (f.eks. ukens tilbud til betjeningen).
-  intern: ["news", "competition", "job", "birthday", "ticker", "slide"],
+  // Kunde: tilbud, konkurranse, artikkel/egenreklame, galleri (catering/meny) + valgfri ticker.
+  kunde: ["slide", "competition", "news", "gallery", "ticker"],
+  // Internt kan også vise tilbud/plakat (f.eks. ukens tilbud til betjeningen),
+  // invitasjoner til arrangement (julebord, kurs …) og galleri (ansattilbud).
+  intern: ["news", "competition", "job", "birthday", "invitation", "gallery", "ticker", "slide"],
 }
 
-export function ContentForm({ stores, tags, initial, audience = "intern" }: { stores: StoreOption[]; tags: TagOption[]; initial?: ContentInitial; audience?: Audience }) {
+export function ContentForm({ stores, tags, initial, audience = "intern", defaultType, listHref: listHrefProp }: { stores: StoreOption[]; tags: TagOption[]; initial?: ContentInitial; audience?: Audience; defaultType?: ContentType; listHref?: string }) {
   const router = useRouter()
   const allowedTypes = AUDIENCE_TYPES[audience]
-  const typeOptions = TYPES.filter((t) => allowedTypes.includes(t.key))
-  const listHref = audience === "kunde" ? "/admin/kundeinnhold" : "/admin/innhold"
+  // defaultType locks the picker to one type (dedicated entry points, e.g. Invitasjoner).
+  const typeOptions = TYPES.filter((t) => (defaultType ? t.key === defaultType : allowedTypes.includes(t.key)))
+  const listHref = listHrefProp ?? (audience === "kunde" ? "/admin/kundeinnhold" : "/admin/innhold")
   const [title, setTitle] = useState(initial?.title ?? "")
-  const [type, setType] = useState<ContentType>(initial?.type ?? allowedTypes[0])
+  const [type, setType] = useState<ContentType>(initial?.type ?? defaultType ?? allowedTypes[0])
   const [bodyHtml, setBodyHtml] = useState(initial?.bodyHtml ?? "")
   const [imageUrls, setImageUrls] = useState<string[]>(initial?.imageUrls?.length ? initial.imageUrls : initial?.imageUrl ? [initial.imageUrl] : [])
   const [targetMode, setTargetMode] = useState<TargetMode>(initial?.targetMode ?? "all")
@@ -141,6 +161,10 @@ export function ContentForm({ stores, tags, initial, audience = "intern" }: { st
   const [offer, setOffer] = useState<OfferFields>(initial?.offer ?? EMPTY_OFFER)
   const [klubb, setKlubb] = useState(initial?.klubb ?? { headline: "Bli medlem – det er gratis", subtext: "Medlemspriser, bonus og ukens beste tilbud." })
   const [avdeling, setAvdeling] = useState(initial?.avdeling ?? "felles")
+  const [invitation, setInvitation] = useState<InvitationFields>(initial?.invitation ?? EMPTY_INVITATION)
+  const [gallery, setGallery] = useState<GalleryFields>(
+    initial?.gallery ?? { ...EMPTY_GALLERY, theme: audience === "intern" ? "ansattilbud" : "catering" }
+  )
   const [bgColor, setBgColor] = useState(initial?.bgColor ?? "")
   const [textColor, setTextColor] = useState(initial?.textColor ?? "")
   const [storeSearch, setStoreSearch] = useState("")
@@ -207,7 +231,7 @@ export function ContentForm({ stores, tags, initial, audience = "intern" }: { st
 
   // Autosave: keep an unsaved draft in localStorage for NEW content only, so a
   // half-written post survives an accidental navigation/refresh.
-  const draftKey = initial ? null : `infoskjerm:draft:${audience}`
+  const draftKey = initial ? null : `infoskjerm:draft:${audience}${defaultType ? `:${defaultType}` : ""}`
   const [restored, setRestored] = useState(false)
 
   useEffect(() => {
@@ -255,7 +279,12 @@ export function ContentForm({ stores, tags, initial, audience = "intern" }: { st
   }
 
   const usesImage = IMAGE_TYPES.includes(type) && !isKlubb
-  const usesBody = type !== "ticker" && !isOfferStruktur && !isKlubb
+  const usesBody = type !== "ticker" && type !== "gallery" && !isOfferStruktur && !isKlubb
+  // Standard visningstid per type/flate (matcher rotatorene). Vises til brukeren
+  // så de vet hva «tom = standard» faktisk betyr.
+  const defaultDuration = audience === "kunde"
+    ? 18
+    : ({ stats: 12, job: 20, competition: 16, invitation: 18, gallery: 30 } as Record<string, number>)[type] ?? 16
   // Tilbud/annonser må alltid ha en gyldig periode (fra + til).
   const periodRequired = type === "slide" && !isKlubb
   const isPdfUrl = (imageUrls[0] ?? "").toLowerCase().split("?")[0].endsWith(".pdf")
@@ -312,13 +341,20 @@ export function ContentForm({ stores, tags, initial, audience = "intern" }: { st
         imageUrls: usesImage ? imageUrls : [],
         offer: isOfferStruktur ? offer : null,
         klubb: isKlubb ? klubb : null,
+        invitation: type === "invitation" ? invitation : null,
+        gallery: type === "gallery" ? {
+          ...gallery,
+          // Ansattilbud-tema er kun internt — fall tilbake til catering på kundeskjerm.
+          theme: audience !== "intern" && gallery.theme === "ansattilbud" ? "catering" : gallery.theme,
+          items: gallery.items.filter((it) => it.name.trim() || it.imageUrl),
+        } : null,
         avdeling: (type === "slide" || type === "competition") ? avdeling : null,
         // 2+ images always render full-page (side by side), so force plakat-style.
         imageMode: usesImage ? (type === "slide" || isMulti ? "plakat" : imageMode) : "bakgrunn",
         targetMode, storeIds, tagIds,
         validFrom: validFrom || null, validTo: validTo || null, publish,
         contactPerson: type === "job" ? contactPerson || null : null,
-        applyUrl: (type === "job" || type === "competition") ? applyUrl || null : null,
+        applyUrl: (type === "job" || type === "competition" || type === "news") ? applyUrl || null : null,
         bgColor: usesColors ? bgColor || null : null,
         textColor: usesColors ? textColor || null : null,
         durationSeconds: durationSeconds ? Math.max(3, Math.min(600, Number(durationSeconds))) : null,
@@ -345,12 +381,14 @@ export function ContentForm({ stores, tags, initial, audience = "intern" }: { st
     imageUrls,
     imageMode: (type === "slide" || isMulti ? "plakat" : imageMode) as ImageMode,
     offer: isOfferStruktur ? offer : null,
+    invitation: type === "invitation" ? invitation : null,
+    gallery: type === "gallery" ? gallery : null,
     avdeling,
     bgColor: usesColors ? bgColor || null : null,
     textColor: usesColors ? textColor || null : null,
     validFrom: validFrom || null,
     validTo: validTo || null,
-    applyUrl: (type === "job" || type === "competition") ? applyUrl || null : null,
+    applyUrl: (type === "job" || type === "competition" || type === "news") ? applyUrl || null : null,
     contactPerson: type === "job" ? contactPerson || null : null,
   }
 
@@ -403,7 +441,7 @@ export function ContentForm({ stores, tags, initial, audience = "intern" }: { st
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder={type === "slide" ? "Tittel på plakaten..." : "Tittel på saken..."}
+                placeholder={type === "slide" ? "Tittel på plakaten..." : type === "gallery" ? "Overskrift på galleriet..." : "Tittel på saken..."}
                 className="w-full text-2xl font-bold text-zinc-900 bg-transparent border-none focus:outline-none placeholder:text-zinc-300"
               />
             </div>
@@ -581,6 +619,18 @@ export function ContentForm({ stores, tags, initial, audience = "intern" }: { st
             </div>
           )}
 
+          {type === "news" && (
+            <div className="rounded-xl border border-zinc-200 bg-white p-4 space-y-3">
+              <h3 className="flex items-center gap-1.5 text-xs font-semibold text-zinc-600"><Globe className="w-3.5 h-3.5" /> Lenke / QR-kode</h3>
+              <div>
+                <label className="block text-[10px] text-zinc-400 mb-1">Lenke for QR-kode (valgfri)</label>
+                <input type="text" value={applyUrl} onChange={(e) => setApplyUrl(e.target.value)} placeholder="gangerolvkjokkenet.no"
+                  className="w-full text-sm border border-zinc-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-zinc-300" />
+                <p className="text-[10px] text-zinc-400 mt-1">Vises som QR-kode nederst på artikkelen — kundene skanner for mer.</p>
+              </div>
+            </div>
+          )}
+
           {type === "job" && (
             <div className="rounded-xl border border-zinc-200 bg-white p-4 space-y-3">
               <h3 className="flex items-center gap-1.5 text-xs font-semibold text-zinc-600"><Briefcase className="w-3.5 h-3.5" /> Stillingsinfo</h3>
@@ -593,6 +643,112 @@ export function ContentForm({ stores, tags, initial, audience = "intern" }: { st
                 <label className="block text-[10px] text-zinc-400 mb-1">Søknadslenke</label>
                 <input type="text" value={applyUrl} onChange={(e) => setApplyUrl(e.target.value)} placeholder="gangerolv.no/stillinger"
                   className="w-full text-sm border border-zinc-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-zinc-300" />
+              </div>
+            </div>
+          )}
+
+          {type === "invitation" && (
+            <div className="rounded-xl border border-zinc-200 bg-white p-4 space-y-3">
+              <h3 className="flex items-center gap-1.5 text-xs font-semibold text-zinc-600"><Ticket className="w-3.5 h-3.5" /> Arrangement</h3>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[10px] text-zinc-400 mb-1">Dato og tid</label>
+                  <input type="datetime-local" value={invitation.eventDate ?? ""} onChange={(e) => setInvitation((p) => ({ ...p, eventDate: e.target.value || null }))}
+                    className="w-full text-sm border border-zinc-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-zinc-300" />
+                </div>
+                <div>
+                  <label className="block text-[10px] text-zinc-400 mb-1 flex items-center gap-1"><MapPin className="w-3 h-3" /> Sted</label>
+                  <input type="text" value={invitation.eventPlace ?? ""} onChange={(e) => setInvitation((p) => ({ ...p, eventPlace: e.target.value || null }))} placeholder="Kantina, 2. etg."
+                    className="w-full text-sm border border-zinc-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-zinc-300" />
+                </div>
+              </div>
+              <label className="flex items-center gap-2 text-xs font-medium text-zinc-700">
+                <input type="checkbox" checked={invitation.signupEnabled} onChange={(e) => setInvitation((p) => ({ ...p, signupEnabled: e.target.checked }))} className="rounded border-zinc-300" />
+                Vis QR-kode for påmelding på skjermen
+              </label>
+              {invitation.signupEnabled && (
+                <>
+                  <div>
+                    <label className="block text-[10px] text-zinc-400 mb-1">Lenke for QR-kode (valgfri)</label>
+                    <input type="text" value={invitation.signupUrl ?? ""} onChange={(e) => setInvitation((p) => ({ ...p, signupUrl: e.target.value || null }))} placeholder="gangerolv.no/julebord"
+                      className="w-full text-sm border border-zinc-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-zinc-300" />
+                    <p className="text-[10px] text-zinc-400 mt-1">
+                      {invitation.signupUrl?.trim()
+                        ? "QR-koden peker til denne lenken."
+                        : "Tom = QR-koden bruker den innebygde påmeldingssiden. Svarene ser du under Kampanjer → Invitasjoner."}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] text-zinc-400 mb-1">Påmeldingsfrist (valgfri)</label>
+                    <input type="date" value={invitation.signupDeadline ?? ""} onChange={(e) => setInvitation((p) => ({ ...p, signupDeadline: e.target.value || null }))}
+                      className="w-full text-sm border border-zinc-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-zinc-300" />
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          {type === "gallery" && (
+            <div className="rounded-xl border border-zinc-200 bg-white p-4 space-y-4">
+              <div>
+                <h3 className="flex items-center gap-1.5 text-xs font-semibold text-zinc-600 mb-2"><LayoutGrid className="w-3.5 h-3.5" /> Galleri</h3>
+                <div className="flex gap-1.5">
+                  {/* Ansattilbud er kun for interne skjermer — aldri på kundeskjerm. */}
+                  {GALLERY_THEMES.filter((t) => audience === "intern" || t.k !== "ansattilbud").map(({ k, label }) => (
+                    <button key={k} type="button" onClick={() => setGallery((p) => ({ ...p, theme: k }))}
+                      className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium border transition-all ${gallery.theme === k ? "border-zinc-900 bg-zinc-900 text-white" : "border-zinc-200 text-zinc-600 hover:border-zinc-300"}`}>
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[10px] text-zinc-400 mt-1.5">Tittelen øverst blir <strong>overskriften</strong> på galleriet. Temaet styrer farger og merkelapp.</p>
+              </div>
+
+              <div className="space-y-3">
+                {gallery.items.map((it, i) => (
+                  <div key={i} className="rounded-lg border border-zinc-200 bg-zinc-50 p-3 space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wide">Vare {i + 1}</span>
+                      {gallery.items.length > 1 && (
+                        <button type="button" onClick={() => setGallery((p) => ({ ...p, items: p.items.filter((_, idx) => idx !== i) }))}
+                          className="text-zinc-400 hover:text-red-600" aria-label="Fjern vare"><Trash2 className="w-3.5 h-3.5" /></button>
+                      )}
+                    </div>
+                    {it.imageUrl ? (
+                      <div className="relative w-full max-w-[180px]">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={it.imageUrl} alt="" className="w-full h-28 object-cover rounded-lg border border-zinc-200" />
+                        <button type="button" onClick={() => setGallery((p) => ({ ...p, items: p.items.map((x, idx) => idx === i ? { ...x, imageUrl: null } : x) }))}
+                          className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/60 text-white flex items-center justify-center" aria-label="Fjern bilde"><X className="w-3.5 h-3.5" /></button>
+                      </div>
+                    ) : (
+                      <div className="max-w-[260px]">
+                        <MediaUploader maxFiles={1} accept={["image/jpeg", "image/png", "image/webp", "image/avif"]} onUpload={(files) => { const url = files[0]?.url; if (url) setGallery((p) => ({ ...p, items: p.items.map((x, idx) => idx === i ? { ...x, imageUrl: url } : x) })) }} />
+                      </div>
+                    )}
+                    <input value={it.name} onChange={(e) => setGallery((p) => ({ ...p, items: p.items.map((x, idx) => idx === i ? { ...x, name: e.target.value } : x) }))} placeholder="Navn på rett/vare"
+                      className="w-full text-sm font-semibold border border-zinc-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-zinc-300" />
+                    <div className="grid grid-cols-2 gap-2">
+                      <input value={it.price ?? ""} onChange={(e) => setGallery((p) => ({ ...p, items: p.items.map((x, idx) => idx === i ? { ...x, price: e.target.value || null } : x) }))} placeholder="Pris (149,-)"
+                        className="w-full text-sm border border-zinc-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-zinc-300" />
+                      <input value={it.priceInfo ?? ""} onChange={(e) => setGallery((p) => ({ ...p, items: p.items.map((x, idx) => idx === i ? { ...x, priceInfo: e.target.value || null } : x) }))} placeholder="Prisinfo (/pers)"
+                        className="w-full text-sm border border-zinc-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-zinc-300" />
+                    </div>
+                  </div>
+                ))}
+                <button type="button" onClick={() => setGallery((p) => ({ ...p, items: [...p.items, { name: "", price: null, priceInfo: null, imageUrl: null } as GalleryItem] }))}
+                  className="flex items-center gap-1.5 text-xs font-semibold text-zinc-600 hover:text-zinc-900 border border-dashed border-zinc-300 rounded-lg px-3 py-2 w-full justify-center">
+                  <Plus className="w-3.5 h-3.5" /> Legg til vare
+                </button>
+              </div>
+
+              <div className="border-t border-zinc-100 pt-3 space-y-2.5">
+                <h4 className="flex items-center gap-1.5 text-[11px] font-semibold text-zinc-600"><QrCode className="w-3.5 h-3.5" /> QR-kode (valgfri)</h4>
+                <input value={gallery.qrUrl ?? ""} onChange={(e) => setGallery((p) => ({ ...p, qrUrl: e.target.value || null }))} placeholder="gangerolv.no/catering"
+                  className="w-full text-sm border border-zinc-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-zinc-300" />
+                <input value={gallery.qrLabel ?? ""} onChange={(e) => setGallery((p) => ({ ...p, qrLabel: e.target.value || null }))} placeholder="Tekst over QR (Bestill her)"
+                  className="w-full text-sm border border-zinc-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-zinc-300" />
+                <p className="text-[10px] text-zinc-400">Tom lenke = ingen QR-kode på galleriet.</p>
               </div>
             </div>
           )}
@@ -731,11 +887,11 @@ export function ContentForm({ stores, tags, initial, audience = "intern" }: { st
             <section className="rounded-xl border border-zinc-200 bg-white p-4">
               <h3 className="text-xs font-semibold text-zinc-600 mb-2.5">Visningstid</h3>
               <div className="flex items-center gap-2">
-                <input type="number" min={3} max={600} value={durationSeconds} onChange={(e) => setDurationSeconds(e.target.value)} placeholder="auto"
+                <input type="number" min={3} max={600} value={durationSeconds} onChange={(e) => setDurationSeconds(e.target.value)} placeholder={`${defaultDuration}`}
                   className="w-24 text-sm border border-zinc-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-zinc-300" />
                 <span className="text-xs text-zinc-500">sekunder</span>
               </div>
-              <p className="text-[10px] text-zinc-400 mt-1.5">Hvor lenge dette vises før skjermen bytter. Tom = standard for typen.</p>
+              <p className="text-[10px] text-zinc-400 mt-1.5">Hvor lenge dette vises før skjermen bytter. Tom = standard for denne typen (<strong>{defaultDuration} sek</strong>).</p>
             </section>
           )}
 

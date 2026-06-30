@@ -23,9 +23,15 @@ const BENEFITS = [
 export default async function KlubbLandingPage({ params }: { params: Promise<{ store: string }> }) {
   const { store } = await params
   const supabase = createAdminClient()
-  const { data } = await supabase.from("stores").select("id, name, chains(name, color, logo_url)").eq("id", store).maybeSingle()
-  if (!data) notFound()
+  // CMS live-preview points its QR here with a placeholder store id — show a
+  // friendly sample page instead of a 404.
+  const isPreview = store === "forhandsvisning"
+  const { data: dbData } = isPreview
+    ? { data: null }
+    : await supabase.from("stores").select("id, name, chains(name, color, logo_url)").eq("id", store).maybeSingle()
+  if (!isPreview && !dbData) notFound()
 
+  const data = dbData ?? { id: "forhandsvisning", name: "butikken", chains: null }
   const chain = (data.chains as unknown as ChainRow | null)
   const accent = chain?.color || "#16a34a"
   const logo = chain?.logo_url ?? null
