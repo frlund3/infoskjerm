@@ -81,6 +81,8 @@ export interface InvitationData {
   eventPlace: string | null
   signupEnabled: boolean
   signupDeadline: string | null
+  /** Custom QR target; null → built-in /pamelding/<id>. */
+  signupUrl: string | null
 }
 
 interface Body {
@@ -98,7 +100,7 @@ interface Body {
   textColor?: string | null
   pages?: string[]
   klubb?: { headline: string; subtext: string; url?: string; cta?: string } | null
-  invitation?: { eventDate?: string | null; eventPlace?: string | null; signupEnabled?: boolean; signupDeadline?: string | null } | null
+  invitation?: { eventDate?: string | null; eventPlace?: string | null; signupEnabled?: boolean; signupDeadline?: string | null; signupUrl?: string | null } | null
   durationSeconds?: number | null
 }
 
@@ -258,6 +260,7 @@ export async function fetchLiveContent(storeId: string | null, types: string[], 
             eventPlace: body.invitation?.eventPlace ?? null,
             signupEnabled: body.invitation?.signupEnabled ?? true,
             signupDeadline: body.invitation?.signupDeadline ?? null,
+            signupUrl: body.invitation?.signupUrl ?? null,
           }
         : null,
     }

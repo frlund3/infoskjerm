@@ -48,7 +48,10 @@ export default async function NewsWidgetPage({ searchParams }: { searchParams: P
     if ((it.type === "job" || it.type === "competition") && it.applyUrl?.trim()) {
       target = normalizeUrl(it.applyUrl)
     } else if (it.type === "invitation" && it.invitation?.signupEnabled !== false) {
-      target = `${base}/pamelding/${it.id}${store ? `?store=${store}` : ""}`
+      // Custom link if given, otherwise the built-in signup page.
+      target = it.invitation?.signupUrl?.trim()
+        ? normalizeUrl(it.invitation.signupUrl)
+        : `${base}/pamelding/${it.id}${store ? `?store=${store}` : ""}`
     }
     if (!target) continue
     try {

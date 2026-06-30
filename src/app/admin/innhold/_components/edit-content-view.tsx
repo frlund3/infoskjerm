@@ -33,7 +33,7 @@ export async function EditContentView({ id, listHref }: { id: string; listHref?:
     avdeling?: string | null
     bgColor?: string | null; textColor?: string | null
     klubb?: { headline: string; subtext: string } | null
-    invitation?: { eventDate?: string | null; eventPlace?: string | null; signupEnabled?: boolean; signupDeadline?: string | null } | null
+    invitation?: { eventDate?: string | null; eventPlace?: string | null; signupEnabled?: boolean; signupDeadline?: string | null; signupUrl?: string | null } | null
     durationSeconds?: number | null
   }
   const audience: Audience = body.audience === "kunde" || body.audience === "intern" ? body.audience : audienceForType(item.type as ContentType)
@@ -71,6 +71,7 @@ export async function EditContentView({ id, listHref }: { id: string; listHref?:
           eventPlace: body.invitation.eventPlace ?? null,
           signupEnabled: body.invitation.signupEnabled ?? true,
           signupDeadline: body.invitation.signupDeadline ?? null,
+          signupUrl: body.invitation.signupUrl ?? null,
         }
       : null,
     durationSeconds: body.durationSeconds ?? null,

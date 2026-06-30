@@ -75,7 +75,7 @@ export interface ContentInitial {
 }
 
 const EMPTY_INVITATION: InvitationFields = {
-  eventDate: null, eventPlace: null, signupEnabled: true, signupDeadline: null,
+  eventDate: null, eventPlace: null, signupEnabled: true, signupDeadline: null, signupUrl: null,
 }
 
 const EMPTY_OFFER: OfferFields = {
@@ -628,11 +628,20 @@ export function ContentForm({ stores, tags, initial, audience = "intern", defaul
               {invitation.signupEnabled && (
                 <>
                   <div>
+                    <label className="block text-[10px] text-zinc-400 mb-1">Lenke for QR-kode (valgfri)</label>
+                    <input type="text" value={invitation.signupUrl ?? ""} onChange={(e) => setInvitation((p) => ({ ...p, signupUrl: e.target.value || null }))} placeholder="gangerolv.no/julebord"
+                      className="w-full text-sm border border-zinc-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-zinc-300" />
+                    <p className="text-[10px] text-zinc-400 mt-1">
+                      {invitation.signupUrl?.trim()
+                        ? "QR-koden peker til denne lenken."
+                        : "Tom = QR-koden bruker den innebygde påmeldingssiden. Svarene ser du under Kampanjer → Invitasjoner."}
+                    </p>
+                  </div>
+                  <div>
                     <label className="block text-[10px] text-zinc-400 mb-1">Påmeldingsfrist (valgfri)</label>
                     <input type="date" value={invitation.signupDeadline ?? ""} onChange={(e) => setInvitation((p) => ({ ...p, signupDeadline: e.target.value || null }))}
                       className="w-full text-sm border border-zinc-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-zinc-300" />
                   </div>
-                  <p className="text-[10px] text-zinc-400">QR-koden tar de ansatte til en innebygd påmeldingsside. Svarene ser du under <strong>Kampanjer → Invitasjoner</strong>.</p>
                 </>
               )}
             </div>

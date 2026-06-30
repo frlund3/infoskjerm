@@ -14,16 +14,18 @@ const AUTHOR_ROLES = ["super_admin", "chain_manager", "area_manager", "store_man
 export type ContentType = "news" | "competition" | "stats" | "weather" | "slide" | "job" | "birthday" | "ticker" | "invitation"
 export type TargetMode = "all" | "stores" | "tags"
 
-/** Invitasjon (arrangement): dato/sted + innebygd påmelding via QR-kode. */
+/** Invitasjon (arrangement): dato/sted + påmelding via QR-kode. */
 export interface InvitationFields {
   /** ISO datetime (datetime-local) for når arrangementet starter. */
   eventDate: string | null
   /** Sted / lokale. */
   eventPlace: string | null
-  /** Vis QR + innebygd påmeldingsside (/pamelding/<id>). */
+  /** Vis QR for påmelding på skjermen. */
   signupEnabled: boolean
   /** Påmeldingsfrist (ISO date), valgfri — vises på skjerm og landingsside. */
   signupDeadline: string | null
+  /** Egen lenke QR-koden skal peke til. Tom → innebygd påmeldingsside (/pamelding/<id>). */
+  signupUrl: string | null
 }
 export type ImageMode = "plakat" | "bakgrunn" | "liten"
 export type { Audience } from "./audience"
