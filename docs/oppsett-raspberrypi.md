@@ -130,6 +130,32 @@ Etter autorisering + tilordning: start spilleren på nytt på Pi-en (`arexibo ~/
 > **Konvensjon:** kundeskjerm → gruppe = butikknavnet (portrett); bakrom → `{butikk} – Bakrom` (liggende).
 > Begge skal testes på fysisk skjerm + få portrett-rotering (kunde) + systemd auto-start før golden image klones.
 
+### 5.1 Kundeskjerm: hele butikken vs. én avdeling
+
+En kundeskjerm kan vise **alle** tilbud, eller filtreres til **én avdeling**. Pi-en vet
+ingenting om avdelinger — det styres 100 % av **hvilken Xibo-gruppe** Pi-en er tilordnet,
+og hvilken `&avdeling=`-parameter den gruppas layout embedder.
+
+**I appen:** hvert kundeinnhold har et `avdeling`-felt (`felles`, `frukt`, `ferskvare`,
+`frys`, `bakeri`, `kjott-fisk`, `kasse`, `inngang`). Widgeten `/widget/tilbud?store=X`
+viser alt; `&avdeling=Y` viser kun avdeling Y **+ «felles»**.
+
+| Type kundeskjerm | Xibo-gruppe | Layout embedder | Viser |
+|------------------|-------------|-----------------|-------|
+| **Hele butikken** | `EUROSPAR MOA` (id 9) | `/widget/tilbud?store=X` | alle kundetilbud |
+| **Avdeling** | `EUROSPAR MOA – Frukt & grønt` | `/widget/tilbud?store=X&avdeling=frukt` | kun frukt + felles |
+
+**Gjøre en kundeskjerm om til avdelingsskjerm** (når det blir aktuelt):
+```bash
+# 1) Bygg layout + gruppe for avdelingen (fra repo-rot)
+node scripts/xibo/build-avdeling-screen.mjs "EUROSPAR MOA" frukt
+#    avdelinger: frukt · ferskvare · frys · bakeri · kjott-fisk · kasse · inngang
+# 2) Flytt Pi-en fra butikk-gruppa (id 9) til den nye avdelingsgruppa (Claude via API)
+```
+
+> **Status nå:** kundeskjermen `gr-eurospar-moa1` står på gruppe `EUROSPAR MOA` (id 9) →
+> **viser hele butikken**. Avdelings-filtrering er klart å skru på senere ved behov.
+
 ## 6. Fjernaksess + flåtestyring (16 butikker)
 
 To slags «oppdatering» — hold dem adskilt:
