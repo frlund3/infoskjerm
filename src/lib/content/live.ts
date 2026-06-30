@@ -73,6 +73,8 @@ export interface LiveItem {
   klubb: { headline: string; subtext: string; url?: string; cta?: string } | null
   /** Invitation (event): date/place + built-in signup config. null for other types. */
   invitation: InvitationData | null
+  /** Gallery (catering/meny/ansattilbud): theme + items + optional QR. null otherwise. */
+  gallery: GalleryData | null
 }
 
 /** Parsed invitation fields off the content body. */
@@ -83,6 +85,22 @@ export interface InvitationData {
   signupDeadline: string | null
   /** Custom QR target; null → built-in /pamelding/<id>. */
   signupUrl: string | null
+}
+
+/** One gallery item (dish/menu/staff offer). */
+export interface GalleryEntry {
+  name: string
+  price: string | null
+  priceInfo: string | null
+  imageUrl: string | null
+}
+
+/** Parsed gallery fields off the content body. */
+export interface GalleryData {
+  theme: "catering" | "meny" | "ansattilbud"
+  items: GalleryEntry[]
+  qrUrl: string | null
+  qrLabel: string | null
 }
 
 interface Body {
@@ -101,6 +119,7 @@ interface Body {
   pages?: string[]
   klubb?: { headline: string; subtext: string; url?: string; cta?: string } | null
   invitation?: { eventDate?: string | null; eventPlace?: string | null; signupEnabled?: boolean; signupDeadline?: string | null; signupUrl?: string | null } | null
+  gallery?: { theme?: string; items?: { name?: string; price?: string | null; priceInfo?: string | null; imageUrl?: string | null }[]; qrUrl?: string | null; qrLabel?: string | null } | null
   durationSeconds?: number | null
 }
 
@@ -172,7 +191,7 @@ export async function fetchLiveContent(storeId: string | null, types: string[], 
     .from("content_items")
     .select("id, type, title, body, created_by, created_at, published_at, valid_from, valid_to, content_targets(target_all, store_id, tag_id)")
     .eq("status", "live")
-    .in("type", types as ("news" | "competition" | "stats" | "weather" | "slide" | "job" | "birthday" | "ticker" | "invitation")[])
+    .in("type", types as ("news" | "competition" | "stats" | "weather" | "slide" | "job" | "birthday" | "ticker" | "invitation" | "gallery")[])
     .order("published_at", { ascending: false, nullsFirst: false })
 
   if (!items || items.length === 0) return []
@@ -261,6 +280,16 @@ export async function fetchLiveContent(storeId: string | null, types: string[], 
             signupEnabled: body.invitation?.signupEnabled ?? true,
             signupDeadline: body.invitation?.signupDeadline ?? null,
             signupUrl: body.invitation?.signupUrl ?? null,
+          }
+        : null,
+      gallery: it.type === "gallery"
+        ? {
+            theme: body.gallery?.theme === "meny" ? "meny" : body.gallery?.theme === "ansattilbud" ? "ansattilbud" : "catering",
+            items: (body.gallery?.items ?? [])
+              .filter((x) => x && (x.name || x.imageUrl))
+              .map((x) => ({ name: x.name ?? "", price: x.price ?? null, priceInfo: x.priceInfo ?? null, imageUrl: x.imageUrl ?? null })),
+            qrUrl: body.gallery?.qrUrl ?? null,
+            qrLabel: body.gallery?.qrLabel ?? null,
           }
         : null,
     }

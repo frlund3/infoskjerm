@@ -1285,6 +1285,7 @@ export type Database = {
         | "birthday"
         | "ticker"
         | "invitation"
+        | "gallery"
       screen_status: "active" | "inactive" | "maintenance"
       user_role:
         | "super_admin"
@@ -1442,6 +1443,7 @@ export const Constants = {
         "birthday",
         "ticker",
         "invitation",
+        "gallery",
       ],
       screen_status: ["active", "inactive", "maintenance"],
       user_role: [

@@ -11,7 +11,27 @@ type AdminSupabase = Awaited<ReturnType<typeof requireRole>>["supabase"]
 
 const AUTHOR_ROLES = ["super_admin", "chain_manager", "area_manager", "store_manager", "store_employee"] as const
 
-export type ContentType = "news" | "competition" | "stats" | "weather" | "slide" | "job" | "birthday" | "ticker" | "invitation"
+export type ContentType = "news" | "competition" | "stats" | "weather" | "slide" | "job" | "birthday" | "ticker" | "invitation" | "gallery"
+
+/** En vare i et galleri (rett, meny, ansattilbud). */
+export interface GalleryItem {
+  name: string
+  /** Pris, f.eks. "149,-". */
+  price: string | null
+  /** Prisinfo/enhet, f.eks. "/pers", "/kg", "personalpris". */
+  priceInfo: string | null
+  imageUrl: string | null
+}
+
+/** Galleri (catering/meny/ansattilbud): overskrift + varer som veksler + valgfri QR. */
+export interface GalleryFields {
+  theme: "catering" | "meny" | "ansattilbud"
+  items: GalleryItem[]
+  /** Lenke QR-koden skal peke til (f.eks. bestillingsside). Tom = ingen QR. */
+  qrUrl: string | null
+  /** Tekst over QR-koden, f.eks. "Bestill her". */
+  qrLabel: string | null
+}
 export type TargetMode = "all" | "stores" | "tags"
 
 /** Invitasjon (arrangement): dato/sted + påmelding via QR-kode. */
@@ -63,6 +83,8 @@ export interface ContentInput {
   klubb?: { headline: string; subtext: string } | null
   /** Invitation only: event date/place + built-in signup config. */
   invitation?: InvitationFields | null
+  /** Gallery only: theme + items (image/price/info) + optional QR. */
+  gallery?: GalleryFields | null
   /** Optional per-item display time in seconds. */
   durationSeconds?: number | null
 }
@@ -98,6 +120,7 @@ function buildBody(input: ContentInput): Json {
     ...(input.textColor ? { textColor: input.textColor } : {}),
     ...(input.type === "slide" && input.klubb ? { klubb: input.klubb } : {}),
     ...(input.type === "invitation" && input.invitation ? { invitation: input.invitation } : {}),
+    ...(input.type === "gallery" && input.gallery ? { gallery: input.gallery } : {}),
     ...(input.durationSeconds ? { durationSeconds: input.durationSeconds } : {}),
   })) as Json
 }

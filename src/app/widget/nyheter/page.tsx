@@ -18,7 +18,7 @@ export const dynamic = "force-dynamic"
 // full-screen layout). Internal/back-room screens additionally show staff
 // "ukens tilbud" slides (poster/PDF/structured offer) + the ticker.
 const CARD_TYPES = ["news", "competition", "job", "birthday"]
-const INTERNAL_CARD_TYPES = [...CARD_TYPES, "slide", "invitation"]
+const INTERNAL_CARD_TYPES = [...CARD_TYPES, "slide", "invitation", "gallery"]
 
 function normalizeUrl(raw: string): string {
   const v = raw.trim()
@@ -52,6 +52,8 @@ export default async function NewsWidgetPage({ searchParams }: { searchParams: P
       target = it.invitation?.signupUrl?.trim()
         ? normalizeUrl(it.invitation.signupUrl)
         : `${base}/pamelding/${it.id}${store ? `?store=${store}` : ""}`
+    } else if (it.type === "gallery" && it.gallery?.qrUrl?.trim()) {
+      target = normalizeUrl(it.gallery.qrUrl)
     }
     if (!target) continue
     try {

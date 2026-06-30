@@ -34,6 +34,7 @@ export async function EditContentView({ id, listHref }: { id: string; listHref?:
     bgColor?: string | null; textColor?: string | null
     klubb?: { headline: string; subtext: string } | null
     invitation?: { eventDate?: string | null; eventPlace?: string | null; signupEnabled?: boolean; signupDeadline?: string | null; signupUrl?: string | null } | null
+    gallery?: { theme?: "catering" | "meny" | "ansattilbud"; items?: { name?: string; price?: string | null; priceInfo?: string | null; imageUrl?: string | null }[]; qrUrl?: string | null; qrLabel?: string | null } | null
     durationSeconds?: number | null
   }
   const audience: Audience = body.audience === "kunde" || body.audience === "intern" ? body.audience : audienceForType(item.type as ContentType)
@@ -72,6 +73,14 @@ export async function EditContentView({ id, listHref }: { id: string; listHref?:
           signupEnabled: body.invitation.signupEnabled ?? true,
           signupDeadline: body.invitation.signupDeadline ?? null,
           signupUrl: body.invitation.signupUrl ?? null,
+        }
+      : null,
+    gallery: body.gallery
+      ? {
+          theme: body.gallery.theme === "meny" ? "meny" : body.gallery.theme === "ansattilbud" ? "ansattilbud" : "catering",
+          items: (body.gallery.items ?? []).map((x) => ({ name: x.name ?? "", price: x.price ?? null, priceInfo: x.priceInfo ?? null, imageUrl: x.imageUrl ?? null })),
+          qrUrl: body.gallery.qrUrl ?? null,
+          qrLabel: body.gallery.qrLabel ?? null,
         }
       : null,
     durationSeconds: body.durationSeconds ?? null,

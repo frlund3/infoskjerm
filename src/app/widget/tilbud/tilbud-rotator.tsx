@@ -6,6 +6,7 @@ import { OfferCard, type ChainBrand } from "./offer-card"
 import { PdfFlyer } from "./pdf-flyer"
 import { CompetitionCard } from "@/app/widget/_shared/competition-card"
 import { KundeklubbCard } from "@/app/widget/_shared/kundeklubb-card"
+import { GalleryCard } from "@/app/widget/_shared/gallery-card"
 
 /**
  * Full-screen offer presentation: a left side panel with the heading, period and
@@ -192,6 +193,11 @@ export function TilbudRotator({ items, ticker, storeName, chain = null, qr = {} 
         // Customer competition → full-bleed flashy portrait card with QR.
         <div key={item.id} style={{ ...inset, animation: "grFade .6s ease-out" }}>
           <CompetitionCard item={item} qrUrl={qr[item.id]} portrait />
+        </div>
+      ) : item.type === "gallery" ? (
+        // Gallery (catering/meny) → full-bleed portrait gallery card with QR.
+        <div key={item.id} style={{ ...inset, animation: "grFade .6s ease-out" }}>
+          <GalleryCard item={item} qrUrl={qr[item.id]} portrait />
         </div>
       ) : item.offer ? (
         // Structured offer → full-bleed price card (no side panel).

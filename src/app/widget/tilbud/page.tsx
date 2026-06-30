@@ -42,7 +42,7 @@ function klubbLiveItem(headline: string, subtext: string, cta: string | null): L
     id: "kundeklubb", type: "slide", title: headline, blocks: [], imageUrl: null, imageUrls: [],
     imageMode: "plakat", isPdf: false, isVideo: false, durationSeconds: null, pages: [], validFrom: null, validTo: null, author: "", date: "",
     contactPerson: null, applyUrl: null, statsValue: null, statsChange: null, offer: null,
-    avdeling: "felles", bgColor: null, textColor: null, klubb: { headline, subtext, cta: cta || undefined }, invitation: null,
+    avdeling: "felles", bgColor: null, textColor: null, klubb: { headline, subtext, cta: cta || undefined }, invitation: null, gallery: null,
   }
 }
 
@@ -50,28 +50,37 @@ export default async function TilbudWidgetPage({ searchParams }: { searchParams:
   const { store, avdeling } = await searchParams
   const supabase = createAdminClient()
 
-  const [slides, comps, articles, storeRow, tickerItems] = await Promise.all([
+  const [slides, comps, articles, galleries, storeRow, tickerItems] = await Promise.all([
     fetchLiveContent(store ?? null, ["slide"], "kunde", avdeling),
     // Customer competitions — same flashy module as internal, shown on the screen.
     fetchLiveContent(store ?? null, ["competition"], "kunde", avdeling),
     // Customer articles / egenreklame (text + image/video, text-top layout).
     fetchLiveContent(store ?? null, ["news"], "kunde", avdeling),
+    // Galleries (catering/meny) — råflott rotating gallery card with QR.
+    fetchLiveContent(store ?? null, ["gallery"], "kunde", avdeling),
     store
       ? supabase.from("stores").select("name, kundeklubb_enabled, kundeklubb_url, kundeklubb_headline, kundeklubb_subtext, kundeklubb_cta, chains(name, logo_url, color, brand_fg)").eq("id", store).maybeSingle()
       : Promise.resolve({ data: null }),
     // Opt-in customer ticker: only kunde-audience tickers targeted to this store.
     fetchLiveContent(store ?? null, ["ticker"], "kunde"),
   ])
-  // Competitions first (attention-grabbing), then articles, then offers.
-  const items = [...(comps as LiveItem[]), ...(articles as LiveItem[]), ...(slides as LiveItem[])]
+  // Competitions first (attention-grabbing), then galleries, articles, offers.
+  const items = [...(comps as LiveItem[]), ...(galleries as LiveItem[]), ...(articles as LiveItem[]), ...(slides as LiveItem[])]
   const ticker = (tickerItems as LiveItem[]).map((t) => t.title.trim()).filter(Boolean)
 
-  // QR codes: competitions + articles with a link (applyUrl) + kundeklubb (per-store).
+  // QR codes: competitions + articles with a link (applyUrl) + galleries (qrUrl) + kundeklubb (per-store).
   const qr: Record<string, string> = {}
   for (const it of [...(comps as LiveItem[]), ...(articles as LiveItem[])]) {
     if (it.applyUrl?.trim()) {
       try {
         qr[it.id] = await QRCode.toDataURL(normalizeUrl(it.applyUrl), { margin: 1, width: 360, color: { dark: "#0a0a0a", light: "#ffffff" } })
+      } catch { /* best-effort */ }
+    }
+  }
+  for (const it of galleries as LiveItem[]) {
+    if (it.gallery?.qrUrl?.trim()) {
+      try {
+        qr[it.id] = await QRCode.toDataURL(normalizeUrl(it.gallery.qrUrl), { margin: 1, width: 360, color: { dark: "#0a0a0a", light: "#ffffff" } })
       } catch { /* best-effort */ }
     }
   }
