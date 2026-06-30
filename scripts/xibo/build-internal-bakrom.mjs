@@ -76,7 +76,6 @@ for (const store of stores) {
   await buildLayout(api, layoutId, {
     topbarUri: topbarUri(APP_URL, { butikk: store.name, lat, lon, navn: store.city || store.name }),
     newsUri: internNewsUri(store.id),
-    dwellSeconds: DWELL_SECONDS,
   })
   built++
 
