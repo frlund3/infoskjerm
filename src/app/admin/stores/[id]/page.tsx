@@ -110,18 +110,29 @@ export default async function StoreDetailPage({ params }: PageProps) {
             {screens.length === 0 ? (
               <p className="text-sm text-zinc-400 italic">Ingen skjerm er koblet til denne butikken ennå. Når en skjerm kobles til skjermsystemet og tilordnes butikken, dukker den opp her.</p>
             ) : (
-              screens.map((screen) => (
-                <div key={screen.displayId} className="flex items-center gap-3 p-3 bg-zinc-50 rounded-lg">
-                  <Monitor className="w-4 h-4 text-zinc-400 flex-shrink-0" />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-zinc-800">{screen.name}</p>
-                    <p className="text-xs text-zinc-400">Sist sett: {screen.lastSeen ?? "Aldri"}</p>
+              screens.map((screen) => {
+                const roleChip =
+                  screen.role === "kunde"
+                    ? "bg-sky-50 text-sky-700"
+                    : screen.role === "bakrom"
+                      ? "bg-amber-50 text-amber-700"
+                      : "bg-violet-50 text-violet-700"
+                return (
+                  <div key={screen.displayId} className="flex items-center gap-3 p-3 bg-zinc-50 rounded-lg">
+                    <Monitor className="w-4 h-4 text-zinc-400 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="text-sm font-medium text-zinc-800 truncate">{screen.name}</p>
+                        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${roleChip}`}>{screen.roleLabel}</span>
+                      </div>
+                      <p className="text-xs text-zinc-400">Sist sett: {screen.lastSeen ?? "Aldri"}</p>
+                    </div>
+                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full flex-shrink-0 ${screen.online ? "bg-emerald-50 text-emerald-700" : "bg-zinc-100 text-zinc-500"}`}>
+                      {screen.online ? "Pålogget" : "Frakoblet"}
+                    </span>
                   </div>
-                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${screen.online ? "bg-emerald-50 text-emerald-700" : "bg-zinc-100 text-zinc-500"}`}>
-                    {screen.online ? "Pålogget" : "Frakoblet"}
-                  </span>
-                </div>
-              ))
+                )
+              })
             )}
           </CardContent>
         </Card>

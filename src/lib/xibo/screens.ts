@@ -10,6 +10,9 @@ import { xiboFetch, fetchLayoutNames, type XiboDisplay } from "./client"
 
 export type ScreenSync = "ok" | "downloading" | "stale" | "unknown"
 
+/** Which screen a store display is: customer-facing, back-room, or a department. */
+export type ScreenRole = "kunde" | "bakrom" | "avdeling"
+
 export interface StoreScreen {
   displayId: number
   name: string
@@ -20,8 +23,25 @@ export interface StoreScreen {
   /** Layout the player reports it is showing right now (resolved name). */
   currentLayout: string | null
   clientVersion: string | null
-  /** The store's display group — target for a "collect now" push. */
+  /** The display group this screen belongs to — target for a "collect now" push. */
   displayGroupId: number
+  /** Role derived from the display group name (kunde/bakrom/avdeling). */
+  role: ScreenRole
+  /** Human label, e.g. "Kunde", "Bakrom", "Avdeling: Frukt & grønt". */
+  roleLabel: string
+}
+
+/**
+ * Derive a screen's role from its display-group name. Convention:
+ *   "{butikk}"            → kunde (customer screen)
+ *   "{butikk} – Bakrom"   → bakrom (staff/back-room)
+ *   "{butikk} – {Avd}"    → avdeling (department screen)
+ */
+function roleFromGroup(groupName: string, storeName: string): { role: ScreenRole; label: string } {
+  if (groupName === storeName) return { role: "kunde", label: "Kunde" }
+  const suffix = groupName.slice(storeName.length).replace(/^\s*–\s*/, "").trim()
+  if (suffix.toLowerCase() === "bakrom") return { role: "bakrom", label: "Bakrom" }
+  return { role: "avdeling", label: `Avdeling: ${suffix}` }
 }
 
 interface XiboGroup {
@@ -67,23 +87,25 @@ export async function fetchScreensByStore(
   } catch {
     return result
   }
-  const groupIdByName = new Map((groups ?? []).map((g) => [g.displayGroup, g.displayGroupId]))
-
   await Promise.all(
     stores.map(async (store) => {
-      const gid = groupIdByName.get(store.name)
-      if (!gid) {
+      // ALL of the store's groups: the customer group (exact name) plus any
+      // "{butikk} – …" group (bakrom + department screens).
+      const myGroups = (groups ?? []).filter(
+        (g) => g.displayGroup === store.name || g.displayGroup.startsWith(`${store.name} – `)
+      )
+      if (myGroups.length === 0) {
         result.set(store.id, [])
         return
       }
-      try {
-        const displays = await xiboFetch<XiboDisplay[]>("/display", {
-          query: { displayGroupId: gid, length: 1000 },
-        })
-        result.set(
-          store.id,
-          (displays ?? [])
-            .map((d) => ({
+      const perGroup = await Promise.all(
+        myGroups.map(async (g) => {
+          const { role, label } = roleFromGroup(g.displayGroup, store.name)
+          try {
+            const displays = await xiboFetch<XiboDisplay[]>("/display", {
+              query: { displayGroupId: g.displayGroupId, length: 1000 },
+            })
+            return (displays ?? []).map((d) => ({
               displayId: d.displayId,
               name: d.display,
               online: d.loggedIn === 1,
@@ -91,13 +113,24 @@ export async function fetchScreensByStore(
               sync: syncFrom(d.mediaInventoryStatus),
               currentLayout: d.currentLayoutId ? layoutNames.get(d.currentLayoutId) ?? null : null,
               clientVersion: d.clientVersion ?? null,
-              displayGroupId: gid,
+              displayGroupId: g.displayGroupId,
+              role,
+              roleLabel: label,
             }))
-            .sort((a, b) => a.name.localeCompare(b.name, "nb"))
-        )
-      } catch {
-        result.set(store.id, [])
-      }
+          } catch {
+            return [] as StoreScreen[]
+          }
+        })
+      )
+      // A display lives in one group, but dedupe defensively, then order
+      // kunde → bakrom → avdeling, and by name within a role.
+      const seen = new Set<number>()
+      const order: Record<ScreenRole, number> = { kunde: 0, bakrom: 1, avdeling: 2 }
+      const screens = perGroup
+        .flat()
+        .filter((s) => (seen.has(s.displayId) ? false : (seen.add(s.displayId), true)))
+        .sort((a, b) => order[a.role] - order[b.role] || a.roleLabel.localeCompare(b.roleLabel, "nb") || a.name.localeCompare(b.name, "nb"))
+      result.set(store.id, screens)
     })
   )
   return result
