@@ -1,6 +1,7 @@
 import { Sidebar } from "@/components/admin/sidebar"
 import { MobileNav } from "@/components/admin/mobile-nav"
 import { PwaManager } from "@/components/pwa/pwa-manager"
+import { QuickCapture } from "@/components/pwa/quick-capture"
 import { ChainThemeProvider } from "@/components/admin/chain-theme-provider"
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
@@ -52,6 +53,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         })()}
       </div>
       <PwaManager />
+      <QuickCapture />
       <Toaster richColors position="bottom-right" />
     </ChainThemeProvider>
   )

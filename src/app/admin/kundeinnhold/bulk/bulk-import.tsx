@@ -118,9 +118,9 @@ function TargetPicker({ value, onChange, stores, tags }: { value: TargetValue; o
   )
 }
 
-export function BulkImport({ stores, tags }: { stores: StoreOption[]; tags: TagOption[] }) {
+export function BulkImport({ stores, tags, initialLinks = "" }: { stores: StoreOption[]; tags: TagOption[]; initialLinks?: string }) {
   const router = useRouter()
-  const [raw, setRaw] = useState("")
+  const [raw, setRaw] = useState(initialLinks)
   const [rows, setRows] = useState<Row[]>([])
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
