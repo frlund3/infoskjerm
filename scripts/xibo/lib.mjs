@@ -83,11 +83,11 @@ async function addRegion(api, draftId, { width, height, top, left }) {
   return r.regionPlaylist.playlistId
 }
 
-async function addWebpage(api, playlistId, uri, { transparency }) {
+async function addWebpage(api, playlistId, uri, { transparency, duration = PERSIST_SECONDS }) {
   const w = await api(`/playlist/widget/webpage/${playlistId}`, { method: "POST" })
   await api(`/playlist/widget/${w.widgetId}`, {
     method: "PUT",
-    form: { uri, transparency, modeid: "1", isPreNavigate: 1, duration: PERSIST_SECONDS, useDuration: 1 },
+    form: { uri, transparency, modeid: "1", isPreNavigate: 1, duration, useDuration: 1 },
   })
 }
 
@@ -109,6 +109,7 @@ async function getDraftId(api, layoutId) {
  * opts: { newsUri, weatherUri }
  */
 export async function buildLayout(api, layoutId, opts) {
+  const dwell = opts.dwellSeconds ?? PERSIST_SECONDS
   const draftId = await getDraftId(api, layoutId)
   const draft = (await api(`/layout?layoutId=${draftId}&embed=regions,playlists`))[0]
   for (const r of draft.regions || []) {
@@ -117,11 +118,11 @@ export async function buildLayout(api, layoutId, opts) {
 
   // 1. Top strip (app webpage): store name + live clock + date + weather, full width.
   const barPl = await addRegion(api, draftId, { width: 1920, height: 180, top: 0, left: 0 })
-  await addWebpage(api, barPl, opts.topbarUri, { transparency: 0 })
+  await addWebpage(api, barPl, opts.topbarUri, { transparency: 0, duration: dwell })
 
   // 2. News + ticker overlay (app webpage), full width below the strip.
   const newsPl = await addRegion(api, draftId, { width: 1920, height: 900, top: 180, left: 0 })
-  await addWebpage(api, newsPl, opts.newsUri, { transparency: 0 })
+  await addWebpage(api, newsPl, opts.newsUri, { transparency: 0, duration: dwell })
 
   await api(`/layout/publish/${layoutId}`, { method: "PUT", form: { publishNow: 1 } })
 }
@@ -130,14 +131,14 @@ export async function buildLayout(api, layoutId, opts) {
  * (Re)builds a single full-screen webpage layout (one region covering the whole
  * 1920×1080 canvas). Used for the staff KPI dashboard. Idempotent.
  */
-export async function buildFullscreenWebpage(api, layoutId, uri) {
+export async function buildFullscreenWebpage(api, layoutId, uri, dwellSeconds = PERSIST_SECONDS) {
   const draftId = await getDraftId(api, layoutId)
   const draft = (await api(`/layout?layoutId=${draftId}&embed=regions,playlists`))[0]
   for (const r of draft.regions || []) {
     await api(`/region/${r.regionId}`, { method: "DELETE" })
   }
   const pl = await addRegion(api, draftId, { width: 1920, height: 1080, top: 0, left: 0 })
-  await addWebpage(api, pl, uri, { transparency: 0 })
+  await addWebpage(api, pl, uri, { transparency: 0, duration: dwellSeconds })
   await api(`/layout/publish/${layoutId}`, { method: "PUT", form: { publishNow: 1 } })
 }
 

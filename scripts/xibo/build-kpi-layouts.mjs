@@ -12,6 +12,8 @@ import { loadEnv, getToken, makeApi, kpiUri, buildFullscreenWebpage } from "./li
 const ALWAYS_DAYPART_ID = 2
 const LAYOUT_PREFIX = "Gange-Rolv KPI – "
 const GROUP_SUFFIX = " – Bakrom"
+// Bakrom roterer mellom flere layouts → kort dwell så ingen side står for lenge (maks 10s).
+const DWELL_SECONDS = 10
 
 const env = loadEnv()
 const APP_URL = env.NEXT_PUBLIC_APP_URL || "https://infoskjerm-seven.vercel.app"
@@ -66,7 +68,7 @@ for (const store of stores) {
   const groupId = await findOrCreateGroup(groupName)
   bakromGroupIds.push(groupId)
   const { layoutId, campaignId } = await findOrCreateLayout(layoutName)
-  await buildFullscreenWebpage(api, layoutId, kpiUri(APP_URL, store.id))
+  await buildFullscreenWebpage(api, layoutId, kpiUri(APP_URL, store.id), DWELL_SECONDS)
   built++
   const did = await ensureSchedule(campaignId, groupId, existingEvents)
   if (did) scheduled++
@@ -84,7 +86,7 @@ const OVERVIEWS = [
 ]
 for (const ov of OVERVIEWS) {
   const { layoutId, campaignId } = await findOrCreateLayout(ov.name)
-  await buildFullscreenWebpage(api, layoutId, ov.uri)
+  await buildFullscreenWebpage(api, layoutId, ov.uri, DWELL_SECONDS)
   let n = 0
   for (const gid of overviewTargets) {
     if (await ensureSchedule(campaignId, gid, existingEvents)) {
