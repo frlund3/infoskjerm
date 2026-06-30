@@ -337,7 +337,12 @@ export function ContentForm({ stores, tags, initial, audience = "intern", defaul
         offer: isOfferStruktur ? offer : null,
         klubb: isKlubb ? klubb : null,
         invitation: type === "invitation" ? invitation : null,
-        gallery: type === "gallery" ? { ...gallery, items: gallery.items.filter((it) => it.name.trim() || it.imageUrl) } : null,
+        gallery: type === "gallery" ? {
+          ...gallery,
+          // Ansattilbud-tema er kun internt — fall tilbake til catering på kundeskjerm.
+          theme: audience !== "intern" && gallery.theme === "ansattilbud" ? "catering" : gallery.theme,
+          items: gallery.items.filter((it) => it.name.trim() || it.imageUrl),
+        } : null,
         avdeling: (type === "slide" || type === "competition") ? avdeling : null,
         // 2+ images always render full-page (side by side), so force plakat-style.
         imageMode: usesImage ? (type === "slide" || isMulti ? "plakat" : imageMode) : "bakgrunn",
@@ -681,7 +686,8 @@ export function ContentForm({ stores, tags, initial, audience = "intern", defaul
               <div>
                 <h3 className="flex items-center gap-1.5 text-xs font-semibold text-zinc-600 mb-2"><LayoutGrid className="w-3.5 h-3.5" /> Galleri</h3>
                 <div className="flex gap-1.5">
-                  {GALLERY_THEMES.map(({ k, label }) => (
+                  {/* Ansattilbud er kun for interne skjermer — aldri på kundeskjerm. */}
+                  {GALLERY_THEMES.filter((t) => audience === "intern" || t.k !== "ansattilbud").map(({ k, label }) => (
                     <button key={k} type="button" onClick={() => setGallery((p) => ({ ...p, theme: k }))}
                       className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium border transition-all ${gallery.theme === k ? "border-zinc-900 bg-zinc-900 text-white" : "border-zinc-200 text-zinc-600 hover:border-zinc-300"}`}>
                       {label}
