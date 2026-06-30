@@ -4,6 +4,7 @@ import { Monitor } from "lucide-react"
 import { createClient } from "@/lib/supabase/server"
 import { BrandingPanel } from "./branding-panel"
 import { NotificationsCard } from "./notifications-card"
+import { BiometricCard } from "./biometric-card"
 import { requireRole } from "@/lib/admin/require-role"
 import Link from "next/link"
 
@@ -12,6 +13,9 @@ export const dynamic = "force-dynamic"
 export default async function SettingsPage() {
   await requireRole(["super_admin", "chain_manager", "store_manager"])
   const supabase = await createClient()
+
+  const { data: { user } } = await supabase.auth.getUser()
+  const userLabel = user?.email ?? "Infoskjerm-konto"
 
   const { data: chains } = await supabase
     .from("chains")
@@ -37,6 +41,8 @@ export default async function SettingsPage() {
         )}
 
         <NotificationsCard />
+
+        <BiometricCard label={userLabel} />
 
         {/* Screens are managed by the screen engine (Xibo), not here */}
         <Card>
