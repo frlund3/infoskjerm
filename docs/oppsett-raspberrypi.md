@@ -74,32 +74,65 @@ git clone https://github.com/birkenfeld/arexibo.git
 cd arexibo
 cargo build --release            # binær: target/release/arexibo
 
-# 4) Installer til /usr/bin
-sudo cargo install --path . --root /usr   # (apt-cargo: fungerer med sudo)
-#   Brukte du rustup-cargo? Da i stedet: sudo cp target/release/arexibo /usr/bin/
+# 4) Installer til /usr/bin (vi har binæren bygget alt — bare kopier, raskt)
+sudo cp target/release/arexibo /usr/bin/arexibo
+arexibo --help | head -3        # verifiser
 ```
+*(Verifisert på Pi 4: bygg ~7–8 min. Husk `libudev-dev` i steg 1, ellers feiler `libudev-sys`.)*
 
 **Konfigurer spilleren (første start):**
 ```bash
 mkdir -p ~/xibo
 arexibo --host https://xibo.framtidtech.no/ --key <CMS-nøkkel> ~/xibo
-# senere oppstart: arexibo ~/xibo
 ```
-- `<CMS-nøkkel>` = CMS Secret Key fra Xibo → Settings → Displays.
-- Spilleren logger til stdout og viser GUI når displayet er **autorisert** i CMS.
+- `<CMS-nøkkel>` = **CMS Secret Key** fra Xibo → Administration → Settings → Displays.
+- Første gang skriver den: `display is not authorized yet, try again after authorization in the CMS` og avslutter. Det er **riktig** — registreringen er lagret i `~/xibo`.
+- **Etter at Claude har autorisert + tilordnet (steg 5):** start på nytt → da laster den layouten:
+  ```bash
+  arexibo ~/xibo
+  ```
 
-> TODO neste gang: lag en **systemd-tjeneste** + autologin/kiosk så spilleren
-> starter automatisk ved boot, og et **klone-script** for resten av butikkene.
+> ⚠️ **Skjerm/Qt:** Arexibo bruker QtWebEngine og må kjøre i Pi-ens **grafiske
+> sesjon** (HDMI), ikke fra SSH uten display. For å faktisk *vise* innhold må en
+> skjerm være koblet til. Auto-start som tjeneste (TODO under) håndterer dette.
 
-## 5. Registrer + tilordne i Xibo (gjøres av Claude via API)
+## 5. Autoriser + tilordne i Xibo (gjøres av Claude via API)
 
-Når spilleren har koblet til, dukker den opp som **uautorisert Display** i Xibo. Da:
-1. **Autoriser** displayet.
-2. **Tilordne til riktig skjermgruppe** (de finnes allerede):
-   - Kundeskjerm: gruppe = **butikknavnet** eksakt, f.eks. `EUROSPAR MOA`
-   - Bakrom/intern: `EUROSPAR MOA – Bakrom`
-   - Avdelingsskjerm (valgfritt): `EUROSPAR MOA – <Avdeling>` (bygges med `scripts/xibo/build-avdeling-screen.mjs`)
-3. Verifiser at den henter layouten (Skjermsystem-previewen i appen viser status).
+Når spilleren har kjørt `arexibo --host ... --key ...` dukker den opp som
+**uautorisert Display** i Xibo (`licensed: 0`). Claude gjør resten via Xibo-API-et
+(`scripts/xibo/lib.mjs` → `makeApi` + OAuth fra `.env.local`):
+
+```js
+// 1) Finn display-id (ny = licensed:0, navn = Pi-ens hostnavn)
+await api(`/display?length=500`)
+// 2) Autoriser
+await api(`/display/authorise/<displayId>`, { method: "PUT" })
+// 3) Finn skjermgruppe
+await api(`/displaygroup?length=1000&isDisplaySpecific=0`)
+// 4) Tilordne til riktig gruppe
+await api(`/displaygroup/<groupId>/display/assign`, { method: "POST", form: { "displayId[]": [<displayId>] } })
+```
+
+**Skjermgruppe per rolle (de finnes allerede):**
+- **Kundeskjerm:** gruppe = **butikknavnet eksakt**, f.eks. `EUROSPAR MOA`
+- **Bakrom/intern:** `EUROSPAR MOA – Bakrom`
+- **Avdelingsskjerm** (valgfritt): `EUROSPAR MOA – <Avdeling>` (bygges med `scripts/xibo/build-avdeling-screen.mjs`)
+
+Etter autorisering + tilordning: start spilleren på nytt på Pi-en (`arexibo ~/xibo`)
+→ den laster ned og viser layouten. Status kan også ses i appens **Skjermsystem**.
+
+### Status — første Pi (EUROSPAR MOA)
+| Felt | Verdi |
+|------|-------|
+| Hostnavn | `gr-eurospar-moa1` |
+| Rolle | **Kundeskjerm** |
+| Xibo display-id | `1` |
+| Tilordnet gruppe | `EUROSPAR MOA` (id **9**) |
+| Bakrom-gruppe (neste Pi) | `EUROSPAR MOA – Bakrom` (id **25**) |
+| Connect | innmeldt (`rpi-connect signin`) |
+
+> **Konvensjon videre:** Pi nr. 2 på MOA = **bakrom** → hostnavn f.eks.
+> `gr-eurospar-moa2`, tilordnes `EUROSPAR MOA – Bakrom` (id 25), liggende skjerm.
 
 ## 6. Fjernaksess + flåtestyring (16 butikker)
 
@@ -120,9 +153,10 @@ To slags «oppdatering» — hold dem adskilt:
 
 **Gratis-alternativ:** Tailscale (gratis VPN → shell) + Xibo-skjermbilder. Funker, men mindre «butikk-vennlig» enn Connect.
 
-### Auto-start (systemd)
-Lag en **systemd-tjeneste** så Arexibo starter ved boot og restarter ved kræsj
-(selvhelbredende ved strømbrudd). *(Kommandoer fylles inn etter første oppsett.)*
+### Gjenstår på denne (og golden image-en)
+1. **Koble til skjerm** → kjør `arexibo ~/xibo` i Pi-ens grafiske sesjon → verifiser at kundeskjerm-layouten vises.
+2. **Roter til portrett** (kundeskjerm = stående): i `raspi-config` / skjerm-innstillinger, eller `/boot/firmware/cmdline.txt` + compositor-rotasjon (90°/270°). Bakrom = liggende (ingen rotasjon).
+3. **Auto-start (systemd):** lag en tjeneste så Arexibo starter ved boot og restarter ved kræsj (selvhelbredende ved strømbrudd). *(Kommandoer fylles inn når vi har testet på skjerm.)*
 
 ### Konvensjoner
 - **Hostnavn:** `gr-<butikk><nr>` (f.eks. `gr-eurospar-moa1`).
