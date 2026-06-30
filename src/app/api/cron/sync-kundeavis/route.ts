@@ -25,26 +25,24 @@ const MAX_PAGES = 6
 const PAGE_SCALE = 1.5
 
 /**
- * Rasterises the first pages of the flyer PDF to PNGs (server-side, pdf-to-img)
- * and uploads them to the public `media` bucket, so customer screens show ready
- * images instantly — no client-side PDF rendering on the weak Raspberry Pis.
- * Best-effort: any failure returns [] and the widget falls back to client PDF.
+ * Rasterises the first pages of the flyer PDF to JPEGs (server-side, pdfjs v4 +
+ * @napi-rs/canvas via lib/content/pdf-render) and uploads them to the public
+ * `media` bucket, so customer screens show ready images instantly — no
+ * client-side PDF rendering on the weak Raspberry Pis. Best-effort: any failure
+ * returns [] and the widget falls back to client PDF.
  */
 async function renderAndUploadPages(pdfUrl: string, week: number, supabase: ReturnType<typeof createAdminClient>): Promise<string[]> {
   try {
-    const { pdf: renderPdf } = await import("pdf-to-img")
     const res = await fetch(pdfUrl, { cache: "no-store" })
     if (!res.ok) return []
-    const buf = Buffer.from(await res.arrayBuffer())
-    const doc = await renderPdf(buf, { scale: PAGE_SCALE })
+    const bytes = new Uint8Array(await res.arrayBuffer())
+    const { renderPdfPagesToJpeg } = await import("@/lib/content/pdf-render")
+    const buffers = await renderPdfPagesToJpeg(bytes, { maxPages: MAX_PAGES, scale: PAGE_SCALE })
     const urls: string[] = []
-    let i = 0
-    for await (const img of doc) {
-      i++
-      const path = `kundeavis/uke-${week}-${i}.png`
-      const up = await supabase.storage.from("media").upload(path, img, { contentType: "image/png", upsert: true })
+    for (let i = 0; i < buffers.length; i++) {
+      const path = `kundeavis/uke-${week}-${i + 1}.jpg`
+      const up = await supabase.storage.from("media").upload(path, buffers[i], { contentType: "image/jpeg", upsert: true })
       if (!up.error) urls.push(supabase.storage.from("media").getPublicUrl(path).data.publicUrl)
-      if (i >= MAX_PAGES) break
     }
     return urls
   } catch (err) {
