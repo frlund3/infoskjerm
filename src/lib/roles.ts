@@ -16,4 +16,13 @@ export const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
   store_employee: "Oppretter og redigerer innholdsutkast",
 }
 
-export const INVITABLE_ROLES: UserRole[] = ["chain_manager", "area_manager", "store_manager", "store_employee"]
+// Redaktør (store_employee) er utfaset som tildelbar rolle. Enum-verdien beholdes
+// for typetrygghet/historiske rader, men kan ikke lenger inviteres eller velges.
+export const INVITABLE_ROLES: UserRole[] = ["chain_manager", "area_manager", "store_manager"]
+
+// Kan rollen målrette innhold til ALLE butikker / på tvers (vs. kun egne enheter)?
+// Butikk-roller (area/store) ser kun egne butikker i «Vis på» — RLS håndhever det
+// uansett, dette er UI-speilingen.
+export function canTargetAllStores(role: UserRole): boolean {
+  return role === "super_admin" || role === "chain_manager"
+}

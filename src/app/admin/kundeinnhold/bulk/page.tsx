@@ -1,4 +1,5 @@
 import { requireRole } from "@/lib/admin/require-role"
+import { canTargetAllStores } from "@/lib/roles"
 import { loadStoreOptions } from "../../innhold/store-options"
 import type { TagOption } from "../../innhold/_components/content-form"
 import { BulkImport } from "./bulk-import"
@@ -12,7 +13,7 @@ export default async function BulkOfferPage({
 }: {
   searchParams: Promise<{ lenker?: string }>
 }) {
-  const { supabase } = await requireRole([...AUTHOR_ROLES])
+  const { supabase, role } = await requireRole([...AUTHOR_ROLES])
   const { lenker } = await searchParams
   const [storeOptions, { data: tags }] = await Promise.all([
     loadStoreOptions(supabase),
@@ -23,6 +24,7 @@ export default async function BulkOfferPage({
       stores={storeOptions}
       tags={(tags ?? []) as TagOption[]}
       initialLinks={lenker ?? ""}
+      canTargetAll={canTargetAllStores(role)}
     />
   )
 }

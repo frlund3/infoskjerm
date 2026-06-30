@@ -6,26 +6,26 @@ import { inviteUser } from "./actions"
 
 import { ROLE_LABELS, ROLE_DESCRIPTIONS } from "@/lib/roles"
 
-type InviteRole = "chain_manager" | "area_manager" | "store_manager" | "store_employee"
+type InviteRole = "chain_manager" | "area_manager" | "store_manager"
 
 type Store = { id: string; name: string }
 
+// Redaktør (store_employee) er utfaset — ikke lenger tildelbar.
 const ROLE_OPTIONS: { value: InviteRole; label: string; desc: string }[] = [
   { value: "chain_manager", label: ROLE_LABELS.chain_manager, desc: ROLE_DESCRIPTIONS.chain_manager },
   { value: "area_manager", label: ROLE_LABELS.area_manager, desc: ROLE_DESCRIPTIONS.area_manager },
   { value: "store_manager", label: ROLE_LABELS.store_manager, desc: ROLE_DESCRIPTIONS.store_manager },
-  { value: "store_employee", label: ROLE_LABELS.store_employee, desc: ROLE_DESCRIPTIONS.store_employee },
 ]
 
 // Roller som er scopet til spesifikke butikker (Tenant Admin får alle).
-const STORE_SCOPED: InviteRole[] = ["area_manager", "store_manager", "store_employee"]
+const STORE_SCOPED: InviteRole[] = ["area_manager", "store_manager"]
 // Roller som kun kan ha én butikk.
 const SINGLE_STORE: InviteRole[] = ["store_manager"]
 
 export function InviteUserForm({ stores }: { stores: Store[] }) {
   const [open, setOpen] = useState(false)
   const [email, setEmail] = useState("")
-  const [role, setRole] = useState<InviteRole>("store_employee")
+  const [role, setRole] = useState<InviteRole>("store_manager")
   const [storeIds, setStoreIds] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -53,7 +53,7 @@ export function InviteUserForm({ stores }: { stores: Store[] }) {
 
   function reset() {
     setEmail("")
-    setRole("store_employee")
+    setRole("store_manager")
     setStoreIds([])
     setError(null)
   }

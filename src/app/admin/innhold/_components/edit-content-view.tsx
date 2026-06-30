@@ -1,4 +1,5 @@
 import { requireRole } from "@/lib/admin/require-role"
+import { canTargetAllStores } from "@/lib/roles"
 import { notFound } from "next/navigation"
 import { ContentForm, type TagOption, type ContentInitial } from "./content-form"
 import { loadStoreOptions } from "../store-options"
@@ -14,7 +15,7 @@ import { audienceForType, type Audience } from "../audience"
 const AUTHOR_ROLES = ["super_admin", "chain_manager", "area_manager", "store_manager", "store_employee"] as const
 
 export async function EditContentView({ id, listHref }: { id: string; listHref?: string }) {
-  const { supabase } = await requireRole([...AUTHOR_ROLES])
+  const { supabase, role } = await requireRole([...AUTHOR_ROLES])
 
   const [{ data: item }, storeOptions, { data: tags }, { data: targets }] = await Promise.all([
     supabase.from("content_items").select("id, title, type, body, valid_from, valid_to").eq("id", id).single(),
@@ -86,5 +87,5 @@ export async function EditContentView({ id, listHref }: { id: string; listHref?:
     durationSeconds: body.durationSeconds ?? null,
   }
 
-  return <ContentForm stores={storeOptions} tags={(tags ?? []) as TagOption[]} initial={initial} audience={audience} listHref={listHref} />
+  return <ContentForm stores={storeOptions} tags={(tags ?? []) as TagOption[]} initial={initial} audience={audience} listHref={listHref} canTargetAll={canTargetAllStores(role)} />
 }

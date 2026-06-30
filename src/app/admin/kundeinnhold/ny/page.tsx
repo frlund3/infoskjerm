@@ -1,4 +1,5 @@
 import { requireRole } from "@/lib/admin/require-role"
+import { canTargetAllStores } from "@/lib/roles"
 import { ContentForm, type TagOption } from "../../innhold/_components/content-form"
 import { loadStoreOptions } from "../../innhold/store-options"
 
@@ -11,7 +12,7 @@ export default async function NewCustomerContentPage({
 }: {
   searchParams: Promise<{ image?: string }>
 }) {
-  const { supabase } = await requireRole([...AUTHOR_ROLES])
+  const { supabase, role } = await requireRole([...AUTHOR_ROLES])
   const { image } = await searchParams
 
   const [storeOptions, { data: tags }] = await Promise.all([
@@ -19,5 +20,5 @@ export default async function NewCustomerContentPage({
     supabase.from("tags").select("id, name, color").order("name"),
   ])
 
-  return <ContentForm stores={storeOptions} tags={(tags ?? []) as TagOption[]} audience="kunde" prefillImage={image} />
+  return <ContentForm stores={storeOptions} tags={(tags ?? []) as TagOption[]} audience="kunde" prefillImage={image} canTargetAll={canTargetAllStores(role)} />
 }
