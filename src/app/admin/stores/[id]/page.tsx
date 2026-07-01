@@ -137,7 +137,7 @@ export default async function StoreDetailPage({ params }: PageProps) {
               <span className="text-xs text-zinc-400">{screens.length} skjerm{screens.length !== 1 ? "er" : ""}</span>
             </div>
             {screens.length === 0 ? (
-              <p className="text-sm text-zinc-400 italic">Ingen skjerm er koblet til denne butikken ennå. Når en skjerm kobles til skjermsystemet og tilordnes butikken, dukker den opp her.</p>
+              <p className="text-sm text-zinc-400 italic">Ingen skjerm er koblet til denne {tenantConfig.unitLabel.toLowerCase()}en ennå. Når en skjerm kobles til skjermsystemet og tilordnes {tenantConfig.unitLabel.toLowerCase()}en, dukker den opp her.</p>
             ) : (
               screens.map((screen) => {
                 const roleChip =
