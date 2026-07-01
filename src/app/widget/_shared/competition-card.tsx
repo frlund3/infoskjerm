@@ -1,25 +1,26 @@
 import type { LiveItem, Block } from "@/lib/content/live"
+import { SPACE, RADIUS, SHADOW, pad, typeScale, KEYFRAMES, type TypeScale } from "./tokens"
 
 /**
- * Loud, eye-catching competition card — used on BOTH internal (landscape) and
- * customer (portrait) screens. Vibrant gradient, floating confetti, tilted
- * "KONKURRANSE" badge, moving shine and a pulsing CTA. Shows a QR code when the
- * competition has a participation link. Honors a custom bg/text colour.
+ * Premium konkurranse-kort — brukt på BÅDE intern (liggende) og kunde (stående)
+ * skjermer. Vibrant gradient, flytende konfetti, skjevstilt «Konkurranse»-merke,
+ * lys-sveip og en pulserende CTA. Viser QR når konkurransen har delta-lenke.
+ * Respekterer egendefinert bg/tekst-farge. Konsistent skala/dybde via tokens.
  */
 
-const RED = "#9d174d"
+const ACCENT = "#9d174d"
 
-function Blocks({ blocks, color }: { blocks: Block[]; color: string }) {
+function Blocks({ blocks, color, t }: { blocks: Block[]; color: string; t: TypeScale }) {
   return (
     <div>
       {blocks.map((b, i) => {
-        if (b.kind === "h") return <p key={i} style={{ fontSize: 40, fontWeight: 800, margin: "14px 0 4px", color }}>{b.text}</p>
+        if (b.kind === "h") return <p key={i} style={{ fontSize: t.h3, fontWeight: 800, margin: `${SPACE.md}px 0 ${SPACE.xs}px`, color }}>{b.text}</p>
         if (b.kind === "li") return (
-          <div key={i} style={{ display: "flex", gap: 12, fontSize: 36, lineHeight: 1.35, color, opacity: 0.95, margin: "5px 0" }}>
-            <span>•</span><span>{b.text}</span>
+          <div key={i} style={{ display: "flex", gap: SPACE.sm, fontSize: t.body, lineHeight: 1.34, color, opacity: 0.96, margin: `${SPACE.xs}px 0` }}>
+            <span style={{ opacity: 0.7 }}>•</span><span>{b.text}</span>
           </div>
         )
-        return <p key={i} style={{ fontSize: 36, lineHeight: 1.4, color, opacity: 0.95, margin: "8px 0" }}>{b.text}</p>
+        return <p key={i} style={{ fontSize: t.body, lineHeight: 1.4, color, opacity: 0.96, margin: `${SPACE.sm}px 0` }}>{b.text}</p>
       })}
     </div>
   )
@@ -28,33 +29,35 @@ function Blocks({ blocks, color }: { blocks: Block[]; color: string }) {
 export function CompetitionCard({ item, qrUrl, portrait = false }: { item: LiveItem; qrUrl?: string; portrait?: boolean }) {
   const fg = item.textColor ?? "#fff"
   const hasImg = !!item.imageUrl
-  const pad = portrait ? 64 : 74
+  const t = typeScale(portrait)
+  const P = pad(portrait)
+  const titleSize = portrait ? (hasImg ? t.h1 : t.hero) : (hasImg ? t.h2 : t.h1)
 
   const badge = (
-    <div style={{ alignSelf: "flex-start", display: "inline-flex", alignItems: "center", gap: 14, background: "#fff", color: RED, fontWeight: 900, fontSize: portrait ? 32 : 28, letterSpacing: 3, padding: "12px 28px", borderRadius: 14, transform: "rotate(-3deg)", boxShadow: "0 12px 40px rgba(0,0,0,.3)", textTransform: "uppercase" }}>
-      <span style={{ fontSize: portrait ? 42 : 36 }}>🏆</span> Konkurranse
+    <div style={{ alignSelf: "flex-start", display: "inline-flex", alignItems: "center", gap: SPACE.sm, background: "#fff", color: ACCENT, fontWeight: 900, fontSize: t.label, letterSpacing: 3, padding: `${SPACE.xs + 2}px ${SPACE.md}px`, borderRadius: RADIUS.md, transform: "rotate(-3deg)", boxShadow: SHADOW.soft, textTransform: "uppercase" }}>
+      <span style={{ fontSize: t.h3 }}>🏆</span> Konkurranse
     </div>
   )
   const cta = (
-    <div style={{ display: "flex", alignItems: "center", gap: 28, flexWrap: "wrap" }}>
-      <div style={{ background: "#fff", color: RED, fontWeight: 900, fontSize: portrait ? 38 : 32, padding: "16px 44px", borderRadius: 9999, animation: "grcPulse 2s ease-in-out infinite", boxShadow: "0 14px 44px rgba(0,0,0,.3)" }}>{qrUrl ? "Skann og delta!" : "Bli med og vinn!"}</div>
+    <div style={{ display: "flex", alignItems: "center", gap: SPACE.md, flexWrap: "wrap" }}>
+      <div style={{ background: "#fff", color: ACCENT, fontWeight: 900, fontSize: t.h3, padding: `${SPACE.sm}px ${SPACE.xl}px`, borderRadius: RADIUS.pill, animation: "wPulse 2s ease-in-out infinite", boxShadow: SHADOW.float }}>{qrUrl ? "Skann og delta!" : "Bli med og vinn!"}</div>
       {qrUrl && (
-        <div style={{ background: "#fff", padding: 14, borderRadius: 18, boxShadow: "0 14px 44px rgba(0,0,0,.3)" }}>
+        <div style={{ background: "#fff", padding: SPACE.sm, borderRadius: RADIUS.md, boxShadow: SHADOW.float }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={qrUrl} alt="QR-kode for å delta" width={portrait ? 170 : 130} height={portrait ? 170 : 130} style={{ display: "block" }} />
+          <img src={qrUrl} alt="QR-kode for å delta" width={portrait ? 176 : 132} height={portrait ? 176 : 132} style={{ display: "block" }} />
         </div>
       )}
     </div>
   )
   const title = (
-    <div style={{ flex: "1 1 auto", display: "flex", flexDirection: "column", justifyContent: "center", minHeight: 0 }}>
-      <div style={{ fontSize: portrait ? 130 : (hasImg ? 84 : 110), lineHeight: 1, animation: "grcFloat 4s ease-in-out infinite" }}>🎉</div>
-      <h1 style={{ fontSize: portrait ? 100 : (hasImg ? 76 : 98), fontWeight: 900, margin: "14px 0 0", lineHeight: 1.0, letterSpacing: -2, textShadow: "0 6px 30px rgba(0,0,0,.25)" }}>{item.title}</h1>
-      {item.blocks.length > 0 && <div style={{ marginTop: 22, maxHeight: portrait ? 360 : 440, overflow: "hidden" }}><Blocks blocks={item.blocks} color={fg} /></div>}
+    <div style={{ flex: "1 1 auto", display: "flex", flexDirection: "column", justifyContent: "center", minHeight: 0, animation: "wRise .7s cubic-bezier(.16,1,.3,1) both" }}>
+      <div style={{ fontSize: portrait ? t.hero : t.h1, lineHeight: 1, animation: "wFloat 4s ease-in-out infinite" }}>🎉</div>
+      <h1 style={{ fontSize: titleSize, fontWeight: 900, margin: `${SPACE.sm}px 0 0`, lineHeight: 1.02, letterSpacing: -2, textShadow: "0 6px 30px rgba(0,0,0,.25)", textWrap: "balance" }}>{item.title}</h1>
+      {item.blocks.length > 0 && <div style={{ marginTop: SPACE.lg, maxHeight: portrait ? 360 : 440, overflow: "hidden" }}><Blocks blocks={item.blocks} color={fg} t={t} /></div>}
     </div>
   )
   const image = hasImg && (
-    <div style={{ borderRadius: 28, overflow: "hidden", boxShadow: "0 20px 60px rgba(0,0,0,.35)", background: "rgba(255,255,255,.1)", ...(portrait ? { flex: "0 0 42%", width: "100%" } : { flex: "0 0 40%", minWidth: 0 }) }}>
+    <div style={{ borderRadius: RADIUS.xl, overflow: "hidden", boxShadow: SHADOW.float, background: "rgba(255,255,255,.1)", ...(portrait ? { flex: "0 0 42%", width: "100%" } : { flex: "0 0 40%", minWidth: 0 }) }}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={item.imageUrl!} alt="" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
     </div>
@@ -62,23 +65,23 @@ export function CompetitionCard({ item, qrUrl, portrait = false }: { item: LiveI
 
   return (
     <div style={{ position: "absolute", inset: 0, overflow: "hidden", color: fg, background: item.bgColor ?? "linear-gradient(135deg,#4c1d95 0%,#9d174d 48%,#b45309 100%)", fontFamily: "Arial, Helvetica, sans-serif" }}>
-      <style>{`@keyframes grcShine{0%{transform:translateX(-40%) skewX(-12deg)}100%{transform:translateX(180%) skewX(-12deg)}}@keyframes grcFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-16px)}}@keyframes grcPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}`}</style>
+      <style>{KEYFRAMES}</style>
       <div style={{ position: "absolute", top: -140, right: -100, width: 460, height: 460, borderRadius: "50%", background: "rgba(255,255,255,.08)" }} />
       <div style={{ position: "absolute", bottom: -180, left: -120, width: 560, height: 560, borderRadius: "50%", background: "rgba(0,0,0,.12)" }} />
-      <div style={{ position: "absolute", top: 0, bottom: 0, left: 0, width: 240, background: "linear-gradient(90deg,transparent,rgba(255,255,255,.16),transparent)", animation: "grcShine 7s linear infinite" }} />
+      <div style={{ position: "absolute", top: 0, bottom: 0, left: 0, width: 240, background: "linear-gradient(90deg,transparent,rgba(255,255,255,.16),transparent)", animation: "wShine 7s linear infinite", pointerEvents: "none" }} />
       {/* Floating sparkles for extra life. */}
       {([["12%", "18%", 0], ["78%", "26%", 1.1], ["32%", "72%", 2], ["88%", "64%", 0.6], ["60%", "12%", 1.6]] as const).map(([left, top, d], i) => (
-        <span key={i} style={{ position: "absolute", left, top, fontSize: 46, opacity: 0.85, animation: `grcFloat ${4 + (i % 3)}s ease-in-out ${d}s infinite`, pointerEvents: "none" }}>{i % 2 ? "✨" : "🎊"}</span>
+        <span key={i} style={{ position: "absolute", left, top, fontSize: 46, opacity: 0.85, animation: `wFloat ${4 + (i % 3)}s ease-in-out ${d}s infinite`, pointerEvents: "none" }}>{i % 2 ? "✨" : "🎊"}</span>
       ))}
       {portrait ? (
-        <div style={{ position: "absolute", inset: 0, padding: pad, display: "flex", flexDirection: "column", gap: 34, boxSizing: "border-box" }}>
+        <div style={{ position: "absolute", inset: 0, padding: P, display: "flex", flexDirection: "column", gap: SPACE.lg, boxSizing: "border-box" }}>
           {badge}
           {title}
           {image}
           {cta}
         </div>
       ) : (
-        <div style={{ position: "absolute", inset: 0, padding: pad, display: "flex", gap: 54, alignItems: "stretch", boxSizing: "border-box" }}>
+        <div style={{ position: "absolute", inset: 0, padding: P, display: "flex", gap: SPACE.xl, alignItems: "stretch", boxSizing: "border-box" }}>
           <div style={{ flex: "1 1 auto", minWidth: 0, display: "flex", flexDirection: "column" }}>
             {badge}
             {title}
