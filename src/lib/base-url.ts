@@ -1,14 +1,25 @@
 import { headers } from "next/headers"
 
-// Kanonisk origin for lenker i e-post. Utledes fra request-headers slik at den
-// blir riktig i alle miljøer (localhost ved lokal testing, prod-domenet i prod).
-// Faller tilbake til NEXT_PUBLIC_APP_URL om headers mangler.
+// Kanonisk origin for lenker i e-post. Ved lokal testing utledes den fra
+// request-host (localhost) slik at lenkene peker til dev-serveren. I alle andre
+// miljøer brukes ALLTID det kanoniske domenet (NEXT_PUBLIC_APP_URL) — aldri det
+// tilfeldige Vercel-aliaset (f.eks. *.vercel.app), som ellers ville havnet i
+// e-postene når reset/invitasjon bes om via et slikt alias.
 export async function getBaseUrl(): Promise<string> {
   const h = await headers()
   const host = h.get("x-forwarded-host") ?? h.get("host")
-  if (host) {
-    const proto = h.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https")
-    return `${proto}://${host}`
+
+  // Lokal utvikling: behold request-host så e-postlenker peker til dev-serveren.
+  if (host && (host.startsWith("localhost") || host.startsWith("127.0.0.1"))) {
+    return `http://${host}`
   }
-  return process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"
+
+  // Prod/preview: kanonisk domene, aldri request-host.
+  if (process.env.NEXT_PUBLIC_APP_URL) {
+    return process.env.NEXT_PUBLIC_APP_URL
+  }
+
+  // Siste fallback om env mangler.
+  if (host) return `https://${host}`
+  return "http://localhost:3000"
 }
