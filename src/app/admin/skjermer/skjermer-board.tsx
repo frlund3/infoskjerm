@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
+import { MonitorOff } from "lucide-react"
 import type { StoreScreen, ScreenRole } from "@/lib/xibo/screens"
 
 export interface BoardStore {
@@ -73,7 +74,14 @@ export function SkjermerBoard({ stores }: { stores: BoardStore[] }) {
         ))}
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+      {ordered.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-zinc-300 bg-white p-12 text-center">
+          <MonitorOff className="w-10 h-10 text-zinc-300 mx-auto mb-3" />
+          <p className="text-sm font-medium text-zinc-700">Ingen skjermer i denne visningen</p>
+          <p className="text-xs text-zinc-400 mt-1">Prøv et annet filter, eller koble til en skjerm i butikken.</p>
+        </div>
+      ) : (
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
         {ordered.map((store) => (
           <div key={store.id} className="rounded-2xl border border-zinc-100 bg-white overflow-hidden flex flex-col">
             <Link
@@ -117,6 +125,7 @@ export function SkjermerBoard({ stores }: { stores: BoardStore[] }) {
           </div>
         ))}
       </div>
+      )}
     </div>
   )
 }

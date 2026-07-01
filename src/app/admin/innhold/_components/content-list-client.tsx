@@ -9,8 +9,9 @@ import { toast } from "sonner"
 import {
   Newspaper, Trophy, ImageIcon, Briefcase, PartyPopper, BarChart3, Megaphone, Globe, Store as StoreIcon, Tag,
   Copy, Trash2, Pencil, MoreVertical, Calendar, CalendarPlus, Search, ChevronLeft, ChevronRight, FileText,
-  Send, EyeOff, X, Check,
+  Send, EyeOff, X, Check, Clock, ArrowUpDown, Timer,
 } from "lucide-react"
+import { ReorderDialog } from "./reorder-dialog"
 
 export interface ContentRow {
   id: string
@@ -21,6 +22,8 @@ export interface ContentRow {
   validFrom: string | null
   validTo: string | null
   updatedAt: string | null
+  sortOrder: number | null
+  durationSeconds: number | null
   target: { mode: "all" | "stores" | "tags" | "none"; count: number; names: string[] }
   storeIds: string[]
   tagIds: string[]
@@ -63,6 +66,25 @@ function formatPeriod(from: string | null, to: string | null): string | null {
   return `Til ${fmt(to!)}`
 }
 
+/**
+ * Liten status-chip for gyldighetsperioden: «Starter om X d» (kommende) eller
+ * «Utløper om X d» (utløper innen 7 dager). Returnerer null ellers, så et kort
+ * uten hastende periode ikke får unødvendig støy.
+ */
+function periodStatus(from: string | null, to: string | null): { label: string; tone: "warn" | "soon" } | null {
+  const now = Date.now()
+  const DAY = 86_400_000
+  if (from) {
+    const days = Math.ceil((new Date(from).getTime() - now) / DAY)
+    if (days > 0) return { label: days === 1 ? "Starter i morgen" : `Starter om ${days} d`, tone: "soon" }
+  }
+  if (to) {
+    const days = Math.ceil((new Date(to).getTime() - now) / DAY)
+    if (days >= 0 && days <= 7) return { label: days === 0 ? "Utløper i dag" : days === 1 ? "Utløper i morgen" : `Utløper om ${days} d`, tone: "warn" }
+  }
+  return null
+}
+
 const PAGE_SIZE = 12
 
 const selectCls = "w-full sm:w-auto text-xs bg-white border border-zinc-200 rounded-lg px-2.5 py-2.5 sm:py-2 text-zinc-600 focus:outline-none focus:ring-1 focus:ring-zinc-300"
@@ -83,6 +105,7 @@ export function ContentListClient({ items, stores, tags, newHref = "/admin/innho
   const [page, setPage] = useState(0)
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [bulkBusy, setBulkBusy] = useState(false)
+  const [showReorder, setShowReorder] = useState(false)
 
   function closeMenu() { setMenuId(null); setConfirmId(null) }
 
@@ -139,6 +162,7 @@ export function ContentListClient({ items, stores, tags, newHref = "/admin/innho
   }
 
   const hasFilters = search || statusF !== "all" || typeF || storeF || tagF || avdelingF
+  const liveItems = items.filter((it) => (it.status ?? "draft") === "live")
 
   return (
     <div className="space-y-4">
@@ -207,6 +231,14 @@ export function ContentListClient({ items, stores, tags, newHref = "/admin/innho
             {visible.every((v) => selected.has(v.id)) ? "Fjern valg på siden" : "Velg alle på siden"}
           </button>
         )}
+        {liveItems.length > 1 && (
+          <button
+            onClick={() => setShowReorder(true)}
+            className="ml-auto flex items-center gap-1.5 text-xs font-medium text-zinc-600 hover:text-zinc-900 border border-zinc-200 hover:border-zinc-300 rounded-lg px-2.5 py-1.5"
+          >
+            <ArrowUpDown className="w-3.5 h-3.5" /> Rekkefølge
+          </button>
+        )}
       </div>
 
       {/* Bulk action bar */}
@@ -232,13 +264,14 @@ export function ContentListClient({ items, stores, tags, newHref = "/admin/innho
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
           {visible.map((item) => {
             const tm = TYPE_META[item.type] ?? TYPE_META.slide
             const sm = STATUS_META[item.status ?? "draft"] ?? STATUS_META.draft
             const TypeIcon = tm.icon
             const TargetIcon = targetIcon(item.target.mode)
             const period = formatPeriod(item.validFrom, item.validTo)
+            const ps = periodStatus(item.validFrom, item.validTo)
             const targetText = item.target.mode === "all" ? "Alle butikker"
               : item.target.mode === "none" ? "Ikke målrettet"
               : item.target.names.slice(0, 2).join(", ") + (item.target.names.length > 2 ? ` +${item.target.names.length - 2}` : "")
@@ -254,19 +287,29 @@ export function ContentListClient({ items, stores, tags, newHref = "/admin/innho
                 </button>
                 <Link href={`${editBase}/${item.id}`} className="block relative aspect-[16/9] overflow-hidden">
                   {item.imageUrl && (item.imageUrl).toLowerCase().split("?")[0].endsWith(".pdf") ? (
-                    <div className="w-full h-full bg-zinc-900 flex flex-col items-center justify-center gap-1.5 text-white/70">
+                    <div className="w-full h-full bg-gradient-to-br from-zinc-800 to-zinc-950 flex flex-col items-center justify-center gap-1.5 text-white/70">
                       <FileText className="w-9 h-9" />
                       <span className="text-[11px] font-semibold tracking-wide">PDF</span>
                     </div>
                   ) : item.imageUrl && /\.(mp4|webm|mov|m4v)$/.test(item.imageUrl.toLowerCase().split("?")[0]) ? (
                     // eslint-disable-next-line jsx-a11y/media-has-caption
-                    <video src={`${item.imageUrl}#t=1`} muted playsInline preload="metadata" className="w-full h-full object-contain bg-zinc-50" />
+                    <video src={`${item.imageUrl}#t=1`} muted playsInline preload="metadata" className="w-full h-full object-cover bg-zinc-900" />
                   ) : item.imageUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={item.imageUrl} alt="" className="w-full h-full object-contain bg-zinc-50 p-1" />
+                    // Plakater/kundeaviser er ofte høye — behold hele bildet (contain),
+                    // men fyll letterboxen med en uskarp forstørret kopi så de grå
+                    // stripene forsvinner og kortet ser helstøpt ut.
+                    <div className="relative w-full h-full bg-zinc-100 overflow-hidden">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={item.imageUrl} alt="" aria-hidden className="absolute inset-0 w-full h-full object-cover scale-110 blur-2xl opacity-40" />
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={item.imageUrl} alt="" className="relative w-full h-full object-contain" />
+                    </div>
                   ) : (
-                    <div className={`w-full h-full bg-gradient-to-br ${tm.gradient} flex items-center justify-center`}>
-                      <TypeIcon className="w-10 h-10 text-white/40" />
+                    // Uten bilde: gjør kortet til et lesbart tittelkort i typefargen,
+                    // ikke en «ødelagt»-lignende mørk klosse.
+                    <div className={`relative w-full h-full bg-gradient-to-br ${tm.gradient} flex items-center justify-center p-4 overflow-hidden`}>
+                      <TypeIcon className="absolute -right-4 -bottom-4 w-28 h-28 text-white/10" />
+                      <span className="relative text-center text-white font-bold text-[15px] leading-tight line-clamp-3 drop-shadow-sm">{item.title || tm.label}</span>
                     </div>
                   )}
                   <span className={`absolute bottom-2.5 left-2.5 inline-flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-full ${tm.badge} shadow-sm`}>
@@ -282,7 +325,13 @@ export function ContentListClient({ items, stores, tags, newHref = "/admin/innho
                   <div className="flex items-center gap-3 mt-2 text-[11px] text-zinc-400">
                     <span className="flex items-center gap-1 min-w-0"><TargetIcon className="w-3 h-3 flex-shrink-0" /><span className="truncate">{targetText}</span></span>
                     {period && <span className="flex items-center gap-1 flex-shrink-0"><Calendar className="w-3 h-3" />{period}</span>}
+                    {item.durationSeconds ? <span className="flex items-center gap-1 flex-shrink-0"><Timer className="w-3 h-3" />{item.durationSeconds}s</span> : null}
                   </div>
+                  {ps && (
+                    <span className={`inline-flex items-center gap-1 mt-2 text-[10px] font-semibold px-1.5 py-0.5 rounded-md ${ps.tone === "warn" ? "bg-amber-50 text-amber-700 ring-1 ring-amber-200" : "bg-cyan-50 text-cyan-700 ring-1 ring-cyan-200"}`}>
+                      <Clock className="w-3 h-3" /> {ps.label}
+                    </span>
+                  )}
                 </div>
 
                 <div className="absolute bottom-2.5 right-2.5">
@@ -323,6 +372,8 @@ export function ContentListClient({ items, stores, tags, newHref = "/admin/innho
           </button>
         </div>
       )}
+
+      {showReorder && <ReorderDialog items={liveItems} onClose={() => setShowReorder(false)} />}
     </div>
   )
 }

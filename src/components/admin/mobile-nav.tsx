@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { Menu, X, Monitor } from "lucide-react"
 import { Sidebar } from "./sidebar"
+import { type SwitcherTenant } from "@/components/admin/tenant-switcher"
 
 interface MobileNavProps {
   user: {
@@ -13,6 +14,8 @@ interface MobileNavProps {
     chainColor: string | null
     isImpersonating: boolean
     activeTenantName: string | null
+    tenants: SwitcherTenant[]
+    activeTenantId: string | null
   }
 }
 

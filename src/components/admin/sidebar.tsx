@@ -5,11 +5,12 @@ import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 import {
-  Store, Monitor, Tv, Users, Settings, ChevronRight, LogOut, Newspaper, Megaphone, ScrollText, Ticket, QrCode, LayoutGrid,
+  Store, Monitor, Tv, Users, Settings, ChevronRight, LogOut, Newspaper, Megaphone, ScrollText, Ticket, QrCode,
 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { ImpersonationBanner } from "@/components/admin/impersonation-banner"
 import { useTenantConfig } from "./tenant-config-provider"
+import { TenantSwitcher, type SwitcherTenant } from "@/components/admin/tenant-switcher"
 
 type UserRole = "super_admin" | "chain_manager" | "area_manager" | "store_manager" | "store_employee"
 
@@ -75,6 +76,8 @@ interface SidebarProps {
     chainColor: string | null
     isImpersonating: boolean
     activeTenantName: string | null
+    tenants: SwitcherTenant[]
+    activeTenantId: string | null
   }
 }
 
@@ -129,25 +132,7 @@ export function Sidebar({ user }: SidebarProps) {
 
       <nav className="flex-1 overflow-y-auto py-3 px-2">
         {role === "super_admin" && (
-          <div className="mb-4">
-            <ul className="space-y-0.5">
-              <li>
-                <Link
-                  href="/admin/plattform"
-                  className={cn(
-                    "flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all",
-                    pathname.startsWith("/admin/plattform")
-                      ? "font-semibold text-white"
-                      : "text-zinc-500 hover:text-zinc-900 hover:bg-zinc-50"
-                  )}
-                  style={pathname.startsWith("/admin/plattform") ? { backgroundColor: "var(--brand-primary)" } : undefined}
-                >
-                  <LayoutGrid className="w-4 h-4 flex-shrink-0" />
-                  <span className="flex-1 truncate">Plattform</span>
-                </Link>
-              </li>
-            </ul>
-          </div>
+          <TenantSwitcher tenants={user.tenants} activeTenantId={user.activeTenantId} />
         )}
         {groups.map((group) => {
           const visibleItems = group.items.filter((item) => item.roles.includes(role))

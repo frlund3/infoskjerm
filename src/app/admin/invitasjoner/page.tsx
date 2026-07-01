@@ -75,7 +75,7 @@ export default async function InvitasjonerPage() {
             </Link>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {(invitations ?? []).map((inv) => {
               const body = (inv.body ?? {}) as InvBody
               const meta = body.invitation ?? {}

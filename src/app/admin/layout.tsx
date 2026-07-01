@@ -8,6 +8,7 @@ import { TenantConfigProvider } from "@/components/admin/tenant-config-provider"
 import { getTenantConfig } from "@/lib/tenant/config"
 import { createClient } from "@/lib/supabase/server"
 import { getAdminContext } from "@/lib/admin/admin-context"
+import { listAllTenants } from "@/lib/admin/tenants"
 import { redirect } from "next/navigation"
 import { Toaster } from "sonner"
 
@@ -30,6 +31,12 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const chainKey = role === "super_admin" ? "super_admin" : (chain?.name ?? "SPAR")
   const tenantConfig = await getTenantConfig(supabase, profile?.tenant_id ?? null)
 
+  // Kun super_admin kan opptre som andre tenants → hent listen for switcheren.
+  // Andre roller får tom liste, og switcheren skjuler seg selv.
+  const tenants = role === "super_admin"
+    ? (await listAllTenants()).map((t) => ({ id: t.id, name: t.name, slug: t.slug }))
+    : []
+
   return (
     <ChainThemeProvider
       chainKey={chainKey}
@@ -48,6 +55,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             chainColor: chain?.color ?? null,
             isImpersonating: ctx?.isImpersonating ?? false,
             activeTenantName: ctx?.activeTenant?.name ?? null,
+            tenants,
+            activeTenantId: ctx?.activeTenant?.id ?? null,
           }
           return (
             <>

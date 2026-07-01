@@ -25,8 +25,9 @@ export async function loadContentForAudience(audience: Audience): Promise<Conten
   const [{ data: items }, { data: stores }, { data: tags }] = await Promise.all([
     supabase
       .from("content_items")
-      .select("id, title, type, status, body, valid_from, valid_to, created_at, updated_at, created_by, content_targets(target_all, store_id, tag_id)")
+      .select("id, title, type, status, body, sort_order, valid_from, valid_to, created_at, updated_at, created_by, content_targets(target_all, store_id, tag_id)")
       .eq("tenant_id", tenantId)
+      .order("sort_order", { ascending: true, nullsFirst: false })
       .order("created_at", { ascending: false }),
     supabase.from("stores").select("id, name").eq("tenant_id", tenantId).order("name"),
     supabase.from("tags").select("id, name").eq("tenant_id", tenantId).order("name"),
@@ -91,7 +92,7 @@ export async function loadContentForAudience(audience: Audience): Promise<Conten
           ? tagIds.map((id) => tagName.get(id)).filter((x): x is string => !!x)
           : []
 
-      const body = (it.body ?? {}) as { imageUrl?: string | null; avdeling?: string | null }
+      const body = (it.body ?? {}) as { imageUrl?: string | null; avdeling?: string | null; durationSeconds?: number | null }
       return {
         id: it.id,
         title: it.title,
@@ -101,6 +102,8 @@ export async function loadContentForAudience(audience: Audience): Promise<Conten
         validFrom: it.valid_from,
         validTo: it.valid_to,
         updatedAt: it.updated_at,
+        sortOrder: it.sort_order ?? null,
+        durationSeconds: body.durationSeconds ?? null,
         target: { mode, count: mode === "stores" ? storeIds.length : tagIds.length, names },
         storeIds,
         tagIds,

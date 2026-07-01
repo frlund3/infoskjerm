@@ -231,6 +231,7 @@ export type Database = {
           published_at: string | null
           schedule_rule: Json | null
           scheduled_at: string | null
+          sort_order: number | null
           status: Database["public"]["Enums"]["content_status"] | null
           tenant_id: string
           title: string
@@ -252,6 +253,7 @@ export type Database = {
           published_at?: string | null
           schedule_rule?: Json | null
           scheduled_at?: string | null
+          sort_order?: number | null
           status?: Database["public"]["Enums"]["content_status"] | null
           tenant_id: string
           title: string
@@ -273,6 +275,7 @@ export type Database = {
           published_at?: string | null
           schedule_rule?: Json | null
           scheduled_at?: string | null
+          sort_order?: number | null
           status?: Database["public"]["Enums"]["content_status"] | null
           tenant_id?: string
           title?: string

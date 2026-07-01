@@ -4,7 +4,7 @@ import { requireRole } from "@/lib/admin/require-role"
 import { logAudit } from "@/lib/admin/audit"
 import { revalidatePath } from "next/cache"
 import { audienceForType, type Audience } from "./audience"
-import type { OfferFields } from "@/lib/content/live"
+import type { OfferFields, CampaignFields } from "@/lib/content/live"
 import type { Json } from "@/types/database"
 
 type AdminSupabase = Awaited<ReturnType<typeof requireRole>>["supabase"]
@@ -74,6 +74,8 @@ export interface ContentInput {
   statsChange?: string | null
   /** Offer (slide) only: structured price-card fields (when not a poster). */
   offer?: OfferFields | null
+  /** Campaign (slide) only: landscape campaign-card fields (Mobile-style poster). */
+  campaign?: CampaignFields | null
   /** Customer offers: department/category ("felles" = whole store). */
   avdeling?: string | null
   /** Text cards: optional background + text colour. */
@@ -115,6 +117,7 @@ function buildBody(input: ContentInput): Json {
     ...(input.type === "news" ? { applyUrl: input.applyUrl ?? null } : {}),
     ...(input.type === "stats" ? { statsValue: input.statsValue ?? null, statsChange: input.statsChange ?? null } : {}),
     ...(input.type === "slide" && input.offer ? { offer: input.offer } : {}),
+    ...(input.type === "slide" && input.campaign && input.campaign.headline ? { campaign: input.campaign } : {}),
     ...((input.type === "slide" || input.type === "competition") ? { avdeling: input.avdeling || "felles" } : {}),
     ...(input.bgColor ? { bgColor: input.bgColor } : {}),
     ...(input.textColor ? { textColor: input.textColor } : {}),
@@ -239,6 +242,24 @@ export async function bulkShiftPeriod(ids: string[], days: number): Promise<Save
   }
   await logAudit({ userId, action: "content.extend", entityType: "content", summary: `Forlenget ${ids.length} element(er) med ${days} dager`, metadata: { ids, days } })
   revalidatePath("/admin/innhold")
+  return { ok: true }
+}
+
+/**
+ * Setter manuell visningsrekkefølge (sort_order = posisjon i lista, 0 = først).
+ * Id-ene kommer fra den tenant-scopede innholdslista, så rekkefølgen påvirker kun
+ * innhold admin allerede ser. Brukes av «Rekkefølge»-dialogen.
+ */
+export async function reorderContent(orderedIds: string[]): Promise<SaveResult> {
+  const { supabase, userId } = await requireRole([...AUTHOR_ROLES])
+  if (orderedIds.length === 0) return { ok: true }
+  for (let i = 0; i < orderedIds.length; i++) {
+    const { error } = await supabase.from("content_items").update({ sort_order: i }).eq("id", orderedIds[i])
+    if (error) return { ok: false, error: error.message }
+  }
+  await logAudit({ userId, action: "content.reorder", entityType: "content", summary: `Endret rekkefølge på ${orderedIds.length} element(er)`, metadata: { count: orderedIds.length } })
+  revalidatePath("/admin/innhold")
+  revalidatePath("/admin/kundeinnhold")
   return { ok: true }
 }
 

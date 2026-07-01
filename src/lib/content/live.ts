@@ -211,11 +211,30 @@ export async function fetchLiveContent(storeId: string | null, types: string[], 
     return a === "kunde" || a === "intern" ? a : type === "slide" ? "kunde" : "intern"
   }
 
-  const { data: items } = await supabase
+  // Resolve the store's tenant so ALL content — including "Alle butikker"
+  // (target_all) items — is scoped to that store's tenant. Without this a
+  // target_all item from tenant A would render on tenant B's screens.
+  let tenantId: string | null = null
+  if (storeId) {
+    const { data: store } = await supabase.from("stores").select("tenant_id").eq("id", storeId).maybeSingle()
+    if (!store) return [] // unknown store → no content (don't leak all-tenant content)
+    tenantId = store.tenant_id
+  }
+
+  let query = supabase
     .from("content_items")
     .select("id, type, title, body, created_by, created_at, published_at, valid_from, valid_to, content_targets(target_all, store_id, tag_id)")
     .eq("status", "live")
     .in("type", types as ("news" | "competition" | "stats" | "weather" | "slide" | "job" | "birthday" | "ticker" | "invitation" | "gallery")[])
+
+  // With a store context, scope to its tenant. The null-storeId path (base/
+  // all-stores feed) is intentionally NOT tenant-scoped — there is no store
+  // to derive a tenant from, so we do not invent one here.
+  if (tenantId) query = query.eq("tenant_id", tenantId)
+
+  // Manuell rekkefølge først (0 = vises først); ellers fall tilbake til nyeste publisert.
+  const { data: items } = await query
+    .order("sort_order", { ascending: true, nullsFirst: false })
     .order("published_at", { ascending: false, nullsFirst: false })
 
   if (!items || items.length === 0) return []
