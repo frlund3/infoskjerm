@@ -19,6 +19,7 @@ export interface TenantConfig {
   unitLabel: string        // «Butikk» | «Forhandler»
   unitLabelPlural: string  // «Butikker» | «Forhandlere»
   brand: string            // tenant-merke for topbar/branding (navn uten «AS»-suffiks); «» = ingen
+  logoUrl: string | null   // organisasjons-logo (tenant-nivå); null = ingen, bruk bokstav
   avdelinger: Avdeling[]        // KUNDE-avdelinger (per tenant)
   avdelingerIntern: Avdeling[]  // INTERNE avdelinger (per tenant, uavhengig av kunde)
   features: TenantFeatures // per-tenant funksjonsflagg (offerCards, gln, …)
@@ -40,6 +41,7 @@ export const DEFAULT_TENANT_CONFIG: TenantConfig = {
   unitLabel: "Butikk",
   unitLabelPlural: "Butikker",
   brand: "",
+  logoUrl: null,
   avdelinger: [{ key: "felles", label: "Hele butikken" }],
   avdelingerIntern: [{ key: "felles", label: "Hele butikken" }],
   features: {},
