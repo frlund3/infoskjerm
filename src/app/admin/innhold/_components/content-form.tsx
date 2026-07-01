@@ -137,7 +137,7 @@ const AUDIENCE_TYPES: Record<Audience, ContentType[]> = {
 
 export function ContentForm({ stores, tags, initial, audience = "intern", defaultType, listHref: listHrefProp, prefillImage, canTargetAll = true }: { stores: StoreOption[]; tags: TagOption[]; initial?: ContentInitial; audience?: Audience; defaultType?: ContentType; listHref?: string; prefillImage?: string; canTargetAll?: boolean }) {
   const router = useRouter()
-  const { avdelinger: AVDELINGER, unitLabelPlural } = useTenantConfig()
+  const { avdelinger: AVDELINGER, unitLabel, unitLabelPlural } = useTenantConfig()
   // Varekort-bygger (struktur) + spar.no-oppslag er dagligvare-spesifikt — kun
   // for tenants med «offerCards». Andre tenants laster kun opp plakat/PDF.
   const canOfferCards = useTenantFeature("offerCards")
@@ -334,7 +334,7 @@ export function ContentForm({ stores, tags, initial, audience = "intern", defaul
       if (!klubb.headline.trim()) { toast.error("Skriv en overskrift"); return }
     } else if (!title.trim()) { toast.error("Skriv en tittel først"); return }
     if (!targetChosen) { toast.error("Velg hvor innholdet skal vises (Vis på)"); return }
-    if (targetMode === "stores" && storeIds.length === 0) { toast.error("Velg minst én butikk"); return }
+    if (targetMode === "stores" && storeIds.length === 0) { toast.error(`Velg minst én ${unitLabel.toLowerCase()}`); return }
     if (targetMode === "tags" && tagIds.length === 0) { toast.error("Velg minst én tagg"); return }
     // Tilbud/annonser MÅ ha både fra- og til-dato — de skal aldri gå evig.
     if (publish && periodRequired && (!validFrom || !validTo)) {
@@ -852,7 +852,7 @@ export function ContentForm({ stores, tags, initial, audience = "intern", defaul
                 <div className="flex gap-1.5">
                   <div className="relative flex-1">
                     <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-400" />
-                    <input value={storeSearch} onChange={(e) => setStoreSearch(e.target.value)} placeholder="Søk butikk…"
+                    <input value={storeSearch} onChange={(e) => setStoreSearch(e.target.value)} placeholder={`Søk ${unitLabel.toLowerCase()}…`}
                       className="w-full text-xs border border-zinc-200 rounded-lg pl-7 pr-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-zinc-300" />
                   </div>
                   {chains.length > 1 && (
@@ -870,7 +870,7 @@ export function ContentForm({ stores, tags, initial, audience = "intern", defaul
                 </div>
                 <div className="max-h-56 overflow-y-auto space-y-0.5 -mx-1 px-1">
                   {visibleStores.length === 0 ? (
-                    <p className="text-[11px] text-zinc-400 px-2 py-2">Ingen butikker matcher.</p>
+                    <p className="text-[11px] text-zinc-400 px-2 py-2">Ingen {unitLabelPlural.toLowerCase()} matcher.</p>
                   ) : visibleStores.map((s) => (
                     <label key={s.id} className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-zinc-50 cursor-pointer">
                       <input type="checkbox" checked={storeIds.includes(s.id)} onChange={() => toggleStore(s.id)} className="rounded border-zinc-300" />
@@ -885,7 +885,7 @@ export function ContentForm({ stores, tags, initial, audience = "intern", defaul
             {targetMode === "tags" && (
               <div className="space-y-1">
                 {tags.length === 0 ? (
-                  <p className="text-[11px] text-zinc-400">Ingen tagger ennå. Lag tagger under Butikker.</p>
+                  <p className="text-[11px] text-zinc-400">Ingen tagger ennå. Lag tagger under {unitLabelPlural}.</p>
                 ) : tags.map((t) => (
                   <label key={t.id} className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-zinc-50 cursor-pointer">
                     <input type="checkbox" checked={tagIds.includes(t.id)} onChange={() => toggleTag(t.id)} className="rounded border-zinc-300" />

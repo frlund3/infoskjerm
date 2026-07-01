@@ -2,7 +2,8 @@
 
 import { randomBytes } from "crypto"
 import { revalidatePath } from "next/cache"
-import { createClient } from "@/lib/supabase/server"
+import { createClient, createAdminClient } from "@/lib/supabase/server"
+import { getAdminContext } from "@/lib/admin/admin-context"
 import { logAudit } from "@/lib/admin/audit"
 
 export type ScreenCommand = "power_on" | "power_off" | "reload" | "reboot"
@@ -124,4 +125,35 @@ export async function uploadChainLogo(
   revalidatePath("/admin/settings")
   revalidatePath("/admin")
   return { ok: true, url: pub.publicUrl }
+}
+
+/**
+ * Lagrer tenant-terminologi (enhetsbetegnelse) for den AKTIVE tenanten. En
+ * bilforhandler setter «Forhandler/Forhandlere» i stedet for «Butikk/Butikker»,
+ * og hele admin-UI-et følger dette via useTenantConfig. Kun tenant-admin
+ * (chain_manager) eller super_admin som opptrer som en tenant kan endre.
+ * tenants-tabellen bruker service-role (samme som getTenantConfig-lesingen).
+ */
+export async function saveTenantTerminology(
+  unitLabel: string,
+  unitLabelPlural: string
+): Promise<{ ok: boolean; error?: string }> {
+  const ctx = await getAdminContext()
+  if (!ctx) return { ok: false, error: "Ikke innlogget" }
+  if (ctx.role !== "super_admin" && ctx.role !== "chain_manager") return { ok: false, error: "Ikke tillatt" }
+  const tenantId = ctx.effectiveTenantId
+  if (!tenantId) return { ok: false, error: "Ingen aktiv organisasjon" }
+
+  const admin = createAdminClient()
+  const { error } = await (admin.from("tenants") as unknown as {
+    update: (v: Record<string, string>) => { eq: (c: string, val: string) => Promise<{ error: { message: string } | null }> }
+  })
+    .update({ unit_label: unitLabel.trim() || "Butikk", unit_label_plural: unitLabelPlural.trim() || "Butikker" })
+    .eq("id", tenantId)
+  if (error) return { ok: false, error: error.message }
+
+  await logAudit({ userId: ctx.userId, action: "settings.terminology", entityType: "tenant", entityId: tenantId, summary: `Satte enhetsbetegnelse: ${unitLabel} / ${unitLabelPlural}` })
+  // Layouten laster tenant-config → revalider hele admin-treet så sidebar m.m. oppdateres.
+  revalidatePath("/admin", "layout")
+  return { ok: true }
 }
