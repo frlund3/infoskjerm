@@ -7,6 +7,7 @@ import { Building2, Mail, Monitor, ArrowLeft } from "lucide-react"
 import Link from "next/link"
 import { fetchScreensByStore } from "@/lib/xibo/screens"
 import { KundeklubbSettings } from "../_components/kundeklubb-settings"
+import { KioskSettings } from "./kiosk-settings"
 import { getTenantConfig } from "@/lib/tenant/config"
 import { hasFeature } from "@/lib/tenant/features"
 
@@ -97,6 +98,17 @@ export default async function StoreDetailPage({ params }: PageProps) {
                 </div>
               )}
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Kiosk-visning (telefon/nettbrett som skjerm) + privat passord */}
+        <Card>
+          <CardContent className="p-0">
+            <KioskSettings
+              storeId={store.id}
+              storeName={store.name}
+              hasPassword={!!(store as unknown as { kiosk_password_hash: string | null }).kiosk_password_hash}
+            />
           </CardContent>
         </Card>
 

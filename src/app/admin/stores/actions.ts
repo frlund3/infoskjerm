@@ -3,12 +3,43 @@
 import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
 import { logAudit } from "@/lib/admin/audit"
+import { hashKioskPassword } from "@/lib/kiosk/auth"
 
 async function requireUser() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error("Ikke innlogget")
   return { supabase, userId: user.id }
+}
+
+/**
+ * Setter (eller fjerner, ved tomt passord) kiosk-passordet for en enhet.
+ * RLS på stores sikrer at brukeren kun kan endre egne enheter. Passordet
+ * hashes server-side; klartekst lagres aldri.
+ */
+export async function setKioskPassword(
+  storeId: string,
+  password: string,
+): Promise<{ ok: boolean; error?: string }> {
+  const { supabase, userId } = await requireUser()
+  const trimmed = password.trim()
+  const hash = trimmed ? hashKioskPassword(trimmed) : null
+  // Ny kolonne (031) er ikke i den genererte Database-typen ennå → cast.
+  const { error } = await (supabase.from("stores") as unknown as {
+    update: (v: Record<string, unknown>) => { eq: (c: string, v: string) => Promise<{ error: { message: string } | null }> }
+  })
+    .update({ kiosk_password_hash: hash })
+    .eq("id", storeId)
+  if (error) return { ok: false, error: error.message }
+  await logAudit({
+    userId,
+    action: "store.kiosk_password",
+    entityType: "store",
+    entityId: storeId,
+    summary: trimmed ? "Satte kiosk-passord" : "Fjernet kiosk-passord",
+  })
+  revalidatePath(`/admin/stores/${storeId}`)
+  return { ok: true }
 }
 
 export async function updateStoreKundeklubb(
