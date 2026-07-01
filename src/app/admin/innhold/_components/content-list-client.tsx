@@ -162,7 +162,16 @@ export function ContentListClient({ items, stores, tags, newHref = "/admin/innho
   }
 
   const hasFilters = search || statusF !== "all" || typeF || storeF || tagF || avdelingF
-  const liveItems = items.filter((it) => (it.status ?? "draft") === "live")
+  // «Aktiv» = publisert OG innenfor gyldighetsperioden = det som faktisk roterer
+  // på skjerm nå (matcher widgetens withinWindow). Utkast/arkivert/utløpt/planlagt
+  // frem i tid vises ikke i rekkefølge-dialogen.
+  const nowMs = Date.now()
+  const activeItems = items.filter((it) => {
+    if ((it.status ?? "draft") !== "live") return false
+    if (it.validFrom && new Date(it.validFrom).getTime() > nowMs) return false
+    if (it.validTo && new Date(it.validTo).getTime() < nowMs) return false
+    return true
+  })
 
   return (
     <div className="space-y-4">
@@ -231,7 +240,7 @@ export function ContentListClient({ items, stores, tags, newHref = "/admin/innho
             {visible.every((v) => selected.has(v.id)) ? "Fjern valg på siden" : "Velg alle på siden"}
           </button>
         )}
-        {liveItems.length > 1 && (
+        {activeItems.length > 1 && (
           <button
             onClick={() => setShowReorder(true)}
             className="ml-auto flex items-center gap-1.5 text-xs font-medium text-zinc-600 hover:text-zinc-900 border border-zinc-200 hover:border-zinc-300 rounded-lg px-2.5 py-1.5"
@@ -373,7 +382,7 @@ export function ContentListClient({ items, stores, tags, newHref = "/admin/innho
         </div>
       )}
 
-      {showReorder && <ReorderDialog items={liveItems} onClose={() => setShowReorder(false)} />}
+      {showReorder && <ReorderDialog items={activeItems} onClose={() => setShowReorder(false)} />}
     </div>
   )
 }

@@ -15,7 +15,7 @@ import { CSS } from "@dnd-kit/utilities"
 import { GripVertical, X, Clock, ImageIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-function SortableRow({ item, index }: { item: ContentRow; index: number }) {
+function SortableRow({ item, index, onDuration }: { item: ContentRow; index: number; onDuration: (id: string, secs: number | null) => void }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id })
   const style = { transform: CSS.Transform.toString(transform), transition }
   return (
@@ -45,9 +45,21 @@ function SortableRow({ item, index }: { item: ContentRow; index: number }) {
         )}
       </span>
       <span className="flex-1 min-w-0 text-sm font-medium text-zinc-900 truncate">{item.title || "Uten tittel"}</span>
-      {item.durationSeconds ? (
-        <span className="flex items-center gap-1 text-[11px] text-zinc-400 flex-shrink-0"><Clock className="w-3 h-3" />{item.durationSeconds}s</span>
-      ) : null}
+      <label className="flex items-center gap-1 flex-shrink-0 text-[11px] text-zinc-400" title="Spilletid i sekunder (tom = standard for typen)">
+        <Clock className="w-3 h-3" />
+        <input
+          type="number"
+          min={3}
+          max={600}
+          value={item.durationSeconds ?? ""}
+          onChange={(e) => onDuration(item.id, e.target.value === "" ? null : Number(e.target.value))}
+          onPointerDown={(e) => e.stopPropagation()}
+          placeholder="std"
+          aria-label={`Spilletid for ${item.title || "element"}`}
+          className="w-12 rounded-md border border-zinc-200 bg-white px-1.5 py-1 text-center text-zinc-700 tabular-nums focus:outline-none focus:ring-1 focus:ring-zinc-300"
+        />
+        <span>s</span>
+      </label>
     </li>
   )
 }
@@ -78,12 +90,16 @@ export function ReorderDialog({ items, onClose }: { items: ContentRow[]; onClose
     })
   }
 
+  function setDuration(id: string, secs: number | null) {
+    setOrdered((prev) => prev.map((p) => (p.id === id ? { ...p, durationSeconds: secs } : p)))
+  }
+
   async function save() {
     setSaving(true)
-    const res = await reorderContent(ordered.map((o) => o.id))
+    const res = await reorderContent(ordered.map((o) => ({ id: o.id, durationSeconds: o.durationSeconds })))
     setSaving(false)
     if (res.ok) {
-      toast.success("Rekkefølge lagret")
+      toast.success("Rekkefølge og spilletid lagret")
       router.refresh()
       onClose()
     } else {
@@ -98,7 +114,7 @@ export function ReorderDialog({ items, onClose }: { items: ContentRow[]; onClose
         <div className="flex items-start justify-between px-5 py-4 border-b border-zinc-100">
           <div>
             <h2 className="text-base font-bold text-zinc-900">Rekkefølge på skjerm</h2>
-            <p className="text-xs text-zinc-400 mt-0.5">Dra for å bestemme rekkefølgen innholdet roterer i. Øverst vises først.</p>
+            <p className="text-xs text-zinc-400 mt-0.5">Dra for å endre rekkefølgen, og sett spilletid per element. Øverst vises først.</p>
           </div>
           <button onClick={onClose} className="p-1.5 -mr-1 rounded-lg text-zinc-400 hover:bg-zinc-100 flex-shrink-0" aria-label="Lukk">
             <X className="w-5 h-5" />
@@ -113,7 +129,7 @@ export function ReorderDialog({ items, onClose }: { items: ContentRow[]; onClose
               <SortableContext items={ordered.map((o) => o.id)} strategy={verticalListSortingStrategy}>
                 <ul className="space-y-1.5">
                   {ordered.map((item, i) => (
-                    <SortableRow key={item.id} item={item} index={i} />
+                    <SortableRow key={item.id} item={item} index={i} onDuration={setDuration} />
                   ))}
                 </ul>
               </SortableContext>
@@ -129,7 +145,7 @@ export function ReorderDialog({ items, onClose }: { items: ContentRow[]; onClose
             className="text-sm font-semibold text-white px-3.5 py-2 rounded-lg disabled:opacity-50"
             style={{ backgroundColor: "var(--brand-primary)" }}
           >
-            {saving ? "Lagrer…" : "Lagre rekkefølge"}
+            {saving ? "Lagrer…" : "Lagre"}
           </button>
         </div>
       </div>
