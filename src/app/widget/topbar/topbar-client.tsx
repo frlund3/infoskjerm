@@ -18,7 +18,8 @@ function Divider() {
   return <span style={{ width: 1, height: 80, background: "rgba(255,255,255,.12)", flex: "0 0 auto" }} />
 }
 
-export function TopbarClient({ butikk, forecast, todayIso }: { butikk: string; forecast: WeatherForecast | null; todayIso: string }) {
+export function TopbarClient({ butikk, forecast, todayIso, merke = "Gange-Rolv", accent }: { butikk: string; forecast: WeatherForecast | null; todayIso: string; merke?: string; accent?: string }) {
+  const brandColor = accent || GREEN
   // null until mounted → avoids SSR/CSR time mismatch; clock ticks every second.
   const [now, setNow] = useState<Date | null>(null)
   useEffect(() => {
@@ -48,7 +49,7 @@ export function TopbarClient({ butikk, forecast, todayIso }: { butikk: string; f
     >
       {/* Store name */}
       <div style={{ flex: "1 1 auto", minWidth: 0 }}>
-        <div style={{ color: GREEN, fontWeight: 800, letterSpacing: 4, fontSize: 18, textTransform: "uppercase" }}>Gange-Rolv</div>
+        <div style={{ color: brandColor, fontWeight: 800, letterSpacing: 4, fontSize: 18, textTransform: "uppercase" }}>{merke}</div>
         <div style={{ fontSize: 48, fontWeight: 900, lineHeight: 1.02, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{butikk}</div>
       </div>
 
