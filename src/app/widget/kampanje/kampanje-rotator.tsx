@@ -41,10 +41,17 @@ function formatPeriod(from: string | null, to: string | null): string | null {
  */
 function LandscapePoster({ item, chain, qrUrl }: { item: LiveItem; chain?: ChainBrand | null; qrUrl?: string }) {
   const [imgOk, setImgOk] = useState(true)
-  const hasImg = !!item.imageUrl && imgOk
   const brand = chain?.color || "#0a5c2b"
   const period = formatPeriod(item.validFrom, item.validTo)
   const kicker = item.type === "news" ? "Aktuelt" : "Tilbud"
+  // Media kan være video, PDF/PowerPoint, forhåndsrendret kundeavis (pages) eller
+  // vanlige bilder — ikke bare imageUrl. Uten dette ble video/kundeavis vist som
+  // et brutt bilde-ikon. Fallback = branded gradient, aldri svart brutt slide.
+  const isVideo = item.isVideo && !!item.imageUrl
+  const isDoc = (item.isPdf || item.isPpt) && !!item.imageUrl && item.pages.length === 0
+  const imgUrls = item.imageUrls.length ? item.imageUrls : item.pages.length ? item.pages : item.imageUrl ? [item.imageUrl] : []
+  const firstImg = imgUrls[0] ?? null
+  const hasMedia = isVideo || isDoc || (!!firstImg && imgOk)
   return (
     <div style={{ position: "absolute", inset: 0, containerType: "size", overflow: "hidden", display: "flex", background: "#0a0a0c" }}>
       {/* Venstre: tekstpanel */}
@@ -68,15 +75,20 @@ function LandscapePoster({ item, chain, qrUrl }: { item: LiveItem; chain?: Chain
         {period && <span style={{ alignSelf: "flex-start", background: "#fff", color: "#0a0a0a", fontWeight: 800, fontSize: "2.8cqh", padding: "1.2cqh 3cqw", borderRadius: "100cqh", marginTop: "0.8cqh" }}>{period}</span>}
       </div>
 
-      {/* Høyre: media (contain + uskarp fyll) eller branded gradient */}
-      <div style={{ flex: "1 1 auto", position: "relative", overflow: "hidden", background: hasImg ? "#0a0a0c" : `radial-gradient(120% 120% at 62% 30%, ${brand} 0%, #0a0a0c 72%)` }}>
-        {item.imageUrl && (
+      {/* Høyre: media (video / PDF / bilde, contain + uskarp fyll) eller branded gradient */}
+      <div style={{ flex: "1 1 auto", position: "relative", overflow: "hidden", background: hasMedia ? "#0a0a0c" : `radial-gradient(120% 120% at 62% 30%, ${brand} 0%, #0a0a0c 72%)` }}>
+        {isVideo ? (
+          // eslint-disable-next-line jsx-a11y/media-has-caption
+          <video src={item.imageUrl!} autoPlay muted loop playsInline style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", background: item.bgColor ?? "#0a0a0c" }} />
+        ) : isDoc ? (
+          <iframe title={item.title} src={`${item.imageUrl}#toolbar=0&navpanes=0&scrollbar=0&view=Fit`} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: "none", background: "#fff" }} />
+        ) : firstImg ? (
           <>
-            <div style={{ position: "absolute", inset: 0, backgroundImage: `url('${item.imageUrl}')`, backgroundSize: "cover", backgroundPosition: "center", filter: "blur(40px) brightness(.5)", transform: "scale(1.2)", opacity: hasImg ? 1 : 0 }} />
+            <div style={{ position: "absolute", inset: 0, backgroundImage: `url('${firstImg}')`, backgroundSize: "cover", backgroundPosition: "center", filter: "blur(40px) brightness(.5)", transform: "scale(1.2)", opacity: imgOk ? 1 : 0 }} />
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={item.imageUrl} alt="" onError={() => setImgOk(false)} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", opacity: hasImg ? 1 : 0, animation: "grKb 18s ease-in-out infinite alternate" }} />
+            <img src={firstImg} alt="" onError={() => setImgOk(false)} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", opacity: imgOk ? 1 : 0, animation: "grKb 18s ease-in-out infinite alternate" }} />
           </>
-        )}
+        ) : null}
       </div>
 
       {chain?.name && <span style={{ position: "absolute", right: "3cqw", top: "5cqh", fontSize: "3cqh", fontWeight: 900, letterSpacing: "0.2cqh", textShadow: "0 2px 6px rgba(0,0,0,.5)", zIndex: 3 }}>{chain.name}</span>}

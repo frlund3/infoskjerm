@@ -661,7 +661,7 @@ export function ContentForm({ stores, tags, initial, audience = "intern", defaul
                           </button>
                         ))}
                       </div>
-                      <p className="text-[10px] text-zinc-400 mt-1">{imageMode === "plakat" ? "Hele bildet vises uten klipp — for ferdige plakater." : imageMode === "liten" ? "Lite bilde til høyre, teksten til venstre — teksten er hovedsaken." : "Bildet fyller kortet som dempet bakgrunn med tekst oppå."}</p>
+                      <p className="text-[10px] text-zinc-400 mt-1">{imageMode === "plakat" ? "Hele bildet vises uten klipp — for ferdige plakater. Samme begge veier." : imageMode === "liten" ? "Teksten er hovedsaken; bildet vises mindre — ved siden av (liggende) eller under (stående)." : "Bildet fyller kortet som dempet bakgrunn med tekst oppå — begge orienteringer."}</p>
                     </div>
                   )}
                   {isMulti && <p className="text-[10px] text-zinc-400">{imageUrls.length} bilder vises som <strong>helside, side om side</strong> — uten dempet bakgrunn.</p>}

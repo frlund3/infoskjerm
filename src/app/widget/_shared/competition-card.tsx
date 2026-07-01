@@ -31,7 +31,8 @@ export function CompetitionCard({ item, qrUrl, portrait = false }: { item: LiveI
   const hasImg = !!item.imageUrl
   const t = typeScale(portrait)
   const P = pad(portrait)
-  const titleSize = portrait ? (hasImg ? t.h1 : t.hero) : (hasImg ? t.h2 : t.h1)
+  // Stående: alltid h1 (ikke hero) — lange ord som «KONKURRANSE» klippet i hero-størrelse.
+  const titleSize = portrait ? t.h1 : (hasImg ? t.h2 : t.h1)
 
   const badge = (
     <div style={{ alignSelf: "flex-start", display: "inline-flex", alignItems: "center", gap: SPACE.sm, background: "#fff", color: ACCENT, fontWeight: 900, fontSize: t.label, letterSpacing: 3, padding: `${SPACE.xs + 2}px ${SPACE.md}px`, borderRadius: RADIUS.md, transform: "rotate(-3deg)", boxShadow: SHADOW.soft, textTransform: "uppercase" }}>
@@ -50,14 +51,14 @@ export function CompetitionCard({ item, qrUrl, portrait = false }: { item: LiveI
     </div>
   )
   const title = (
-    <div style={{ flex: "1 1 auto", display: "flex", flexDirection: "column", justifyContent: "center", minHeight: 0, animation: "wRise .7s cubic-bezier(.16,1,.3,1) both" }}>
-      <div style={{ fontSize: portrait ? t.hero : t.h1, lineHeight: 1, animation: "wFloat 4s ease-in-out infinite" }}>🎉</div>
+    <div style={{ flex: "1 1 auto", display: "flex", flexDirection: "column", justifyContent: "center", minHeight: 0, overflow: "hidden", animation: "wRise .7s cubic-bezier(.16,1,.3,1) both" }}>
+      <div style={{ fontSize: portrait ? t.h2 : t.h1, lineHeight: 1, animation: "wFloat 4s ease-in-out infinite" }}>🎉</div>
       <h1 style={{ fontSize: titleSize, fontWeight: 900, margin: `${SPACE.sm}px 0 0`, lineHeight: 1.02, letterSpacing: -2, textShadow: "0 6px 30px rgba(0,0,0,.25)", textWrap: "balance" }}>{item.title}</h1>
-      {item.blocks.length > 0 && <div style={{ marginTop: SPACE.lg, maxHeight: portrait ? 360 : 440, overflow: "hidden" }}><Blocks blocks={item.blocks} color={fg} t={t} /></div>}
+      {item.blocks.length > 0 && <div style={{ marginTop: portrait ? SPACE.md : SPACE.lg, flex: "1 1 auto", minHeight: 0, overflow: "hidden" }}><Blocks blocks={item.blocks} color={fg} t={t} /></div>}
     </div>
   )
   const image = hasImg && (
-    <div style={{ borderRadius: RADIUS.xl, overflow: "hidden", boxShadow: SHADOW.float, background: "rgba(255,255,255,.1)", ...(portrait ? { flex: "0 0 42%", width: "100%" } : { flex: "0 0 40%", minWidth: 0 }) }}>
+    <div style={{ borderRadius: RADIUS.xl, overflow: "hidden", boxShadow: SHADOW.float, background: "rgba(255,255,255,.1)", ...(portrait ? { flex: "0 0 34%", width: "100%" } : { flex: "0 0 40%", minWidth: 0 }) }}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={item.imageUrl!} alt="" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
     </div>

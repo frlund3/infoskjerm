@@ -64,7 +64,7 @@ function LandscapeRow({ row, rank }: { row: RowView; rank: number }) {
   const dFjor = diffPct(row.omsetning, row.fjor)
   const medal = medalFor(rank)
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 16, padding: "0 22px", height: 58, borderRadius: 14, background: rank % 2 ? "transparent" : "rgba(255,255,255,.035)" }}>
+    <div style={{ display: "flex", alignItems: "center", gap: 16, padding: "0 22px", flex: "1 1 0", minHeight: 0, borderRadius: 14, background: rank % 2 ? "transparent" : "rgba(255,255,255,.035)" }}>
       <div style={{ width: 44, flex: "0 0 auto", fontSize: 26, fontWeight: 800, color: MUTED, textAlign: "center" }}>{medal ?? rank}</div>
       <div style={{ flex: "1 1 auto", minWidth: 0, fontSize: 26, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{row.storeName}</div>
       <div style={{ width: 230, flex: "0 0 auto", textAlign: "right", fontSize: 28, fontWeight: 900 }}>{kr(row.omsetning)} <span style={{ fontSize: 18, color: MUTED }}>kr</span></div>
@@ -131,30 +131,39 @@ function LandscapeOverview({ data }: { data: KpiOverviewData }) {
 
 /* ---------------- STÅENDE (to-linjers kort per butikk) ---------------- */
 
-function PortraitRow({ row, rank }: { row: RowView; rank: number }) {
+function PortraitRow({ row, rank, dense }: { row: RowView; rank: number; dense: boolean }) {
   const dBud = diffPct(row.omsetning, row.budsjett)
   const dFjor = diffPct(row.omsetning, row.fjor)
   const medal = medalFor(rank)
+  // Tettere skala når det er mange butikker (16 for Gange-Rolv), så ALT får plass
+  // uten klipp — kiosk-skjermer kan ikke scrolle.
+  const nameSize = dense ? 30 : 38
+  const omsSize = dense ? 34 : 42
+  const line2Size = dense ? 21 : 24
   return (
     <div
       style={{
+        flex: "1 1 0",
+        minHeight: 0,
         display: "flex",
         flexDirection: "column",
-        gap: 6,
-        padding: `12px ${SPACE.md}px`,
+        justifyContent: "center",
+        gap: dense ? 3 : 6,
+        padding: `0 ${SPACE.md}px`,
         borderRadius: RADIUS.md,
+        overflow: "hidden",
         background: rank <= 3 ? "rgba(34,197,94,.07)" : rank % 2 ? "transparent" : "rgba(255,255,255,.035)",
         border: rank <= 3 ? "1px solid rgba(34,197,94,.20)" : "1px solid transparent",
       }}
     >
       {/* Linje 1: rang · navn · omsetning */}
       <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm }}>
-        <div style={{ width: 52, flex: "0 0 auto", fontSize: 32, fontWeight: 800, color: MUTED, textAlign: "center" }}>{medal ?? rank}</div>
-        <div style={{ flex: "1 1 auto", minWidth: 0, fontSize: 38, fontWeight: 800, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{row.storeName}</div>
-        <div style={{ flex: "0 0 auto", textAlign: "right", fontSize: 42, fontWeight: 900, whiteSpace: "nowrap" }}>{kr(row.omsetning)} <span style={{ fontSize: 22, color: MUTED }}>kr</span></div>
+        <div style={{ width: 52, flex: "0 0 auto", fontSize: dense ? 26 : 32, fontWeight: 800, color: MUTED, textAlign: "center" }}>{medal ?? rank}</div>
+        <div style={{ flex: "1 1 auto", minWidth: 0, fontSize: nameSize, fontWeight: 800, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{row.storeName}</div>
+        <div style={{ flex: "0 0 auto", textAlign: "right", fontSize: omsSize, fontWeight: 900, whiteSpace: "nowrap" }}>{kr(row.omsetning)} <span style={{ fontSize: 22, color: MUTED }}>kr</span></div>
       </div>
       {/* Linje 2: deltaer venstre, marginer høyre — alt på én linje (nowrap) */}
-      <div style={{ display: "flex", alignItems: "center", gap: SPACE.md, paddingLeft: 52 + SPACE.sm, fontSize: 24, whiteSpace: "nowrap" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: SPACE.md, paddingLeft: 52 + SPACE.sm, fontSize: line2Size, whiteSpace: "nowrap" }}>
         <span><span style={{ color: MUTED }}>bud </span><Delta value={dBud} /></span>
         <span><span style={{ color: MUTED }}>fjor </span><Delta value={dFjor} /></span>
         <div style={{ marginLeft: "auto", display: "flex", gap: SPACE.md, color: MUTED }}>
@@ -200,10 +209,11 @@ function PortraitOverview({ data }: { data: KpiOverviewData }) {
         </div>
       </div>
 
-      {/* Butikk-kort — fordelt over høyden */}
-      <section style={{ flex: "1 1 auto", minHeight: 0, display: "flex", flexDirection: "column", gap: SPACE.xs, justifyContent: "space-between" }}>
+      {/* Butikk-kort — deler høyden likt (flex:1) så ALLE butikker får plass uten
+          klipp, uansett antall (kiosk kan ikke scrolle). */}
+      <section style={{ flex: "1 1 auto", minHeight: 0, display: "flex", flexDirection: "column", gap: data.rows.length > 12 ? 4 : SPACE.xs }}>
         {data.rows.map((row, i) => (
-          <PortraitRow key={row.storeName} row={row} rank={i + 1} />
+          <PortraitRow key={row.storeName} row={row} rank={i + 1} dense={data.rows.length > 12} />
         ))}
       </section>
     </main>

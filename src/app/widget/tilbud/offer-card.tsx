@@ -102,8 +102,9 @@ function LandscapeOffer({ item, offer, chain }: { item: LiveItem; offer: OfferFi
   return (
     <div style={{ position: "absolute", inset: 0, background: "#fff", containerType: "size", overflow: "hidden", display: "flex", fontFamily: "Arial, Helvetica, sans-serif", color: INK }}>
       <style>{OC_KEYFRAMES}</style>
-      {/* Venstre: bilde + badge + pris-sirkel */}
-      <div style={{ flex: "0 0 50%", position: "relative", minWidth: 0, background: "#f6f7f8" }}>
+      {/* Venstre: bilde + badge + pris-sirkel (hvit bakgrunn — produktbildet skal
+          flyte sømløst på plakaten, ikke sitte i en grå boks) */}
+      <div style={{ flex: "0 0 50%", position: "relative", minWidth: 0, background: "#fff" }}>
         {img && <div style={{ position: "absolute", inset: 0, backgroundImage: `url('${img}')`, backgroundSize: "contain", backgroundPosition: "center", backgroundRepeat: "no-repeat", animation: "grOcKen 14s ease-in-out infinite alternate" }} />}
         {offer.badge && (
           <div style={{ position: "absolute", top: 60, left: -8, background: RED, color: "#fff", fontWeight: 900, fontSize: t.h3, letterSpacing: 1, padding: `${SPACE.sm}px ${SPACE.lg}px`, borderRadius: RADIUS.md, textTransform: "uppercase", transform: "rotate(-4deg)", transformOrigin: "left center", boxShadow: SHADOW.soft, animation: "grOcWobble 3.2s ease-in-out infinite" }}>

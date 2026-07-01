@@ -161,6 +161,14 @@ function StandardCard({ item, portrait = false }: { item: LiveItem; portrait?: b
   // video) overlays it dimmed, so a chosen colour always shows through. Uten bilde
   // sentreres innholdet vertikalt i stående, så korte tekst-kort ikke blir tomme.
   const centre = portrait && !item.imageUrl
+  // Kontrast-scrim over bakgrunnsbildet, matchet til tekstfargen: lys tekst → mørk
+  // scrim, mørk tekst → lys scrim. Sikrer at et lyst logo-bilde (f.eks. Kystfrost)
+  // aldri ser vasket ut/brutt — bildet blir bevisst atmosfære, teksten alltid lesbar.
+  const tc = (item.textColor ?? "#fff").toLowerCase()
+  const lightText = tc === "#fff" || tc === "#ffffff" || tc === "white"
+  const scrim = lightText
+    ? "linear-gradient(180deg, rgba(10,10,12,.35) 0%, rgba(10,10,12,.72) 100%)"
+    : "linear-gradient(180deg, rgba(255,255,255,.55) 0%, rgba(255,255,255,.85) 100%)"
   return (
     <>
       {item.imageUrl && item.isVideo && (
@@ -168,6 +176,7 @@ function StandardCard({ item, portrait = false }: { item: LiveItem; portrait?: b
         <video src={item.imageUrl} autoPlay muted loop playsInline style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", opacity: 0.22 }} />
       )}
       {item.imageUrl && !item.isVideo && <div style={bgImage(item.imageUrl)} />}
+      {item.imageUrl && <div style={{ position: "absolute", inset: 0, background: scrim, pointerEvents: "none" }} />}
       <div style={{ position: "absolute", inset: 0, padding: portrait ? 76 : 70, boxSizing: "border-box", display: "flex", flexDirection: "column", justifyContent: centre ? "center" : "flex-start", color: item.textColor ?? "#fff" }}>
         {KICKER[item.type] && <Kicker>{KICKER[item.type]}</Kicker>}
         <h1 style={{ fontSize: portrait ? 96 : 78, fontWeight: 900, margin: "0 0 18px", lineHeight: 1.02, letterSpacing: -1, textWrap: "balance" }}>{item.title}</h1>
@@ -202,7 +211,9 @@ function Gallery({ urls }: { urls: string[] }) {
  */
 function SplitCard({ item, portrait = false }: { item: LiveItem; portrait?: boolean }) {
   const multi = item.imageUrls.length >= 2
-  // Stående: stable tekst over bilde(r); liggende: tekst venstre / bilde høyre.
+  // «Lite bilde»: teksten er hovedsaken. Liggende: tekst venstre / bilde høyre.
+  // Stående: tittel + tekst dominerer, bildet er et LITE bånd (ikke stort med
+  // masse tomrom rundt — det var feil at bildet vokste og fylte skjermen).
   return (
     <div style={{ position: "absolute", inset: 0, padding: portrait ? 68 : 60, boxSizing: "border-box", display: "flex", flexDirection: portrait ? "column" : "row", gap: portrait ? 34 : 44, alignItems: "stretch" }}>
       <div style={{ flex: portrait ? "0 0 auto" : (multi ? "0 0 40%" : "1 1 auto"), minWidth: 0, display: "flex", flexDirection: "column" }}>
@@ -212,10 +223,12 @@ function SplitCard({ item, portrait = false }: { item: LiveItem; portrait?: bool
         <PeriodChip item={item} />
         {!portrait && <ScrollText blocks={item.blocks} style={{ flex: "1 1 auto" }} />}
       </div>
-      <div style={{ flex: "1 1 auto", minHeight: 0, minWidth: 0, display: "flex" }}>
+      {/* Bilde: liggende fyller høyre halvdel; stående = lite bånd (maks ~34%). */}
+      <div style={{ flex: portrait ? "0 0 auto" : "1 1 auto", height: portrait ? "34%" : "auto", minHeight: 0, minWidth: 0, display: "flex" }}>
         <Gallery urls={item.imageUrls} />
       </div>
-      {portrait && item.blocks.length > 0 && <ScrollText blocks={item.blocks} style={{ flex: "0 0 auto", maxHeight: "22%" }} />}
+      {/* Stående: brødteksten er hovedsaken → får resten av høyden. */}
+      {portrait && item.blocks.length > 0 && <ScrollText blocks={item.blocks} style={{ flex: "1 1 auto", minHeight: 0 }} />}
     </div>
   )
 }
