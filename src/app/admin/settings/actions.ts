@@ -2,27 +2,21 @@
 
 import { randomBytes } from "crypto"
 import { revalidatePath } from "next/cache"
-import { createClient, createAdminClient } from "@/lib/supabase/server"
+import { createAdminClient } from "@/lib/supabase/server"
 import { getAdminContext } from "@/lib/admin/admin-context"
 import { requireRole } from "@/lib/admin/require-role"
 import { logAudit } from "@/lib/admin/audit"
 
-// Rollene som har tilgang til /admin/settings-sidebaren. super_admin bypasser RLS,
-// så .eq("tenant_id", tenantId) på id-baserte muteringer er selve tenant-isolasjonen
+// Destruktive skjerm-/branding-operasjoner er kun for ledelse (super_admin,
+// chain_manager) — ikke area/store-roller. super_admin bypasser RLS, så
+// .eq("tenant_id", tenantId) på id-baserte muteringer er selve tenant-isolasjonen
 // under act-as. tenantId = effektiv (aktiv) tenant fra requireRole.
-const SETTINGS_ROLES = ["super_admin", "chain_manager", "area_manager", "store_manager"] as const
+const MANAGEMENT_ROLES = ["super_admin", "chain_manager"] as const
 
 export type ScreenCommand = "power_on" | "power_off" | "reload" | "reboot"
 
-async function requireUser() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error("Ikke innlogget")
-  return { supabase, userId: user.id }
-}
-
 export async function sendCommand(screenId: string, command: ScreenCommand) {
-  const { supabase, tenantId } = await requireRole([...SETTINGS_ROLES])
+  const { supabase, tenantId } = await requireRole([...MANAGEMENT_ROLES])
   const { error } = await supabase
     .from("screens")
     .update({ pending_command: command })
@@ -34,7 +28,7 @@ export async function sendCommand(screenId: string, command: ScreenCommand) {
 }
 
 export async function createScreen(storeId: string, name: string) {
-  const { supabase, userId } = await requireUser()
+  const { supabase, userId } = await requireRole([...MANAGEMENT_ROLES])
 
   // tenant for the chosen store (RLS keeps this within the user's tenant)
   const { data: store, error: storeErr } = await supabase
@@ -59,7 +53,7 @@ export async function createScreen(storeId: string, name: string) {
 }
 
 export async function regenerateToken(screenId: string) {
-  const { supabase, userId, tenantId } = await requireRole([...SETTINGS_ROLES])
+  const { supabase, userId, tenantId } = await requireRole([...MANAGEMENT_ROLES])
   const token = "gr_" + randomBytes(24).toString("hex")
   const { error } = await supabase
     .from("screens")
@@ -73,7 +67,7 @@ export async function regenerateToken(screenId: string) {
 }
 
 export async function deleteScreen(screenId: string) {
-  const { supabase, userId, tenantId } = await requireRole([...SETTINGS_ROLES])
+  const { supabase, userId, tenantId } = await requireRole([...MANAGEMENT_ROLES])
   const { error } = await supabase.from("screens").delete().eq("id", screenId).eq("tenant_id", tenantId)
   if (error) return { ok: false, error: error.message }
   await logAudit({ userId, action: "screen.delete", entityType: "screen", entityId: screenId, summary: "Slettet skjerm" })
@@ -87,7 +81,7 @@ export async function updateChainBranding(
   brandLight: string,
   brandFg: string
 ) {
-  const { supabase, userId, tenantId } = await requireRole([...SETTINGS_ROLES])
+  const { supabase, userId, tenantId } = await requireRole([...MANAGEMENT_ROLES])
   const { error } = await supabase
     .from("chains")
     .update({ color, brand_light: brandLight, brand_fg: brandFg })
@@ -111,7 +105,7 @@ export async function uploadChainLogo(
   chainId: string,
   formData: FormData
 ): Promise<{ ok: true; url: string } | { ok: false; error: string }> {
-  const { supabase, userId, tenantId } = await requireRole([...SETTINGS_ROLES])
+  const { supabase, userId, tenantId } = await requireRole([...MANAGEMENT_ROLES])
 
   const file = formData.get("file")
   if (!(file instanceof File) || file.size === 0) return { ok: false, error: "Ingen fil valgt" }

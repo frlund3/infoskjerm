@@ -11,14 +11,27 @@ const MANAGER_ROLES = ["super_admin", "chain_manager", "area_manager", "store_ma
 interface ChainRow { name: string }
 
 export default async function KundeklubbOverviewPage() {
-  const { tenantId } = await requireRole([...MANAGER_ROLES])
+  const { userId, role, tenantId } = await requireRole([...MANAGER_ROLES])
   const admin = createAdminClient()
 
-  const { data: stores } = await admin
+  const { data: allStores } = await admin
     .from("stores")
     .select("id, name, city, kundeklubb_enabled, kundeklubb_headline, chains(name)")
     .eq("tenant_id", tenantId)
     .order("name")
+
+  // Store-level scoping: chain-wide roles see every store in the tenant; area/
+  // store managers only see the stores assigned to them in user_stores. This
+  // page uses the service-role client (bypasses RLS), so the restriction MUST
+  // be enforced here — otherwise member counts (PII proxy) would leak across
+  // stores the caller has no access to.
+  const privileged = role === "super_admin" || role === "chain_manager"
+  let stores = allStores ?? []
+  if (!privileged) {
+    const { data: userStores } = await admin.from("user_stores").select("store_id").eq("user_id", userId)
+    const accessible = new Set((userStores ?? []).map((r) => r.store_id).filter(Boolean) as string[])
+    stores = stores.filter((s) => accessible.has(s.id))
+  }
 
   const ids = (stores ?? []).map((s) => s.id)
   const members = new Map<string, number>()

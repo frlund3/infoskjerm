@@ -5,6 +5,7 @@ import { Topbar } from "@/components/admin/topbar"
 import Link from "next/link"
 import { Pencil, Users, UserPlus, CalendarDays, MapPin } from "lucide-react"
 import { SignupsTable, type SignupRow } from "./signups-table"
+import { canAccessInvitation } from "../access"
 
 export const dynamic = "force-dynamic"
 
@@ -26,15 +27,20 @@ function fmtEventDate(iso: string | null | undefined): string | null {
 
 export default async function InvitationSignupsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const { tenantId } = await requireRole([...AUTHOR_ROLES])
+  const { userId, role, tenantId } = await requireRole([...AUTHOR_ROLES])
   const admin = createAdminClient()
 
   const { data: inv } = await admin
     .from("content_items")
-    .select("id, title, type, body, tenant_id")
+    .select("id, title, type, body, tenant_id, created_by, content_targets(target_all, store_id, tag_id)")
     .eq("id", id)
     .maybeSingle()
   if (!inv || inv.type !== "invitation" || inv.tenant_id !== tenantId) notFound()
+
+  // Store-level scoping: area/store managers may only open invitations they
+  // authored OR that reach one of their assigned stores. Service-role bypasses
+  // RLS, so enforce it here — the signups below are attendee PII.
+  if (!(await canAccessInvitation(admin, inv, userId, role))) notFound()
 
   const { data: signups } = await admin
     .from("event_signups")

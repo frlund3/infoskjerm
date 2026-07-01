@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useTransition } from "react"
 import { Monitor, ChevronDown, RefreshCw, Camera, Wifi, WifiOff, Megaphone } from "lucide-react"
 import type { StoreScreen, ScreenSync } from "@/lib/xibo/screens"
 import { pushToScreen, requestNewScreenshot } from "./actions"
-import { useTenantConfig } from "@/components/admin/tenant-config-provider"
+import { useTenantConfig, useTenantFeature } from "@/components/admin/tenant-config-provider"
 
 /**
  * Live, in-app preview of exactly what plays on a store's screen — composed from
@@ -49,6 +49,9 @@ export function ScreenPreview({
   brand: string
 }) {
   const { avdelinger: AVDELINGER } = useTenantConfig()
+  // Butikk-KPI + «Alle butikker» er dagligvare (svinn/omsetning fra Gange-Rolv Drift)
+  // — skjul dem for ikke-dagligvare-tenants (f.eks. bilforhandlere).
+  const canKpi = useTenantFeature("offerCards")
   const [storeId, setStoreId] = useState(stores[0]?.id ?? "")
   const [avdeling, setAvdeling] = useState("felles")
   const [view, setView] = useState<View>("intern-innhold")
@@ -83,7 +86,7 @@ export function ScreenPreview({
   const sid = encodeURIComponent(store.id)
   const tilbudSrc = `/widget/tilbud?store=${sid}&avdeling=${encodeURIComponent(avdeling)}`
   const kpiSrc = `/widget/butikk-kpi?store=${sid}`
-  const oversiktSrc = `/widget/kpi-oversikt`
+  const oversiktSrc = `/widget/kpi-oversikt?store=${sid}`
   const internInnholdSrc = `/widget/nyheter?store=${sid}&flate=intern`
   const kundeklubbSrc = `/widget/kundeklubb?store=${sid}`
   const kundeSrc = kundeView === "klubb" ? kundeklubbSrc : tilbudSrc
@@ -91,14 +94,22 @@ export function ScreenPreview({
   // Internal "innhold" screen carries the top strip (store name + clock + date +
   // weather) above the rotating news + ticker — like the real bakrom layout.
   const showStrip = view === "intern-innhold"
-  const oversiktFull = oversiktPeriode === "ar" ? `${oversiktSrc}?periode=ar` : oversiktSrc
+  const oversiktFull = oversiktPeriode === "ar" ? `${oversiktSrc}&periode=ar` : oversiktSrc
   const internContentSrc = view === "intern-kpi" ? kpiSrc : view === "intern-innhold" ? internInnholdSrc : oversiktFull
 
   // Kunde = ett portrett-skjermbilde (toppstripe + tilbud/avis). Intern = 3 faner.
   const subTabs: { key: View; label: string }[] =
     flate === "kunde"
       ? []
-      : [{ key: "intern-innhold", label: "Internt innhold" }, { key: "intern-kpi", label: "Butikk-KPI" }, { key: "intern-oversikt", label: "Alle butikker" }]
+      : [
+          { key: "intern-innhold" as View, label: "Internt innhold" },
+          ...(canKpi
+            ? [
+                { key: "intern-kpi" as View, label: "Butikk-KPI" },
+                { key: "intern-oversikt" as View, label: "Alle butikker" },
+              ]
+            : []),
+        ]
 
   return (
     <div className="space-y-4">

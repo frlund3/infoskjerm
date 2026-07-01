@@ -102,6 +102,9 @@ const ROLE_LABEL: Record<InvitableRole, string> = {
 export async function deleteUser(userId: string) {
   const { supabase, userId: actorId, tenantId } = await requireRole(["super_admin", "chain_manager"])
   const { data: target } = await supabase.from("users").select("email").eq("id", userId).eq("tenant_id", tenantId).maybeSingle()
+  // Bekreft at brukeren tilhører kallers tenant FØR sletting — ellers ville
+  // auth-sletting under kunne kjørt selv om DB-raden var utenfor tenant.
+  if (!target) return { ok: false, error: "Bruker ikke funnet" }
   const { error } = await supabase.from("users").delete().eq("id", userId).eq("tenant_id", tenantId)
   if (error) return { ok: false, error: error.message }
   await logAudit({ userId: actorId, action: "user.delete", entityType: "user", entityId: userId, summary: `Slettet bruker ${target?.email ?? userId}` })
@@ -135,7 +138,15 @@ export async function updateUserRole(userId: string, role: UserRole) {
 }
 
 export async function setUserStores(userId: string, storeIds: string[]) {
-  const { supabase, userId: actorId } = await requireRole(["super_admin", "chain_manager", "area_manager"])
+  const { supabase, userId: actorId, tenantId } = await requireRole(["super_admin", "chain_manager"])
+  // Verifiser at målbruker OG butikkene tilhører kallers tenant (RLS håndhever
+  // også via user_stores_write — dette gir tydelig feil + forsvar i dybden).
+  const { data: target } = await supabase.from("users").select("id").eq("id", userId).eq("tenant_id", tenantId).maybeSingle()
+  if (!target) return { ok: false, error: "Bruker ikke funnet" }
+  if (storeIds.length > 0) {
+    const { data: okStores } = await supabase.from("stores").select("id").in("id", storeIds).eq("tenant_id", tenantId)
+    if ((okStores?.length ?? 0) !== storeIds.length) return { ok: false, error: "Ugyldig butikkvalg" }
+  }
   // Replace the user's store assignments
   const { error: delError } = await supabase.from("user_stores").delete().eq("user_id", userId)
   if (delError) return { ok: false, error: delError.message }

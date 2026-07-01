@@ -9,7 +9,7 @@ import type { ChainBrand } from "@/app/widget/tilbud/offer-card"
  *   • pris i sirkel-badge (kort/prosent) eller inline
  *   • kjedelogo/-navn nede til høyre
  *
- * Alt skaleres via container-query-enheter (cqmin/cqh) → ser likt ut på enhver
+ * Alt skaleres via container-query-enheter (cqmin/cqmin) → ser likt ut på enhver
  * 16:9-skjerm. Rein presentasjon; ingen rå HTML injiseres.
  */
 
@@ -27,10 +27,10 @@ function PriceBadge({ price, accent }: { price: string; accent: string }) {
     <div
       style={{
         position: "absolute",
-        top: "8cqh",
-        right: "7cqh",
-        width: "26cqh",
-        height: "26cqh",
+        top: "8cqmin",
+        right: "7cqmin",
+        width: "26cqmin",
+        height: "26cqmin",
         borderRadius: "50%",
         background: accent,
         color: "#fff",
@@ -38,12 +38,12 @@ function PriceBadge({ price, accent }: { price: string; accent: string }) {
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        boxShadow: "0 3cqh 8cqh rgba(0,0,0,.45)",
+        boxShadow: "0 3cqmin 8cqmin rgba(0,0,0,.45)",
         transform: "rotate(-8deg)",
-        border: "1.2cqh solid rgba(255,255,255,.9)",
+        border: "1.2cqmin solid rgba(255,255,255,.9)",
       }}
     >
-      <span style={{ fontSize: "9cqh", fontWeight: 900, lineHeight: 0.9, letterSpacing: "-0.3cqh" }}>{price}</span>
+      <span style={{ fontSize: "9cqmin", fontWeight: 900, lineHeight: 0.9, letterSpacing: "-0.3cqmin" }}>{price}</span>
     </div>
   )
 }
@@ -70,32 +70,32 @@ export function CampaignCard({ item, chain }: { item: LiveItem; chain?: ChainBra
       <div style={{ position: "absolute", inset: 0, background: "linear-gradient(100deg, rgba(10,10,12,.86) 0%, rgba(10,10,12,.66) 34%, rgba(10,10,12,.12) 62%, rgba(10,10,12,0) 100%)" }} />
 
       {/* Innhold: venstrejustert kolonne */}
-      <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", justifyContent: "center", gap: "3cqh", padding: "0 8cqw", maxWidth: "62%" }}>
+      <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", justifyContent: "center", gap: "3cqmin", padding: "0 8cqw", maxWidth: "62%" }}>
         {c.category && (
           <span
             style={{
               alignSelf: "flex-start",
               background: INK,
               color: "#fff",
-              fontSize: "3.4cqh",
+              fontSize: "3.4cqmin",
               fontWeight: 800,
-              letterSpacing: "0.35cqh",
+              letterSpacing: "0.35cqmin",
               textTransform: "uppercase",
-              padding: "1.6cqh 3.2cqh",
-              borderRadius: "1.4cqh",
-              boxShadow: "0 2cqh 5cqh rgba(0,0,0,.4)",
+              padding: "1.6cqmin 3.2cqmin",
+              borderRadius: "1.4cqmin",
+              boxShadow: "0 2cqmin 5cqmin rgba(0,0,0,.4)",
             }}
           >
             {c.category}
           </span>
         )}
 
-        <h1 style={{ margin: 0, color: "#fff", fontSize: "12cqh", fontWeight: 900, lineHeight: 0.98, letterSpacing: "-0.4cqh", textShadow: "0 1.5cqh 4cqh rgba(0,0,0,.45)" }}>
+        <h1 style={{ margin: 0, color: "#fff", fontSize: "11cqmin", fontWeight: 900, lineHeight: 0.98, letterSpacing: "-0.4cqmin", textShadow: "0 1.5cqmin 4cqmin rgba(0,0,0,.45)", overflowWrap: "break-word", hyphens: "auto" }}>
           {c.headline}
         </h1>
 
         {c.subtext && (
-          <p style={{ margin: 0, color: "rgba(255,255,255,.92)", fontSize: "4.6cqh", fontStyle: "italic", fontWeight: 500, lineHeight: 1.15, maxWidth: "92%" }}>
+          <p style={{ margin: 0, color: "rgba(255,255,255,.92)", fontSize: "4.6cqmin", fontStyle: "italic", fontWeight: 500, lineHeight: 1.15, maxWidth: "92%" }}>
             {c.subtext}
           </p>
         )}
@@ -104,15 +104,15 @@ export function CampaignCard({ item, chain }: { item: LiveItem; chain?: ChainBra
           <div
             style={{
               alignSelf: "flex-start",
-              marginTop: "1cqh",
+              marginTop: "1cqmin",
               background: accent,
               color: "#fff",
-              fontSize: "6.4cqh",
+              fontSize: "6.4cqmin",
               fontWeight: 900,
-              letterSpacing: "-0.2cqh",
-              padding: "1.8cqh 4cqh",
-              borderRadius: "2cqh",
-              boxShadow: "0 3cqh 7cqh rgba(0,0,0,.4)",
+              letterSpacing: "-0.2cqmin",
+              padding: "1.8cqmin 4cqmin",
+              borderRadius: "2cqmin",
+              boxShadow: "0 3cqmin 7cqmin rgba(0,0,0,.4)",
             }}
           >
             {c.price}
@@ -123,12 +123,12 @@ export function CampaignCard({ item, chain }: { item: LiveItem; chain?: ChainBra
       {c.price && badge && <PriceBadge price={c.price} accent={accent} />}
 
       {/* Kjedelogo / -navn nede til høyre */}
-      <div style={{ position: "absolute", right: "6cqh", bottom: "6cqh", display: "flex", alignItems: "center" }}>
+      <div style={{ position: "absolute", right: "6cqmin", bottom: "6cqmin", display: "flex", alignItems: "center" }}>
         {chain?.logoUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={chain.logoUrl} alt={chain.name ?? ""} style={{ height: "8cqh", maxWidth: "30cqw", objectFit: "contain", filter: "drop-shadow(0 2px 6px rgba(0,0,0,.5))" }} />
+          <img src={chain.logoUrl} alt={chain.name ?? ""} style={{ height: "8cqmin", maxWidth: "30cqw", objectFit: "contain", filter: "drop-shadow(0 2px 6px rgba(0,0,0,.5))" }} />
         ) : chain?.name ? (
-          <span style={{ color: "#fff", fontSize: "5cqh", fontWeight: 900, letterSpacing: "0.2cqh", textShadow: "0 2px 6px rgba(0,0,0,.5)" }}>{chain.name}</span>
+          <span style={{ color: "#fff", fontSize: "5cqmin", fontWeight: 900, letterSpacing: "0.2cqmin", textShadow: "0 2px 6px rgba(0,0,0,.5)" }}>{chain.name}</span>
         ) : null}
       </div>
     </div>

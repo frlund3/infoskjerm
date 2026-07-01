@@ -11,7 +11,7 @@ const MANAGER_ROLES = ["super_admin", "chain_manager", "area_manager", "store_ma
 
 export default async function StoreKundeklubbPage({ params }: { params: Promise<{ store: string }> }) {
   const { store } = await params
-  const { tenantId } = await requireRole([...MANAGER_ROLES])
+  const { userId, role, tenantId } = await requireRole([...MANAGER_ROLES])
   const admin = createAdminClient()
 
   const { data: s } = await admin
@@ -20,6 +20,16 @@ export default async function StoreKundeklubbPage({ params }: { params: Promise<
     .eq("id", store)
     .maybeSingle()
   if (!s || s.tenant_id !== tenantId) notFound()
+
+  // Store-level scoping: area/store managers may only open a store assigned to
+  // them in user_stores. Service-role bypasses RLS, so enforce it here — the
+  // members list below is member PII (name/phone/email).
+  const privileged = role === "super_admin" || role === "chain_manager"
+  if (!privileged) {
+    const { data: userStores } = await admin.from("user_stores").select("store_id").eq("user_id", userId)
+    const accessible = new Set((userStores ?? []).map((r) => r.store_id).filter(Boolean) as string[])
+    if (!accessible.has(store)) notFound()
+  }
 
   const { data: members } = await admin
     .from("kundeklubb_members")
