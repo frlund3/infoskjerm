@@ -1,4 +1,9 @@
 import { createAdminClient } from "@/lib/supabase/server"
+import { kr, pct, ratio, diffPct, sum } from "./kpi-format"
+
+// Formatererne bor i kpi-format.ts (klient-trygge). Re-eksporteres her så alle
+// eksisterende server-kallsteder (som importerer fra @/lib/content/kpi) består.
+export { kr, pct, ratio, diffPct, sum }
 
 /**
  * Reads synced operational KPIs (from Gange-Rolv Drift) for the staff KPI
@@ -189,30 +194,5 @@ export async function fetchAllStoresKpi(tenantId: string | null): Promise<AllSto
 }
 
 // ---------- formatting + derived helpers ----------
-
-/** Norwegian kr, compact for signage: ≥1M → "1,80 mill", else thousand-separated. */
-export function kr(value: number | null | undefined): string {
-  if (value === null || value === undefined) return "–"
-  if (Math.abs(value) >= 1_000_000) return `${(value / 1_000_000).toLocaleString("nb-NO", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} mill`
-  return value.toLocaleString("nb-NO", { maximumFractionDigits: 0 })
-}
-
-export function pct(value: number | null | undefined, digits = 1): string {
-  if (value === null || value === undefined || Number.isNaN(value)) return "–"
-  return `${value.toLocaleString("nb-NO", { minimumFractionDigits: digits, maximumFractionDigits: digits })} %`
-}
-
-export function ratio(num: number | null | undefined, den: number | null | undefined): number | null {
-  if (!num || !den) return null
-  return (num / den) * 100
-}
-
-/** Percentage difference of a vs b ((a-b)/b * 100). */
-export function diffPct(a: number | null | undefined, b: number | null | undefined): number | null {
-  if (a === null || a === undefined || !b) return null
-  return ((a - b) / Math.abs(b)) * 100
-}
-
-export function sum(weeks: WeekKpi[], key: keyof WeekKpi): number {
-  return weeks.reduce((acc, w) => acc + (typeof w[key] === "number" ? (w[key] as number) : 0), 0)
-}
+// kr/pct/ratio/diffPct/sum er flyttet til ./kpi-format (klient-trygge) og
+// re-eksporteres øverst i denne filen.
