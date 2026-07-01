@@ -1,5 +1,6 @@
 "use client"
 
+import Image from "next/image"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
@@ -105,11 +106,15 @@ export function Sidebar({ user }: SidebarProps) {
     <aside className="fixed left-0 top-0 h-screen w-60 bg-white border-r border-zinc-100 flex flex-col z-40">
       {/* Logo/brand */}
       <div className="flex items-center gap-3 px-5 py-4 border-b border-zinc-100">
-        <div
-          className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-          style={{ backgroundColor: "var(--brand-primary)" }}
-        >
-          <Monitor className="w-4 h-4" style={{ color: "var(--brand-fg)" }} />
+        <div className="w-8 h-8 rounded-lg overflow-hidden flex-shrink-0">
+          <Image
+            src="/icon-192.png"
+            alt="Framtidmedia"
+            width={32}
+            height={32}
+            className="w-full h-full object-cover"
+            priority
+          />
         </div>
         <div className="min-w-0">
           <p className="text-zinc-900 font-bold text-sm leading-tight truncate">
