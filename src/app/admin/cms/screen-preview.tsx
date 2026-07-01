@@ -48,7 +48,7 @@ export function ScreenPreview({
   screens: Record<string, StoreScreen[]>
   brand: string
 }) {
-  const { avdelinger: AVDELINGER } = useTenantConfig()
+  const { avdelinger: AVDELINGER, unitLabel, unitLabelPlural } = useTenantConfig()
   // Butikk-KPI + «Alle butikker» er dagligvare (svinn/omsetning fra Gange-Rolv Drift)
   // — skjul dem for ikke-dagligvare-tenants (f.eks. bilforhandlere).
   const canKpi = useTenantFeature("offerCards")
@@ -77,7 +77,7 @@ export function ScreenPreview({
   }, [STAGE_W])
 
   const store = stores.find((s) => s.id === storeId) ?? stores[0]
-  if (!store) return <p className="text-sm text-zinc-500">Ingen butikker ennå.</p>
+  if (!store) return <p className="text-sm text-zinc-500">Ingen {unitLabelPlural.toLowerCase()} ennå.</p>
 
   const storeScreens = screens[store.id] ?? []
   // Filter the screen list to the selected flate: Kundeskjerm → customer-facing
@@ -105,8 +105,8 @@ export function ScreenPreview({
           { key: "intern-innhold" as View, label: "Internt innhold" },
           ...(canKpi
             ? [
-                { key: "intern-kpi" as View, label: "Butikk-KPI" },
-                { key: "intern-oversikt" as View, label: "Alle butikker" },
+                { key: "intern-kpi" as View, label: `${unitLabel}-KPI` },
+                { key: "intern-oversikt" as View, label: `Alle ${unitLabelPlural.toLowerCase()}` },
               ]
             : []),
         ]
@@ -206,7 +206,7 @@ export function ScreenPreview({
 
       <p className="text-xs text-zinc-400">
         {flate === "kunde"
-          ? "Kundeskjerm — det kundene ser i butikken (tilbud, plakater). Veksler automatisk mellom innhold og tilbud."
+          ? `Kundeskjerm — det kundene ser i ${unitLabel.toLowerCase()}en (tilbud, plakater). Veksler automatisk mellom innhold og tilbud.`
           : "Internskjerm (bakrom) — KPI og driftstall for de ansatte. Aldri synlig for kunder."}
       </p>
     </div>
@@ -216,6 +216,7 @@ export function ScreenPreview({
 type View = "kunde-skjerm" | "kunde-tilbud" | "intern-innhold" | "intern-kpi" | "intern-oversikt"
 
 function ScreenStatus({ storeName, screens }: { storeName: string; screens: StoreScreen[] }) {
+  const { unitLabel } = useTenantConfig()
   const [pending, startTransition] = useTransition()
   const [note, setNote] = useState<{ kind: "ok" | "err"; text: string } | null>(null)
 
@@ -244,7 +245,7 @@ function ScreenStatus({ storeName, screens }: { storeName: string; screens: Stor
     <div className="rounded-xl border border-zinc-200 bg-white">
       <div className="flex items-center justify-between gap-3 px-4 py-2.5 border-b border-zinc-100">
         <span className="text-xs font-semibold text-zinc-700">
-          {screens.length === 1 ? "1 skjerm" : `${screens.length} skjermer`} i butikken
+          {screens.length === 1 ? "1 skjerm" : `${screens.length} skjermer`} i {unitLabel.toLowerCase()}en
         </span>
         <button
           onClick={handlePush}

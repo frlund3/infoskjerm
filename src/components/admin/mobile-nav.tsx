@@ -11,6 +11,7 @@ interface MobileNavProps {
     fullName: string
     role: string
     chainName: string | null
+    orgName: string | null
     chainColor: string | null
     chainLogoUrl: string | null
     isImpersonating: boolean
@@ -39,7 +40,7 @@ export function MobileNav({ user }: MobileNavProps) {
           <span className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: "var(--brand-primary)" }}>
             <Monitor className="w-4 h-4" style={{ color: "var(--brand-fg)" }} />
           </span>
-          <span className="font-bold text-sm text-zinc-900 truncate">{user.chainName ?? "Infoskjerm"}</span>
+          <span className="font-bold text-sm text-zinc-900 truncate">{user.orgName ?? "Infoskjerm"}</span>
         </div>
         {user.isImpersonating && user.activeTenantName && (
           <span className="ml-auto text-[10px] font-semibold uppercase tracking-wide bg-amber-50 border border-amber-200 text-amber-700 rounded-full px-2 py-0.5 truncate max-w-[40%]">

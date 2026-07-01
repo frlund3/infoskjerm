@@ -583,7 +583,7 @@ export function ContentForm({ stores, tags, initial, audience = "intern", defaul
           {isKlubb && (
             <div className="space-y-4 rounded-xl border border-zinc-200 bg-white p-4">
               <p className="text-[11px] text-zinc-500 bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-2">
-                Kundeklubb-kort med <strong>QR-kode</strong> som tar kunden til butikkens egen påmeldingsside. QR-koden lages automatisk per butikk — du velger kun tekst og hvilke skjermer den vises på.
+                Kundeklubb-kort med <strong>QR-kode</strong> som tar kunden til {unitLabel.toLowerCase()}ens egen påmeldingsside. QR-koden lages automatisk per {unitLabel.toLowerCase()} — du velger kun tekst og hvilke skjermer den vises på.
               </p>
               <div>
                 <label className="block text-[10px] text-zinc-400 mb-1">Overskrift *</label>
@@ -823,7 +823,7 @@ export function ContentForm({ stores, tags, initial, audience = "intern", defaul
             ) : (
               <>
                 <LivePreview data={previewData} portrait={audience === "kunde"} />
-                <p className="text-[10px] text-zinc-400 mt-2.5 text-center">Live — slik vises det på {audience === "kunde" ? "kundeskjermen" : "internskjermen"}.{isOfferStruktur ? " Kjedelogo legges til per butikk." : ""}</p>
+                <p className="text-[10px] text-zinc-400 mt-2.5 text-center">Live — slik vises det på {audience === "kunde" ? "kundeskjermen" : "internskjermen"}.{isOfferStruktur ? ` Kjedelogo legges til per ${unitLabel.toLowerCase()}.` : ""}</p>
               </>
             )}
           </section>
@@ -912,7 +912,7 @@ export function ContentForm({ stores, tags, initial, audience = "intern", defaul
               className="w-full text-xs border border-zinc-200 rounded-lg px-2.5 py-2 focus:outline-none focus:ring-1 focus:ring-zinc-300">
               {AVDELINGER.map((a) => <option key={a.key} value={a.key}>{a.label}</option>)}
             </select>
-            <p className="text-[10px] text-zinc-400 mt-1.5">Vises på skjermer i denne avdelingen. «Hele butikken» vises på alle skjermer.</p>
+            <p className="text-[10px] text-zinc-400 mt-1.5">Vises på skjermer i denne avdelingen. «Hele {unitLabel.toLowerCase()}en» vises på alle skjermer.</p>
           </section>
 
           {/* Appearance — background + text colour for text cards */}

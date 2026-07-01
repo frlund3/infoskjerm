@@ -72,6 +72,7 @@ interface SidebarProps {
     fullName: string
     role: string
     chainName: string | null
+    orgName: string | null
     chainColor: string | null
     chainLogoUrl: string | null
     isImpersonating: boolean
@@ -127,7 +128,7 @@ export function Sidebar({ user }: SidebarProps) {
         </div>
         <div className="min-w-0">
           <p className="text-zinc-900 font-bold text-sm leading-tight truncate">
-            {user.chainName ?? "Infoskjerm"}
+            {user.orgName ?? "Infoskjerm"}
           </p>
           <p className="text-zinc-400 text-xs">Administrasjon</p>
         </div>

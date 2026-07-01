@@ -74,6 +74,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             fullName: profile?.full_name ?? "Admin",
             role,
             chainName: chain?.name ?? null,
+            // Sidebar-overskriften skal vise ORGANISASJONEN (tenant), ikke kjeden.
+            orgName: tenantConfig.brand || ctx?.activeTenant?.name || chain?.name || null,
             chainColor: chain?.color ?? null,
             chainLogoUrl: tenantConfig.logoUrl ?? chain?.logo_url ?? null,
             isImpersonating: ctx?.isImpersonating ?? false,

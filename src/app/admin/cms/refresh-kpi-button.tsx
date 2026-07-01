@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react"
 import { RefreshCw, Check, AlertTriangle } from "lucide-react"
 import { syncKpiNow } from "./kpi-actions"
+import { useTenantConfig } from "@/components/admin/tenant-config-provider"
 
 /**
  * "Oppdater KPI nå" — pulls the latest week from Gange-Rolv Drift on demand, so
@@ -13,6 +14,7 @@ import { syncKpiNow } from "./kpi-actions"
 type Status = { kind: "idle" } | { kind: "ok"; text: string } | { kind: "error"; text: string }
 
 export function RefreshKpiButton() {
+  const { unitLabelPlural } = useTenantConfig()
   const [pending, startTransition] = useTransition()
   const [status, setStatus] = useState<Status>({ kind: "idle" })
 
@@ -21,7 +23,7 @@ export function RefreshKpiButton() {
     startTransition(async () => {
       const res = await syncKpiNow()
       if (res.ok) {
-        setStatus({ kind: "ok", text: `Oppdatert: ${res.result.kpiWeeks} ukerader, ${res.result.svinnStores} butikker` })
+        setStatus({ kind: "ok", text: `Oppdatert: ${res.result.kpiWeeks} ukerader, ${res.result.svinnStores} ${unitLabelPlural.toLowerCase()}` })
       } else {
         setStatus({ kind: "error", text: res.error })
       }
