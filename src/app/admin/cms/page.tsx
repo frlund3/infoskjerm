@@ -21,7 +21,7 @@ const VIEW_ROLES = ["super_admin", "chain_manager", "area_manager", "store_manag
 
 export default async function CmsDashboardPage() {
   const { supabase, tenantId } = await requireRole([...VIEW_ROLES])
-  const { unitLabel, unitLabelPlural } = await getTenantConfig(supabase, tenantId)
+  const { unitLabel, unitLabelPlural, brand } = await getTenantConfig(supabase, tenantId)
 
   const { data: stores } = await supabase
     .from("stores")
@@ -84,7 +84,7 @@ export default async function CmsDashboardPage() {
           <div className="space-y-6">
             <ContentStatus counts={counts} />
             <InsightPanel insight={insight} />
-            <ScreenPreview stores={previewStores} screens={screens} />
+            <ScreenPreview stores={previewStores} screens={screens} brand={brand} />
           </div>
         )}
       </div>
