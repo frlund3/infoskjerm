@@ -13,11 +13,11 @@ export default async function BulkOfferPage({
 }: {
   searchParams: Promise<{ lenker?: string }>
 }) {
-  const { supabase, role } = await requireRole([...AUTHOR_ROLES])
+  const { supabase, role, tenantId } = await requireRole([...AUTHOR_ROLES])
   const { lenker } = await searchParams
   const [storeOptions, { data: tags }] = await Promise.all([
-    loadStoreOptions(supabase),
-    supabase.from("tags").select("id, name, color").order("name"),
+    loadStoreOptions(supabase, tenantId),
+    supabase.from("tags").select("id, name, color").eq("tenant_id", tenantId).order("name"),
   ])
   return (
     <BulkImport

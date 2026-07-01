@@ -3,6 +3,9 @@
 import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
 import { logAudit } from "@/lib/admin/audit"
+import { requireRole } from "@/lib/admin/require-role"
+
+const STORE_ROLES = ["super_admin", "chain_manager", "area_manager"] as const
 
 async function requireUser() {
   const supabase = await createClient()
@@ -75,19 +78,11 @@ export async function createTag(name: string, color: string): Promise<CreateTagR
   const trimmed = name.trim()
   if (!trimmed) return { ok: false, error: "Tag-navn kan ikke være tomt" }
 
-  const { supabase, userId } = await requireUser()
-
-  const { data: profile } = await supabase
-    .from("users")
-    .select("tenant_id")
-    .eq("id", userId)
-    .single()
-
-  if (!profile) return { ok: false, error: "Bruker ikke funnet" }
+  const { supabase, userId, tenantId } = await requireRole([...STORE_ROLES])
 
   const { data, error } = await supabase
     .from("tags")
-    .insert({ name: trimmed, color, tenant_id: profile.tenant_id })
+    .insert({ name: trimmed, color, tenant_id: tenantId })
     .select("id, name, color")
     .single()
 
@@ -106,19 +101,11 @@ export async function createStore(data: {
   city: string
   chain_id: string
 }) {
-  const { supabase, userId } = await requireUser()
-
-  const { data: profile } = await supabase
-    .from("users")
-    .select("tenant_id")
-    .eq("id", userId)
-    .single()
-
-  if (!profile) return { ok: false, error: "Bruker ikke funnet" }
+  const { supabase, userId, tenantId } = await requireRole([...STORE_ROLES])
 
   const { error } = await supabase.from("stores").insert({
     ...data,
-    tenant_id: profile.tenant_id,
+    tenant_id: tenantId,
   })
 
   if (error) return { ok: false, error: error.message }
