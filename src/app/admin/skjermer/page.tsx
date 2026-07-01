@@ -4,6 +4,7 @@ import { fetchScreensByStore } from "@/lib/xibo/screens"
 import { Topbar } from "@/components/admin/topbar"
 import { SkjermerBoard, type BoardStore } from "./skjermer-board"
 import { StoreScreens, type DisplayLite, type ScreenRowLite } from "./store-screens"
+import { SkjermerTabs } from "./skjermer-tabs"
 import { getBaseUrl } from "@/lib/base-url"
 
 /**
@@ -89,43 +90,50 @@ export default async function SkjermerPage() {
   const online = boardStores.reduce((n, s) => n + s.screens.filter((x) => x.online).length, 0)
   const origin = await getBaseUrl()
 
+  const styringPanel = (
+    <div className="space-y-3">
+      <p className="text-sm text-zinc-500">Bind hver tilkoblede skjerm til flate, avdeling og orientering — eller legg til en kiosk-skjerm (telefon/nettbrett). Endringen slår gjennom av seg selv; du rører aldri enheten.</p>
+      {managed.length === 0 ? (
+        <p className="text-sm text-zinc-400 italic">Ingen tilkoblede skjermer ennå. Koble til en Raspberry Pi i skjermsystemet (den dukker opp her automatisk), eller åpne en butikk for å legge til en kiosk-skjerm.</p>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {managed.map((s) => (
+            <div key={s.id} className="rounded-2xl border border-zinc-100 bg-white p-5 space-y-3">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: s.chainColor }} />
+                <span className="text-sm font-semibold text-zinc-900">{s.name}</span>
+                <span className="text-xs text-zinc-400">{s.chainName}</span>
+              </div>
+              <StoreScreens
+                storeId={s.id}
+                displays={displaysByStore.get(s.id) ?? []}
+                rows={rowsByStore.get(s.id) ?? []}
+                origin={origin}
+              />
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+
+  const statusPanel = (
+    <div className="space-y-3">
+      <p className="text-sm text-zinc-500">Live status fra skjermsystemet. Åpne en butikk for å legge til en kiosk-skjerm.</p>
+      <SkjermerBoard stores={boardStores} />
+    </div>
+  )
+
   return (
     <div className="flex flex-1 flex-col">
       <Topbar title="Skjermer" subtitle={`${totalScreens} skjermer · ${online} pålogget`} />
-      <div className="flex-1 p-6 max-w-7xl space-y-8">
-        {managed.length > 0 && (
-          <section className="space-y-3">
-            <div>
-              <h2 className="text-lg font-bold text-zinc-900">Skjerm-styring</h2>
-              <p className="text-sm text-zinc-500">Bind hver tilkoblede skjerm til flate, avdeling og orientering — eller legg til en kiosk-skjerm (telefon/nettbrett). Endringen slår gjennom av seg selv; du rører aldri enheten.</p>
-            </div>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {managed.map((s) => (
-                <div key={s.id} className="rounded-2xl border border-zinc-100 bg-white p-5 space-y-3">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: s.chainColor }} />
-                    <span className="text-sm font-semibold text-zinc-900">{s.name}</span>
-                    <span className="text-xs text-zinc-400">{s.chainName}</span>
-                  </div>
-                  <StoreScreens
-                    storeId={s.id}
-                    displays={displaysByStore.get(s.id) ?? []}
-                    rows={rowsByStore.get(s.id) ?? []}
-                    origin={origin}
-                  />
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        <section className="space-y-3">
-          <div>
-            <h2 className="text-lg font-bold text-zinc-900">Alle butikker · status</h2>
-            <p className="text-sm text-zinc-500">Live status fra skjermsystemet. Åpne en butikk for å legge til en kiosk-skjerm.</p>
-          </div>
-          <SkjermerBoard stores={boardStores} />
-        </section>
+      <div className="flex-1 p-6 max-w-7xl">
+        <SkjermerTabs
+          styring={styringPanel}
+          status={statusPanel}
+          styringCount={managed.length}
+          statusCount={stores.length}
+        />
       </div>
     </div>
   )
