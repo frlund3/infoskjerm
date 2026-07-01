@@ -21,6 +21,8 @@ export const TENANT_FEATURES = {
   gln: "GLN / EPD-lokasjonsnummer",
   /** Liggende kampanjekort-bygger (premium plakat-mal, /widget/kampanje) — f.eks. bilforhandler. */
   campaignCards: "Kampanjekort (liggende)",
+  /** KPI-dashboard + drift-synk («Oppdater KPI nå») — kun kjeder med Drift-integrasjon (Gange-Rolv). */
+  kpi: "KPI-dashboard (drift-synk)",
 } as const
 
 export type TenantFeature = keyof typeof TENANT_FEATURES

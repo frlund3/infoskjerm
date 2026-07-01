@@ -26,7 +26,10 @@ try {
 } catch {}
 
 const MAX_PAGES = 6
-const SCALE = 1.5
+// 3.0 gir ~1785px brede A4-sider → skarpt også på store/4K TV-skjermer i butikk.
+// (1.5 var kornet ved oppskalering; kundeavisen ble klient-rendret i native
+// oppløsning før den flyttet til forhåndsrasterisering.)
+const SCALE = 3
 
 function env(key) {
   if (process.env[key]) return process.env[key]
@@ -66,7 +69,7 @@ async function renderPages(pdfUrl) {
     const vp = page.getViewport({ scale: SCALE })
     const cc = factory.create(vp.width, vp.height)
     await page.render({ canvasContext: cc.context, viewport: vp }).promise
-    buffers.push(cc.canvas.toBuffer("image/jpeg", 0.82))
+    buffers.push(cc.canvas.toBuffer("image/jpeg", 0.9))
   }
   return buffers
 }

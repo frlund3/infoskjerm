@@ -8,6 +8,7 @@ import { InsightPanel } from "./insight-panel"
 import { ContentStatus, type ContentStatusCounts } from "./content-status"
 import { RefreshKpiButton } from "./refresh-kpi-button"
 import { getTenantConfig } from "@/lib/tenant/config-server"
+import { hasFeature } from "@/lib/tenant/features"
 
 /**
  * "Skjermsystem" — the CMS user's window into what each store's screen is
@@ -21,7 +22,10 @@ const VIEW_ROLES = ["super_admin", "chain_manager", "area_manager", "store_manag
 
 export default async function CmsDashboardPage() {
   const { supabase, tenantId } = await requireRole([...VIEW_ROLES])
-  const { unitLabel, unitLabelPlural, brand } = await getTenantConfig(supabase, tenantId)
+  const { unitLabel, unitLabelPlural, brand, features } = await getTenantConfig(supabase, tenantId)
+  // «Oppdater KPI nå» krever Drift-synk — kun tenants med kpi-funksjonen (Gange-Rolv),
+  // aldri hardkodet tenant-navn. Uten den vises knappen ikke (f.eks. Mobile AS).
+  const showKpi = hasFeature(features, "kpi")
 
   const { data: stores } = await supabase
     .from("stores")
@@ -75,7 +79,7 @@ export default async function CmsDashboardPage() {
       <Topbar
         title="Skjermsystem"
         subtitle={`Forhåndsvis og styr hva som vises på hver ${unitLabel.toLowerCase()}s skjerm`}
-        actions={<RefreshKpiButton />}
+        actions={showKpi ? <RefreshKpiButton /> : undefined}
       />
       <div className="flex-1 p-4 sm:p-6 max-w-5xl">
         {previewStores.length === 0 ? (
