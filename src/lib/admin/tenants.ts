@@ -7,6 +7,7 @@ export interface TenantRow {
   created_at: string
   status: string
   archivedAt: string | null
+  logoUrl: string | null
 }
 
 // Kolonnene status/archived_at (036) er ikke i den genererte Database-typen ennå
@@ -18,6 +19,7 @@ type TenantSelectRow = {
   created_at: string | null
   status: string | null
   archived_at: string | null
+  logo_url: string | null
 }
 
 function mapTenant(row: TenantSelectRow): TenantRow {
@@ -28,6 +30,7 @@ function mapTenant(row: TenantSelectRow): TenantRow {
     created_at: row.created_at ?? "",
     status: row.status ?? "active",
     archivedAt: row.archived_at ?? null,
+    logoUrl: row.logo_url ?? null,
   }
 }
 
@@ -39,7 +42,7 @@ export async function listAllTenants(): Promise<TenantRow[]> {
       order: (col: string) => Promise<{ data: TenantSelectRow[] | null; error: unknown }>
     }
   })
-    .select("id, name, slug, created_at, status, archived_at")
+    .select("id, name, slug, created_at, status, archived_at, logo_url")
     .order("name")
   if (error) throw error
   return (data ?? []).map(mapTenant)
@@ -52,7 +55,7 @@ export async function getTenantById(id: string): Promise<TenantRow | null> {
       eq: (c: string, v: string) => { maybeSingle: () => Promise<{ data: TenantSelectRow | null }> }
     }
   })
-    .select("id, name, slug, created_at, status, archived_at")
+    .select("id, name, slug, created_at, status, archived_at, logo_url")
     .eq("id", id)
     .maybeSingle()
   if (!data) return null

@@ -3,10 +3,10 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
-import { Tag } from "lucide-react"
+import { Tag, Upload } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useTenantConfig } from "@/components/admin/tenant-config-provider"
-import { saveTenantTerminology } from "./actions"
+import { saveTenantTerminology, uploadTenantLogo } from "./actions"
 
 /**
  * Lar en tenant-admin sette hva en «enhet» kalles (Butikk vs Forhandler). Hele
@@ -15,12 +15,25 @@ import { saveTenantTerminology } from "./actions"
  */
 export function TenantTerminologyCard() {
   const router = useRouter()
-  const { unitLabel, unitLabelPlural } = useTenantConfig()
+  const { unitLabel, unitLabelPlural, logoUrl } = useTenantConfig()
   const [singular, setSingular] = useState(unitLabel)
   const [plural, setPlural] = useState(unitLabelPlural)
   const [saving, setSaving] = useState(false)
+  const [uploading, setUploading] = useState(false)
 
   const dirty = singular.trim() !== unitLabel || plural.trim() !== unitLabelPlural
+
+  async function onLogo(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const fd = new FormData()
+    fd.set("file", file)
+    setUploading(true)
+    const res = await uploadTenantLogo(fd)
+    setUploading(false)
+    if (res.ok) { toast.success("Logo lastet opp"); router.refresh() }
+    else toast.error(res.error ?? "Kunne ikke laste opp logo")
+  }
 
   async function save() {
     if (!singular.trim() || !plural.trim()) {
@@ -43,10 +56,28 @@ export function TenantTerminologyCard() {
       <CardHeader className="pb-3">
         <CardTitle className="text-sm flex items-center gap-2">
           <Tag className="w-4 h-4 text-zinc-500" />
-          Terminologi
+          Organisasjon
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        <div className="flex items-center gap-3">
+          <div className="w-14 h-14 rounded-xl border border-zinc-200 bg-white flex items-center justify-center overflow-hidden flex-shrink-0">
+            {logoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={logoUrl} alt="Logo" className="w-full h-full object-contain" />
+            ) : (
+              <span className="text-lg font-bold text-zinc-300">{(singular || "?").charAt(0).toUpperCase()}</span>
+            )}
+          </div>
+          <div>
+            <label className={`inline-flex items-center gap-1.5 text-sm font-medium text-zinc-700 border border-zinc-200 hover:border-zinc-300 rounded-lg px-3 py-2 cursor-pointer ${uploading ? "opacity-50 pointer-events-none" : ""}`}>
+              <Upload className="w-4 h-4" /> {uploading ? "Laster opp…" : logoUrl ? "Bytt logo" : "Last opp logo"}
+              <input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" className="hidden" onChange={onLogo} disabled={uploading} />
+            </label>
+            <p className="text-[11px] text-zinc-400 mt-1">Organisasjons-logo — vises i sidemeny og organisasjons-velger. PNG/JPG/WEBP/SVG, maks 5 MB.</p>
+          </div>
+        </div>
+
         <p className="text-sm text-zinc-500">
           Hva kalles en enhet i denne organisasjonen? Endres her og slår gjennom i meny, overskrifter og målretting overalt.
         </p>
