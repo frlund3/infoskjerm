@@ -5,13 +5,14 @@ import { createClient } from "@/lib/supabase/server"
 import { BrandingPanel } from "./branding-panel"
 import { NotificationsCard } from "./notifications-card"
 import { BiometricCard } from "./biometric-card"
+import { TenantTerminologyCard } from "./tenant-terminology-card"
 import { requireRole } from "@/lib/admin/require-role"
 import Link from "next/link"
 
 export const dynamic = "force-dynamic"
 
 export default async function SettingsPage() {
-  const { tenantId } = await requireRole(["super_admin", "chain_manager", "area_manager", "store_manager"])
+  const { tenantId, role } = await requireRole(["super_admin", "chain_manager", "area_manager", "store_manager"])
   const supabase = await createClient()
 
   const { data: { user } } = await supabase.auth.getUser()
@@ -28,6 +29,8 @@ export default async function SettingsPage() {
       <Topbar title="Innstillinger" subtitle="Merkevare og systemkonfigurasjon" />
 
       <div className="flex-1 p-4 sm:p-6 space-y-6 max-w-4xl">
+        {(role === "super_admin" || role === "chain_manager") && <TenantTerminologyCard />}
+
         {chains && chains.length > 0 && (
           <BrandingPanel
             chains={chains.map((c) => ({

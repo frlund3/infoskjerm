@@ -90,7 +90,7 @@ const PAGE_SIZE = 12
 const selectCls = "w-full sm:w-auto text-xs bg-white border border-zinc-200 rounded-lg px-2.5 py-2.5 sm:py-2 text-zinc-600 focus:outline-none focus:ring-1 focus:ring-zinc-300"
 
 export function ContentListClient({ items, stores, tags, newHref = "/admin/innhold/ny", editBase = "/admin/innhold" }: { items: ContentRow[]; stores: Option[]; tags: Option[]; newHref?: string; editBase?: string }) {
-  const { avdelinger: AVDELINGER } = useTenantConfig()
+  const { avdelinger: AVDELINGER, unitLabelPlural } = useTenantConfig()
   const router = useRouter()
   const [busyId, setBusyId] = useState<string | null>(null)
   const [menuId, setMenuId] = useState<string | null>(null)
@@ -205,7 +205,7 @@ export function ContentListClient({ items, stores, tags, newHref = "/admin/innho
           <option value="ticker">Ticker</option>
         </select>
         <select value={storeF} onChange={(e) => resetPage(setStoreF)(e.target.value)} className={selectCls}>
-          <option value="">Alle butikker</option>
+          <option value="">Alle {unitLabelPlural.toLowerCase()}</option>
           {stores.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
         </select>
         <select value={tagF} onChange={(e) => resetPage(setTagF)(e.target.value)} className={selectCls}>
@@ -281,7 +281,7 @@ export function ContentListClient({ items, stores, tags, newHref = "/admin/innho
             const TargetIcon = targetIcon(item.target.mode)
             const period = formatPeriod(item.validFrom, item.validTo)
             const ps = periodStatus(item.validFrom, item.validTo)
-            const targetText = item.target.mode === "all" ? "Alle butikker"
+            const targetText = item.target.mode === "all" ? `Alle ${unitLabelPlural.toLowerCase()}`
               : item.target.mode === "none" ? "Ikke målrettet"
               : item.target.names.slice(0, 2).join(", ") + (item.target.names.length > 2 ? ` +${item.target.names.length - 2}` : "")
             return (

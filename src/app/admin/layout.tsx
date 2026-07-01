@@ -29,7 +29,10 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const role = profile?.role ?? "store_employee"
   const chain = (profile as unknown as { chains: { name: string; color: string; brand_light: string | null; brand_fg: string | null } | null } | null)?.chains ?? null
   const chainKey = role === "super_admin" ? "super_admin" : (chain?.name ?? "SPAR")
-  const tenantConfig = await getTenantConfig(supabase, profile?.tenant_id ?? null)
+  // Terminologi/avdelinger skal følge den AKTIVE tenanten (act-as), ikke
+  // super_adminens egen. effectiveTenantId = impersonert tenant når man opptrer
+  // som en; ellers brukerens egen tenant.
+  const tenantConfig = await getTenantConfig(supabase, ctx?.effectiveTenantId || profile?.tenant_id || null)
 
   // Kun super_admin kan opptre som andre tenants → hent listen for switcheren.
   // Andre roller får tom liste, og switcheren skjuler seg selv.

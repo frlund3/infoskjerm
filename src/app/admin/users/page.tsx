@@ -70,8 +70,10 @@ export default async function UsersPage() {
       />
       <div className="flex-1 p-4 sm:p-6">
         {users.length === 0 ? (
-          <div className="flex items-center justify-center h-48">
-            <p className="text-zinc-400 text-sm">Ingen brukere funnet.</p>
+          <div className="rounded-2xl border border-dashed border-zinc-300 bg-white p-12 text-center">
+            <UserCircle className="w-10 h-10 text-zinc-300 mx-auto mb-3" />
+            <p className="text-sm font-medium text-zinc-700">Ingen brukere ennå</p>
+            <p className="text-xs text-zinc-400 mt-1">Inviter en bruker for å komme i gang.</p>
           </div>
         ) : (
           <>
