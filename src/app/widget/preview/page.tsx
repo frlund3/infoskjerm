@@ -49,8 +49,8 @@ function normalizeUrl(raw: string): string {
   return /^https?:\/\//i.test(v) ? v : `https://${v}`
 }
 
-export default async function PreviewWidgetPage({ searchParams }: { searchParams: Promise<{ d?: string }> }) {
-  const { d } = await searchParams
+export default async function PreviewWidgetPage({ searchParams }: { searchParams: Promise<{ d?: string; o?: string }> }) {
+  const { d, o } = await searchParams
   let data: PreviewData = {}
   try {
     if (d) data = JSON.parse(Buffer.from(d, "base64url").toString("utf-8"))
@@ -142,8 +142,13 @@ export default async function PreviewWidgetPage({ searchParams }: { searchParams
     ? { name: data.chain.name, logoUrl: data.chain.logoUrl, color: data.chain.color, brandFg: data.chain.brandFg }
     : null
 
-  // Liggende kampanjekort forhåndsvises i sin egen fullskjerm-ramme.
-  if (item.campaign) {
+  // Orientering: eksplisitt `o` (fra editorens toggle) styrer; ellers standard ut
+  // fra innholdet (kampanje + intern = liggende, kunde = stående). Slik kan ALLE
+  // maler forhåndsvises i BÅDE stående (TilbudRotator) og liggende (NewsRotator).
+  const landscape = o ? o === "landscape" : (!!item.campaign || data.audience === "intern")
+
+  // Kampanjekortet er designet for liggende — vis det i sin egen fullskjerm-ramme.
+  if (item.campaign && landscape) {
     return (
       <main style={{ position: "relative", width: "100%", height: "100vh", overflow: "hidden", background: "#0a0a0c" }}>
         <CampaignCard item={item} chain={chain} />
@@ -151,7 +156,7 @@ export default async function PreviewWidgetPage({ searchParams }: { searchParams
     )
   }
 
-  if (data.audience === "intern") {
+  if (landscape) {
     return <NewsRotator items={[item]} qr={qr} ticker={[]} />
   }
   return <TilbudRotator items={[item]} ticker={[]} storeName={null} chain={chain} qr={qr} />

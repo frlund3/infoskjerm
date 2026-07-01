@@ -20,11 +20,11 @@ export function LivePreview({ data, portrait }: { data: unknown; portrait: boole
       try {
         const json = JSON.stringify(data)
         const b64 = btoa(unescape(encodeURIComponent(json))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "")
-        setSrc(`/widget/preview?d=${b64}`)
+        setSrc(`/widget/preview?d=${b64}&o=${portrait ? "portrait" : "landscape"}`)
       } catch { /* ignore */ }
     }, 450)
     return () => clearTimeout(id)
-  }, [data])
+  }, [data, portrait])
 
   useEffect(() => {
     const el = wrapRef.current

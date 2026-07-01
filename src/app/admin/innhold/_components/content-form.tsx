@@ -173,6 +173,9 @@ export function ContentForm({ stores, tags, initial, audience = "intern", defaul
   const [klubb, setKlubb] = useState(initial?.klubb ?? { headline: "Bli medlem – det er gratis", subtext: "Medlemspriser, bonus og ukens beste tilbud." })
   const [avdeling, setAvdeling] = useState(initial?.avdeling ?? "felles")
   const [invitation, setInvitation] = useState<InvitationFields>(initial?.invitation ?? EMPTY_INVITATION)
+  // Forhåndsvisnings-orientering — standard etter flate, men kan veksles fritt så
+  // du ser at malen er 100% i BÅDE stående og liggende.
+  const [previewPortrait, setPreviewPortrait] = useState(audience === "kunde")
   const [gallery, setGallery] = useState<GalleryFields>(
     initial?.gallery ?? { ...EMPTY_GALLERY, theme: audience === "intern" ? "ansattilbud" : "catering" }
   )
@@ -820,13 +823,21 @@ export function ContentForm({ stores, tags, initial, audience = "intern", defaul
         <div className="space-y-5">
           {/* Universal live preview — exactly as it appears on the screen */}
           <section className="rounded-xl border border-zinc-200 bg-white p-4">
-            <h3 className="text-xs font-semibold text-zinc-600 mb-3">Forhåndsvisning</h3>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-xs font-semibold text-zinc-600">Forhåndsvisning</h3>
+              {type !== "ticker" && (
+                <div className="inline-flex rounded-lg border border-zinc-200 p-0.5 bg-zinc-50">
+                  <button type="button" onClick={() => setPreviewPortrait(true)} className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-colors ${previewPortrait ? "bg-zinc-900 text-white" : "text-zinc-500 hover:text-zinc-800"}`}>Stående</button>
+                  <button type="button" onClick={() => setPreviewPortrait(false)} className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-colors ${!previewPortrait ? "bg-zinc-900 text-white" : "text-zinc-500 hover:text-zinc-800"}`}>Liggende</button>
+                </div>
+              )}
+            </div>
             {type === "ticker" ? (
               <p className="text-[11px] text-zinc-400">Ticker vises som en rullende stripe nederst på {audience === "kunde" ? "kundeskjermen" : "internskjermen"}.</p>
             ) : (
               <>
-                <LivePreview data={previewData} portrait={audience === "kunde"} />
-                <p className="text-[10px] text-zinc-400 mt-2.5 text-center">Live — slik vises det på {audience === "kunde" ? "kundeskjermen" : "internskjermen"}.{isOfferStruktur ? ` Kjedelogo legges til per ${unitLabel.toLowerCase()}.` : ""}</p>
+                <LivePreview data={previewData} portrait={previewPortrait} />
+                <p className="text-[10px] text-zinc-400 mt-2.5 text-center">Slik vises det {previewPortrait ? "stående" : "liggende"}. Veksle over for å sjekke begge orienteringer.{isOfferStruktur ? ` Kjedelogo legges til per ${unitLabel.toLowerCase()}.` : ""}</p>
               </>
             )}
           </section>
