@@ -160,3 +160,38 @@ export async function saveTenantTerminology(
   revalidatePath("/admin", "layout")
   return { ok: true }
 }
+
+/**
+ * Laster opp organisasjons-logo (tenant-nivå) til media-bøtta og lagrer URL-en på
+ * tenants.logo_url. Vises i sidebar-header + tenant-velger. Separat fra per-kjede
+ * logo. Service-role (samme mønster som terminologi), kun tenant-admin/super_admin.
+ */
+export async function uploadTenantLogo(
+  formData: FormData
+): Promise<{ ok: true; url: string } | { ok: false; error: string }> {
+  const ctx = await getAdminContext()
+  if (!ctx) return { ok: false, error: "Ikke innlogget" }
+  if (ctx.role !== "super_admin" && ctx.role !== "chain_manager") return { ok: false, error: "Ikke tillatt" }
+  const tenantId = ctx.effectiveTenantId
+  if (!tenantId) return { ok: false, error: "Ingen aktiv organisasjon" }
+
+  const file = formData.get("file")
+  if (!(file instanceof File) || file.size === 0) return { ok: false, error: "Ingen fil valgt" }
+  if (!LOGO_MIME.has(file.type)) return { ok: false, error: "Bruk PNG, JPG, WEBP eller SVG" }
+  if (file.size > 5 * 1024 * 1024) return { ok: false, error: "Maks 5 MB" }
+
+  const admin = createAdminClient()
+  const ext = file.type === "image/svg+xml" ? "svg" : (file.name.split(".").pop() || "png").toLowerCase()
+  const path = `tenant-logos/${tenantId}-${Date.now()}.${ext}`
+  const { error: upErr } = await admin.storage.from("media").upload(path, file, { upsert: true, contentType: file.type, cacheControl: "3600" })
+  if (upErr) return { ok: false, error: upErr.message }
+  const { data: pub } = admin.storage.from("media").getPublicUrl(path)
+  const { error } = await (admin.from("tenants") as unknown as {
+    update: (v: Record<string, string>) => { eq: (c: string, val: string) => Promise<{ error: { message: string } | null }> }
+  }).update({ logo_url: pub.publicUrl }).eq("id", tenantId)
+  if (error) return { ok: false, error: error.message }
+
+  await logAudit({ userId: ctx.userId, action: "settings.tenant_logo", entityType: "tenant", entityId: tenantId, summary: "Lastet opp organisasjons-logo" })
+  revalidatePath("/admin", "layout")
+  return { ok: true, url: pub.publicUrl }
+}

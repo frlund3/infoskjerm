@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Building2, Check, ChevronsUpDown, Search } from "lucide-react"
+import { Check, ChevronsUpDown, Search } from "lucide-react"
 import { setActiveTenant } from "@/app/admin/plattform/actions"
 import { cn } from "@/lib/utils"
 
@@ -9,6 +9,24 @@ export interface SwitcherTenant {
   id: string
   name: string
   slug: string
+  logoUrl: string | null
+}
+
+/** Liten avatar: tenant-logo hvis satt, ellers org-bokstav i merkefargen. */
+function TenantAvatar({ logoUrl, name, className, textClass }: { logoUrl: string | null; name: string; className: string; textClass: string }) {
+  return (
+    <span
+      className={cn(className, "rounded-md overflow-hidden flex items-center justify-center flex-shrink-0")}
+      style={logoUrl ? { backgroundColor: "white" } : { backgroundColor: "var(--brand-primary)" }}
+    >
+      {logoUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={logoUrl} alt="" className="w-full h-full object-contain" />
+      ) : (
+        <span className={cn(textClass, "font-bold text-white")}>{(name || "?").charAt(0).toUpperCase()}</span>
+      )}
+    </span>
+  )
 }
 
 /**
@@ -37,9 +55,7 @@ export function TenantSwitcher({ tenants, activeTenantId }: { tenants: SwitcherT
         aria-expanded={open}
         className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg border border-zinc-200 bg-white hover:border-zinc-300 hover:bg-zinc-50 transition-all text-left"
       >
-        <span className="w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0 text-white" style={{ backgroundColor: "var(--brand-primary)" }}>
-          <Building2 className="w-4 h-4" />
-        </span>
+        <TenantAvatar logoUrl={active?.logoUrl ?? null} name={active?.name ?? "?"} className="w-7 h-7" textClass="text-xs" />
         <span className="flex-1 min-w-0">
           <span className="block text-[10px] font-semibold uppercase tracking-wider text-zinc-400 leading-none">Organisasjon</span>
           <span className="block text-sm font-semibold text-zinc-900 truncate leading-tight mt-0.5">{active?.name ?? "Velg organisasjon"}</span>
@@ -79,6 +95,7 @@ export function TenantSwitcher({ tenants, activeTenantId }: { tenants: SwitcherT
                           isActive && "bg-zinc-50"
                         )}
                       >
+                        <TenantAvatar logoUrl={t.logoUrl} name={t.name} className="w-6 h-6" textClass="text-[10px]" />
                         <span className="flex-1 min-w-0">
                           <span className="block text-sm font-medium text-zinc-900 truncate">{t.name}</span>
                           <span className="block text-[11px] text-zinc-400 truncate">{t.slug}</span>

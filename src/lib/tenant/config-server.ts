@@ -20,11 +20,11 @@ export async function getTenantConfig(_supabase: unknown, tenantId: string | nul
   const { data } = await (admin.from("tenants") as unknown as {
     select: (cols: string) => { eq: (c: string, v: string) => { single: () => Promise<{ data: unknown }> } }
   })
-    .select("name, unit_label, unit_label_plural, avdelinger, features")
+    .select("name, unit_label, unit_label_plural, logo_url, avdelinger, features")
     .eq("id", tenantId)
     .single()
   if (!data) return DEFAULT_TENANT_CONFIG
-  const raw = data as { name: string | null; unit_label: string | null; unit_label_plural: string | null; avdelinger: unknown; features: unknown }
+  const raw = data as { name: string | null; unit_label: string | null; unit_label_plural: string | null; logo_url: string | null; avdelinger: unknown; features: unknown }
   const avdelinger = Array.isArray(raw.avdelinger)
     ? (raw.avdelinger as Avdeling[]).filter((a) => a && typeof a.key === "string" && typeof a.label === "string")
     : DEFAULT_TENANT_CONFIG.avdelinger
@@ -33,6 +33,7 @@ export async function getTenantConfig(_supabase: unknown, tenantId: string | nul
     unitLabelPlural: raw.unit_label_plural?.trim() || DEFAULT_TENANT_CONFIG.unitLabelPlural,
     // Merke = tenant-navn uten «AS»-suffiks («Gange-Rolv AS»→«Gange-Rolv», «Mobile AS»→«Mobile»).
     brand: (raw.name?.trim() || "").replace(/\s+AS$/i, ""),
+    logoUrl: raw.logo_url?.trim() || null,
     avdelinger: avdelinger.length ? avdelinger : DEFAULT_TENANT_CONFIG.avdelinger,
     features: parseTenantFeatures(raw.features),
   }

@@ -56,7 +56,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   // Kun super_admin kan opptre som andre tenants → hent listen for switcheren.
   // Andre roller får tom liste, og switcheren skjuler seg selv.
   const tenants = role === "super_admin"
-    ? (await listAllTenants()).map((t) => ({ id: t.id, name: t.name, slug: t.slug }))
+    ? (await listAllTenants()).map((t) => ({ id: t.id, name: t.name, slug: t.slug, logoUrl: t.logoUrl }))
     : []
 
   return (
@@ -75,7 +75,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             role,
             chainName: chain?.name ?? null,
             chainColor: chain?.color ?? null,
-            chainLogoUrl: chain?.logo_url ?? null,
+            chainLogoUrl: tenantConfig.logoUrl ?? chain?.logo_url ?? null,
             isImpersonating: ctx?.isImpersonating ?? false,
             activeTenantName: ctx?.activeTenant?.name ?? null,
             tenants,
