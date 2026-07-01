@@ -3,11 +3,12 @@
 import { useEffect, useRef, useState } from "react"
 
 /**
- * Rendrer skjerm-widgeten i sin NATIVE oppløsning (1080×1920 stående /
- * 1920×1080 liggende) og skalerer den ned for å passe enheten (contain) —
- * så hele designet alltid vises, aldri klippet, uansett telefon/nettbrett/
- * skjerm-forhold. Samme teknikk som CMS-forhåndsvisningen. Svarte kanter når
- * enhetens forhold ikke matcher malen.
+ * Viser skjerm-widgeten så den ALLTID fyller enheten (contain, aldri klippet),
+ * men uten å bli uskarp:
+ *  • Stor nok skjerm (design ≤ skjerm) → render iframe i NATIV skjermoppløsning
+ *    (ingen oppskalering) → knivskarpt, også PDF-rasterisering på store skjermer.
+ *  • Liten skjerm (telefon) → render i design-oppløsning og skalér NED (contain)
+ *    → skarpt (nedskalering), hele designet vises.
  */
 export function KioskStage({
   src,
@@ -21,12 +22,12 @@ export function KioskStage({
   height: number
 }) {
   const ref = useRef<HTMLDivElement>(null)
-  const [scale, setScale] = useState(0)
+  const [box, setBox] = useState<{ cw: number; ch: number } | null>(null)
 
   useEffect(() => {
     const el = ref.current
     if (!el) return
-    const update = () => setScale(Math.min(el.clientWidth / width, el.clientHeight / height))
+    const update = () => setBox({ cw: el.clientWidth, ch: el.clientHeight })
     update()
     const ro = new ResizeObserver(update)
     ro.observe(el)
@@ -38,7 +39,36 @@ export function KioskStage({
       window.removeEventListener("resize", update)
       window.removeEventListener("orientationchange", update)
     }
-  }, [width, height])
+  }, [])
+
+  let inner: React.ReactNode = null
+  if (box) {
+    const scale = Math.min(box.cw / width, box.ch / height)
+    if (scale >= 1) {
+      // Skjermen er minst like stor som designet → render i native oppløsning
+      // (contain-boks i skjermens faktiske piksler). Ingen transform = ingen
+      // oppskalering = skarpt.
+      const designAspect = width / height
+      const containerAspect = box.cw / box.ch
+      const displayW = Math.round(containerAspect > designAspect ? box.ch * designAspect : box.cw)
+      const displayH = Math.round(containerAspect > designAspect ? box.ch : box.cw / designAspect)
+      inner = (
+        <iframe
+          src={src}
+          title={title}
+          style={{ width: displayW, height: displayH, border: 0, display: "block" }}
+          allow="fullscreen"
+        />
+      )
+    } else {
+      // Mindre skjerm (telefon/nettbrett) → render i design-oppløsning, skalér ned.
+      inner = (
+        <div style={{ width, height, flexShrink: 0, transform: `scale(${scale})`, transformOrigin: "center center" }}>
+          <iframe src={src} title={title} style={{ width, height, border: 0, display: "block" }} allow="fullscreen" />
+        </div>
+      )
+    }
+  }
 
   return (
     <div
@@ -51,26 +81,10 @@ export function KioskStage({
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
+        visibility: box ? "visible" : "hidden",
       }}
     >
-      <div
-        style={{
-          width,
-          height,
-          flexShrink: 0,
-          transform: `scale(${scale})`,
-          transformOrigin: "center center",
-          // Skjul til skalering er beregnet (unngår ett-frames overflow-glimt).
-          visibility: scale > 0 ? "visible" : "hidden",
-        }}
-      >
-        <iframe
-          src={src}
-          title={title}
-          style={{ width, height, border: 0, display: "block" }}
-          allow="fullscreen"
-        />
-      </div>
+      {inner}
     </div>
   )
 }
