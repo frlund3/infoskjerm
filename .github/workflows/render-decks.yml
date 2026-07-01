@@ -1,0 +1,54 @@
+name: Render decks (PowerPoint → bilder)
+
+# PowerPoint (.pptx/.ppt) → sidebilder via LibreOffice + pdfjs (samme motor som
+# kundeavis-PDF). Poller ofte, men en billig Node-forsjekk (kun innebygde moduler,
+# ingen install) hopper over den tunge LibreOffice-renderingen når ingen nye decks
+# venter — så hyppig polling nesten ikke koster CI-minutter.
+#
+# repository_dispatch (event render-decks) gir umiddelbar render hvis appen har en
+# GH_DISPATCH_TOKEN satt; uten token fanger pollingen decket opp innen ~15 min.
+on:
+  schedule:
+    - cron: "*/15 * * * *"   # hvert 15. min — billig pga forsjekken under
+  workflow_dispatch:
+  repository_dispatch:
+    types: [render-decks]
+
+# Minste nødvendige rettigheter — jobben gjør kun checkout + Supabase-API via secrets.
+permissions:
+  contents: read
+
+# Ikke kjør flere render-jobber oppå hverandre (poll + dispatch kan overlappe).
+concurrency:
+  group: render-decks
+  cancel-in-progress: false
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      # Billig forsjekk (kun Node-innebygde moduler): finnes PowerPoint-slides uten
+      # ferdige sidebilder? Setter steps.check.outputs.pending.
+      - id: check
+        run: node scripts/check-pending-decks.mjs
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      # Tung render kun når noe venter: LibreOffice (forhåndsinstallert på
+      # ubuntu-latest; apt kun som fallback) + pdfjs/canvas i egen mappe så ESM
+      # resolver mot node_modules (npm leser ikke pnpm-workspace.yaml).
+      - if: steps.check.outputs.pending != '0'
+        run: |
+          cd "$RUNNER_TEMP"
+          npm init -y >/dev/null 2>&1
+          npm install --no-audit --no-fund pdfjs-dist@^4.10.38 @napi-rs/canvas@^1.0.1
+          if ! command -v soffice >/dev/null 2>&1; then sudo apt-get update && sudo apt-get install -y libreoffice-impress; fi
+          cp "$GITHUB_WORKSPACE/scripts/render-decks.mjs" render-decks.mjs
+          node render-decks.mjs
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}

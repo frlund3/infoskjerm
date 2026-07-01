@@ -13,7 +13,7 @@ const GREEN = "#16a34a"
 const MAX_PAGES = 6
 const PAGE_SECONDS = 7
 
-export function PdfFlyer({ url, title, color, fg, pages: serverPages }: { url: string; title?: string; color?: string | null; fg?: string | null; pages?: string[] }) {
+export function PdfFlyer({ url, title, color, fg, pages: serverPages, ppt }: { url: string; title?: string; color?: string | null; fg?: string | null; pages?: string[]; ppt?: boolean }) {
   const headBg = color || GREEN
   const headFg = fg || "#fff"
   const preRendered = serverPages && serverPages.length > 0 ? serverPages : null
@@ -22,6 +22,9 @@ export function PdfFlyer({ url, title, color, fg, pages: serverPages }: { url: s
 
   useEffect(() => {
     if (preRendered) { setPages(preRendered); return } // already have server images
+    // PowerPoint kan ikke rasteriseres i nettleseren (pdf.js leser bare PDF).
+    // Uten ferdige server-sider viser vi en vente-tilstand i stedet for å feile.
+    if (ppt) return
     let cancelled = false
     ;(async () => {
       const pdfjs = await import("pdfjs-dist")
@@ -47,7 +50,7 @@ export function PdfFlyer({ url, title, color, fg, pages: serverPages }: { url: s
     return () => {
       cancelled = true
     }
-  }, [url, preRendered])
+  }, [url, preRendered, ppt])
 
   useEffect(() => {
     if (pages.length <= 1) return
@@ -69,7 +72,7 @@ export function PdfFlyer({ url, title, color, fg, pages: serverPages }: { url: s
           // eslint-disable-next-line @next/next/no-img-element
           <img key={i} src={page} alt="" style={{ position: "absolute", inset: "2.5vmin", width: "calc(100% - 5vmin)", height: "calc(100% - 5vmin)", objectFit: "contain", animation: "grFade .5s ease-out" }} />
         ) : (
-          <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", color: "#9aa0a6", fontSize: "4vmin" }}>Laster kundeavis…</div>
+          <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", color: "#9aa0a6", fontSize: "4vmin" }}>{ppt ? "Presentasjonen gjøres klar …" : "Laster kundeavis…"}</div>
         )}
       </div>
       {pages.length > 1 && (

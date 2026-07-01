@@ -82,9 +82,11 @@ export function MediaUploader({ onUpload, maxFiles = 10, accept = ["image/jpeg",
 
   const hasVideo = accept.some((a) => a.startsWith("video/"))
   const hasPdf = accept.includes("application/pdf")
+  const hasPpt = accept.some((a) => a.includes("presentationml") || a.includes("ms-powerpoint"))
   const formatHint = [
     accept.some((a) => a.startsWith("image/")) ? "JPG, PNG, WEBP, GIF" : null,
     hasPdf ? "PDF" : null,
+    hasPpt ? "PowerPoint" : null,
     hasVideo ? "MP4/WEBM/MOV-video" : null,
   ].filter(Boolean).join(" · ") + " — maks 50 MB per fil"
   const isVideoUrl = (u: string) => /\.(mp4|webm|mov|m4v)$/.test(u.toLowerCase().split("?")[0])

@@ -38,6 +38,7 @@ export async function EditContentView({ id, listHref }: { id: string; listHref?:
     invitation?: { eventDate?: string | null; eventPlace?: string | null; signupEnabled?: boolean; signupDeadline?: string | null; signupUrl?: string | null } | null
     gallery?: { theme?: "catering" | "meny" | "ansattilbud"; items?: { name?: string; price?: string | null; priceInfo?: string | null; imageUrl?: string | null }[]; qrUrl?: string | null; qrLabel?: string | null } | null
     durationSeconds?: number | null
+    pages?: string[]
   }
   const audience: Audience = body.audience === "kunde" || body.audience === "intern" ? body.audience : audienceForType(item.type as ContentType)
   const targetRows = targets ?? []
@@ -53,6 +54,7 @@ export async function EditContentView({ id, listHref }: { id: string; listHref?:
     bodyHtml: body.html ?? "",
     imageUrl: body.imageUrl ?? null,
     imageUrls: body.imageUrls?.length ? body.imageUrls : body.imageUrl ? [body.imageUrl] : [],
+    pages: Array.isArray(body.pages) ? body.pages.filter(Boolean) : undefined,
     targetMode,
     storeIds: targetRows.filter((t) => t.store_id).map((t) => t.store_id as string),
     tagIds: targetRows.filter((t) => t.tag_id).map((t) => t.tag_id as string),

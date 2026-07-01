@@ -40,7 +40,7 @@ interface StoreChainRow {
 function klubbLiveItem(headline: string, subtext: string, cta: string | null): LiveItem {
   return {
     id: "kundeklubb", type: "slide", title: headline, blocks: [], imageUrl: null, imageUrls: [],
-    imageMode: "plakat", isPdf: false, isVideo: false, durationSeconds: null, pages: [], validFrom: null, validTo: null, author: "", date: "",
+    imageMode: "plakat", isPdf: false, isPpt: false, isVideo: false, durationSeconds: null, pages: [], validFrom: null, validTo: null, author: "", date: "",
     contactPerson: null, applyUrl: null, statsValue: null, statsChange: null, offer: null, campaign: null,
     avdeling: "felles", bgColor: null, textColor: null, klubb: { headline, subtext, cta: cta || undefined }, invitation: null, gallery: null,
   }

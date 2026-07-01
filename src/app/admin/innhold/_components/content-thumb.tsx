@@ -2,6 +2,7 @@ import {
   Newspaper, Trophy, ImageIcon, Briefcase, PartyPopper, BarChart3, Megaphone, FileText,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { isDeckUrl } from "@/lib/content/deck"
 
 /**
  * Delt kilde-til-sannhet for innholdstype-metadata (etikett, ikon, badge, gradient)
@@ -38,7 +39,8 @@ export function ContentThumb({ imageUrl, type, className }: { imageUrl: string |
   const tm = TYPE_META[type] ?? TYPE_META.slide
   const TypeIcon = tm.icon
 
-  if (imageUrl && isPdfUrl(imageUrl)) {
+  if (imageUrl && isDeckUrl(imageUrl)) {
+    // PDF (kundeavis) og PowerPoint vises begge som dokument-ikon i miniatyren.
     return (
       <div className={cn("flex items-center justify-center bg-gradient-to-br from-zinc-800 to-zinc-950 text-white/70", className)}>
         <FileText className="w-4 h-4" />

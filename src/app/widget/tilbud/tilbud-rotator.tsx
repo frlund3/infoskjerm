@@ -204,11 +204,12 @@ export function TilbudRotator({ items, ticker, storeName, chain = null, qr = {} 
         <div key={item.id} style={{ ...inset, animation: "grFade .6s ease-out" }}>
           <OfferCard item={item} chain={chain} />
         </div>
-      ) : item.isPdf && item.imageUrl ? (
-        // Kundeavis / PDF → rasterised page-by-page (pdf.js), full-bleed, under a
-        // bold heading. No native PDF viewer chrome (toolbar/scrollbars).
+      ) : (item.isPdf || item.isPpt) && item.imageUrl ? (
+        // Kundeavis (PDF) eller PowerPoint → vist som ferdig-renderte sidebilder
+        // (maks 6), full-bleed under en fet overskrift. PPT kan ikke rasteriseres
+        // i nettleseren, så uten ferdige sider viser PdfFlyer en vente-tilstand.
         <div key={item.id} style={{ ...inset, animation: "grFade .6s ease-out" }}>
-          <PdfFlyer url={item.imageUrl} title={item.title} color={chain?.color} fg={chain?.brandFg} pages={item.pages} />
+          <PdfFlyer url={item.imageUrl} title={item.title} color={chain?.color} fg={chain?.brandFg} pages={item.pages} ppt={item.isPpt} />
         </div>
       ) : (
         // Customer poster/article slide → text on TOP, image below (portrait).

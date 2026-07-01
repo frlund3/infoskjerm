@@ -4,6 +4,7 @@ import { useState, useMemo } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { deleteContent, duplicateContent, bulkSetStatus, bulkDeleteContent, bulkShiftPeriod } from "../actions"
+import { isDeckUrl, isPptUrl } from "@/lib/content/deck"
 import { useTenantConfig } from "@/components/admin/tenant-config-provider"
 import { toast } from "sonner"
 import {
@@ -12,7 +13,7 @@ import {
   Send, EyeOff, X, Check, Clock, ArrowUpDown, Timer, LayoutGrid,
 } from "lucide-react"
 import { ReorderDialog } from "./reorder-dialog"
-import { TYPE_META, isPdfUrl, isVideoUrl } from "./content-thumb"
+import { TYPE_META, isVideoUrl } from "./content-thumb"
 
 export interface ContentRow {
   id: string
@@ -296,10 +297,10 @@ export function ContentListClient({ items, stores, tags, newHref = "/admin/innho
                   <Check className="w-4 h-4" />
                 </button>
                 <Link href={`${editBase}/${item.id}`} className="block relative aspect-[16/9] overflow-hidden">
-                  {item.imageUrl && isPdfUrl(item.imageUrl) ? (
+                  {item.imageUrl && isDeckUrl(item.imageUrl) ? (
                     <div className="w-full h-full bg-gradient-to-br from-zinc-800 to-zinc-950 flex flex-col items-center justify-center gap-1.5 text-white/70">
                       <FileText className="w-9 h-9" />
-                      <span className="text-[11px] font-semibold tracking-wide">PDF</span>
+                      <span className="text-[11px] font-semibold tracking-wide">{isPptUrl(item.imageUrl) ? "PowerPoint" : "PDF"}</span>
                     </div>
                   ) : item.imageUrl && isVideoUrl(item.imageUrl) ? (
                     // eslint-disable-next-line jsx-a11y/media-has-caption
