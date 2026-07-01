@@ -22,10 +22,19 @@ export function TopbarClient({ butikk, forecast, todayIso, merke = "Gange-Rolv",
   const brandColor = accent || GREEN
   // null until mounted → avoids SSR/CSR time mismatch; clock ticks every second.
   const [now, setNow] = useState<Date | null>(null)
+  // Stående skjerm gir en SMAL stripe (~1080 bred) mot liggende (~1920). Da er
+  // det ikke plass til butikknavnet ved siden av vær + klokke → skjul navnet.
+  const [narrow, setNarrow] = useState(false)
   useEffect(() => {
     setNow(new Date())
     const id = setInterval(() => setNow(new Date()), 1000)
-    return () => clearInterval(id)
+    const checkWidth = () => setNarrow(window.innerWidth < 1400)
+    checkWidth()
+    window.addEventListener("resize", checkWidth)
+    return () => {
+      clearInterval(id)
+      window.removeEventListener("resize", checkWidth)
+    }
   }, [])
 
   const time = now ? now.toLocaleTimeString("nb-NO", { timeZone: TZ, hour: "2-digit", minute: "2-digit" }) : "--:--"
@@ -47,11 +56,13 @@ export function TopbarClient({ butikk, forecast, todayIso, merke = "Gange-Rolv",
         fontFamily: "Arial, Helvetica, sans-serif",
       }}
     >
-      {/* Store name */}
-      <div style={{ flex: "1 1 auto", minWidth: 0 }}>
-        <div style={{ color: brandColor, fontWeight: 800, letterSpacing: 4, fontSize: 18, textTransform: "uppercase" }}>{merke}</div>
-        <div style={{ fontSize: 48, fontWeight: 900, lineHeight: 1.02, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{butikk}</div>
-      </div>
+      {/* Store name — skjult i stående (smal stripe), der navnet uansett ville klippet. */}
+      {!narrow && (
+        <div style={{ flex: "1 1 auto", minWidth: 0 }}>
+          <div style={{ color: brandColor, fontWeight: 800, letterSpacing: 4, fontSize: 18, textTransform: "uppercase" }}>{merke}</div>
+          <div style={{ fontSize: 48, fontWeight: 900, lineHeight: 1.02, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{butikk}</div>
+        </div>
+      )}
 
       {forecast && (
         <>
@@ -79,6 +90,9 @@ export function TopbarClient({ butikk, forecast, todayIso, merke = "Gange-Rolv",
           <Divider />
         </>
       )}
+
+      {/* I stående skjøv butikknavnet klokka til høyre; uten navn trenger vi en spacer. */}
+      {narrow && <div style={{ flex: "1 1 auto" }} />}
 
       {/* Clock + date */}
       <div style={{ flex: "0 0 auto", textAlign: "right" }}>
