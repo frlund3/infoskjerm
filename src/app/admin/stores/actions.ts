@@ -6,6 +6,10 @@ import { requireRole } from "@/lib/admin/require-role"
 import { hashKioskPassword } from "@/lib/kiosk/auth"
 
 const STORE_ROLES = ["super_admin", "chain_manager", "area_manager"] as const
+// Kiosk-passord kan settes av alle enhets-admins (også store_manager) for EGEN
+// enhet — RLS + tenant-verifisering under holder det scopet. Bredere enn
+// STORE_ROLES (som styrer destruktive enhets-operasjoner).
+const KIOSK_ROLES = ["super_admin", "chain_manager", "area_manager", "store_manager"] as const
 
 /**
  * Setter (eller fjerner, ved tomt passord) kiosk-passordet for en enhet.
@@ -16,7 +20,7 @@ export async function setKioskPassword(
   storeId: string,
   password: string,
 ): Promise<{ ok: boolean; error?: string }> {
-  const { supabase, userId, tenantId } = await requireRole([...STORE_ROLES])
+  const { supabase, userId, tenantId } = await requireRole([...KIOSK_ROLES])
   const trimmed = password.trim()
   const hash = trimmed ? hashKioskPassword(trimmed) : null
   // store_tags-mønster: verifiser at enheten tilhører aktiv tenant før id-only update.

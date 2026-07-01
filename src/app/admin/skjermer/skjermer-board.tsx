@@ -4,6 +4,7 @@ import { useState } from "react"
 import Link from "next/link"
 import { MonitorOff } from "lucide-react"
 import { useTenantConfig } from "@/components/admin/tenant-config-provider"
+import { StoreKioskInline } from "./store-kiosk-inline"
 import type { StoreScreen, ScreenRole } from "@/lib/xibo/screens"
 
 export interface BoardStore {
@@ -12,6 +13,7 @@ export interface BoardStore {
   chainName: string
   chainColor: string
   screens: StoreScreen[]
+  hasKioskPassword: boolean
 }
 
 type Filter = "alle" | ScreenRole
@@ -124,6 +126,8 @@ export function SkjermerBoard({ stores }: { stores: BoardStore[] }) {
                 ))
               )}
             </div>
+
+            <StoreKioskInline storeId={store.id} storeName={store.name} hasPassword={store.hasKioskPassword} />
           </div>
         ))}
       </div>
