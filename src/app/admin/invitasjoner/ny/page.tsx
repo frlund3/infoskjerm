@@ -8,11 +8,11 @@ export const dynamic = "force-dynamic"
 const AUTHOR_ROLES = ["super_admin", "chain_manager", "area_manager", "store_manager", "store_employee"] as const
 
 export default async function NewInvitationPage() {
-  const { supabase, role } = await requireRole([...AUTHOR_ROLES])
+  const { supabase, role, tenantId } = await requireRole([...AUTHOR_ROLES])
 
   const [storeOptions, { data: tags }] = await Promise.all([
-    loadStoreOptions(supabase),
-    supabase.from("tags").select("id, name, color").order("name"),
+    loadStoreOptions(supabase, tenantId),
+    supabase.from("tags").select("id, name, color").eq("tenant_id", tenantId).order("name"),
   ])
 
   return (

@@ -20,15 +20,16 @@ export interface ContentData {
 }
 
 export async function loadContentForAudience(audience: Audience): Promise<ContentData> {
-  const { supabase, userId, role } = await requireRole([...AUTHOR_ROLES])
+  const { supabase, userId, role, tenantId } = await requireRole([...AUTHOR_ROLES])
 
   const [{ data: items }, { data: stores }, { data: tags }] = await Promise.all([
     supabase
       .from("content_items")
       .select("id, title, type, status, body, valid_from, valid_to, created_at, updated_at, created_by, content_targets(target_all, store_id, tag_id)")
+      .eq("tenant_id", tenantId)
       .order("created_at", { ascending: false }),
-    supabase.from("stores").select("id, name").order("name"),
-    supabase.from("tags").select("id, name").order("name"),
+    supabase.from("stores").select("id, name").eq("tenant_id", tenantId).order("name"),
+    supabase.from("tags").select("id, name").eq("tenant_id", tenantId).order("name"),
   ])
 
   const privileged = role === "super_admin" || role === "chain_manager"

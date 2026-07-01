@@ -11,6 +11,8 @@ interface MobileNavProps {
     role: string
     chainName: string | null
     chainColor: string | null
+    isImpersonating: boolean
+    activeTenantName: string | null
   }
 }
 

@@ -53,10 +53,10 @@ export default async function KioskPage({
   searchParams,
 }: {
   params: Promise<{ store: string }>
-  searchParams: Promise<{ type?: string }>
+  searchParams: Promise<{ type?: string; orientation?: string }>
 }) {
   const { store } = await params
-  const { type } = await searchParams
+  const { type, orientation } = await searchParams
   const row = await resolveStore(store)
   if (!row) notFound()
 
@@ -69,11 +69,15 @@ export default async function KioskPage({
     }
   }
 
-  // Intern skjerm (verksted/pauserom) via ?type=intern → ren intern nyhetsflate
-  // (uten dagligvare-KPI). Ellers kundeskjerm.
+  // Intern skjerm (verksted/pauserom) via ?type=intern → ren intern nyhetsflate.
+  // Liggende kundeskjerm via ?orientation=liggende → premium kampanjemal.
+  // Ellers stående kundeskjerm.
+  const landscape = orientation === "liggende" || orientation === "landscape"
   const widget = type === "intern"
     ? `/widget/nyheter?store=${row.id}&flate=intern`
-    : `/widget/tilbud?store=${row.id}`
+    : landscape
+      ? `/widget/kampanje?store=${row.id}`
+      : `/widget/tilbud?store=${row.id}`
 
   return (
     <div style={{ position: "fixed", inset: 0, background: "#0a0a0a", overflow: "hidden" }}>

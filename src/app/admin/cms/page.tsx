@@ -26,6 +26,7 @@ export default async function CmsDashboardPage() {
   const { data: stores } = await supabase
     .from("stores")
     .select("id, name, city, latitude, longitude")
+    .eq("tenant_id", tenantId)
     .order("name")
 
   const list = stores ?? []
@@ -33,7 +34,7 @@ export default async function CmsDashboardPage() {
   // Content health counts for the status strip.
   const nowMs = Date.now()
   const weekMs = nowMs + 7 * 86400000
-  const { data: contentRows } = await supabase.from("content_items").select("status, valid_to")
+  const { data: contentRows } = await supabase.from("content_items").select("status, valid_to").eq("tenant_id", tenantId)
   const counts: ContentStatusCounts = { live: 0, expiringSoon: 0, drafts: 0, expired: 0 }
   for (const r of contentRows ?? []) {
     if (r.status === "draft") counts.drafts++

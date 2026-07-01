@@ -79,6 +79,7 @@ export default async function PreviewWidgetPage({ searchParams }: { searchParams
     statsValue: data.statsValue ?? null,
     statsChange: data.statsChange ?? null,
     offer: data.offer && data.offer.varenavn ? data.offer : null,
+    campaign: null,
     avdeling: data.avdeling || "felles",
     bgColor: data.bgColor ?? null,
     textColor: data.textColor ?? null,

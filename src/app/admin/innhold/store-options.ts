@@ -9,9 +9,9 @@ import type { StoreOption } from "./_components/content-form"
 
 type AdminSupabase = Awaited<ReturnType<typeof requireRole>>["supabase"]
 
-export async function loadStoreOptions(supabase: AdminSupabase): Promise<StoreOption[]> {
+export async function loadStoreOptions(supabase: AdminSupabase, tenantId: string): Promise<StoreOption[]> {
   const [{ data: stores }, { data: storeTags }] = await Promise.all([
-    supabase.from("stores").select("id, name, city, chains(name)").order("name"),
+    supabase.from("stores").select("id, name, city, chains(name)").eq("tenant_id", tenantId).order("name"),
     supabase.from("store_tags").select("store_id, tag_id"),
   ])
   const tagsByStore = new Map<string, string[]>()

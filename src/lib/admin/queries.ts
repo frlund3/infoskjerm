@@ -32,12 +32,12 @@ export interface AdminStats {
   liveContent: number
 }
 
-export async function getAdminStats(supabase: AdminSupabase): Promise<AdminStats> {
+export async function getAdminStats(supabase: AdminSupabase, tenantId: string): Promise<AdminStats> {
   const [screensResult, pendingResult, storesResult, liveResult] = await Promise.all([
-    supabase.from('screens').select('id, last_heartbeat, status'),
-    supabase.from('content_items').select('id', { count: 'exact', head: true }).eq('status', 'pending_approval'),
-    supabase.from('stores').select('id', { count: 'exact', head: true }),
-    supabase.from('content_items').select('id', { count: 'exact', head: true }).eq('status', 'live'),
+    supabase.from('screens').select('id, last_heartbeat, status').eq('tenant_id', tenantId),
+    supabase.from('content_items').select('id', { count: 'exact', head: true }).eq('tenant_id', tenantId).eq('status', 'pending_approval'),
+    supabase.from('stores').select('id', { count: 'exact', head: true }).eq('tenant_id', tenantId),
+    supabase.from('content_items').select('id', { count: 'exact', head: true }).eq('tenant_id', tenantId).eq('status', 'live'),
   ])
 
   const screens = screensResult.data ?? []
@@ -62,32 +62,72 @@ export interface ChainOverviewItem {
   onlineScreens: number
 }
 
-export async function getChainOverview(supabase: AdminSupabase): Promise<ChainOverviewItem[]> {
-  const { data: chains } = await supabase
-    .from('chains')
-    .select('id, name, color, stores(id, screens(id, status, last_heartbeat))')
+// Stores that have no chain (null chain_id / null relation) are grouped here so
+// they are never hidden by chain-ownership scoping.
+const NO_CHAIN_ID = 'ingen-kjede'
+const NO_CHAIN_NAME = 'Uten kjede'
+const NO_CHAIN_COLOR = '#9ca3af'
+
+interface EmbeddedChain {
+  id: string
+  name: string
+  color: string
+}
+
+// Normalises the embedded `chains(...)` relation, which Supabase may return as a
+// single object (FK) or an array depending on the inferred cardinality.
+function resolveChain(chain: EmbeddedChain | EmbeddedChain[] | null): EmbeddedChain | null {
+  if (!chain) return null
+  return Array.isArray(chain) ? (chain[0] ?? null) : chain
+}
+
+export async function getChainOverview(supabase: AdminSupabase, tenantId: string): Promise<ChainOverviewItem[]> {
+  // Scope by stores.tenant_id (correct join point) so every store the tenant owns
+  // is counted, regardless of which tenant owns its chain.
+  const { data: stores } = await supabase
+    .from('stores')
+    .select('id, chains(id, name, color), screens(id, status, last_heartbeat)')
+    .eq('tenant_id', tenantId)
     .order('name')
 
-  if (!chains) return []
+  if (!stores) return []
 
-  return chains.map((chain) => {
-    const stores = (chain.stores as unknown as Array<{ id: string; screens: Array<{ id: string; status: string | null; last_heartbeat: string | null }> }>) ?? []
-    const screens = stores.flatMap((s) => s.screens ?? [])
-    const onlineScreens = screens.filter(
+  type OverviewStore = {
+    id: string
+    chains: EmbeddedChain | EmbeddedChain[] | null
+    screens: Array<{ id: string; status: string | null; last_heartbeat: string | null }> | null
+  }
+
+  const byChain = new Map<string, ChainOverviewItem>()
+
+  for (const store of stores as unknown as OverviewStore[]) {
+    const chain = resolveChain(store.chains)
+    const chainId = chain?.id ?? NO_CHAIN_ID
+    const screens = store.screens ?? []
+    const online = screens.filter(
       (s) => getScreenStatusColor(s.status, s.last_heartbeat) !== 'red'
     ).length
 
-    return {
-      name: chain.name,
-      color: chain.color,
-      storeCount: stores.length,
-      totalScreens: screens.length,
-      onlineScreens,
+    const existing = byChain.get(chainId)
+    if (existing) {
+      existing.storeCount += 1
+      existing.totalScreens += screens.length
+      existing.onlineScreens += online
+    } else {
+      byChain.set(chainId, {
+        name: chain?.name ?? NO_CHAIN_NAME,
+        color: chain?.color ?? NO_CHAIN_COLOR,
+        storeCount: 1,
+        totalScreens: screens.length,
+        onlineScreens: online,
+      })
     }
-  })
+  }
+
+  return Array.from(byChain.values()).sort((a, b) => a.name.localeCompare(b.name, 'nb'))
 }
 
-export async function getScreensWithStore(supabase: AdminSupabase) {
+export async function getScreensWithStore(supabase: AdminSupabase, tenantId: string) {
   const { data, error } = await supabase
     .from('screens')
     .select(`
@@ -97,51 +137,118 @@ export async function getScreensWithStore(supabase: AdminSupabase) {
         chains(id, name, color)
       )
     `)
+    .eq('tenant_id', tenantId)
     .order('created_at', { ascending: true })
 
   if (error) throw error
   return data ?? []
 }
 
-export async function getStoresGroupedByChain(supabase: AdminSupabase) {
-  const { data: chains } = await supabase
-    .from('chains')
-    .select('id, name, color, stores(id, name, company_name, city, email, org_number, gln, screens(id))')
-    .order('name')
+// Groups a store-first, tenant-scoped result set into the chain-board shape the
+// consumers expect: Array<{ id, name, color, stores: [...] }>. Stores keep every
+// field they were selected with (minus the embedded `chains` relation, which
+// becomes the group key). Chains are ordered by name, stores by name.
+function groupStoresByChain<S extends { name: string; chains: EmbeddedChain | EmbeddedChain[] | null }>(
+  stores: S[]
+): Array<{ id: string; name: string; color: string; stores: Array<Omit<S, 'chains'>> }> {
+  const groups = new Map<string, { id: string; name: string; color: string; stores: Array<Omit<S, 'chains'>> }>()
 
-  return chains ?? []
+  for (const store of stores) {
+    const chain = resolveChain(store.chains)
+    const chainId = chain?.id ?? NO_CHAIN_ID
+    const { chains: _chains, ...storeFields } = store
+
+    const existing = groups.get(chainId)
+    if (existing) {
+      existing.stores.push(storeFields)
+    } else {
+      groups.set(chainId, {
+        id: chainId,
+        name: chain?.name ?? NO_CHAIN_NAME,
+        color: chain?.color ?? NO_CHAIN_COLOR,
+        stores: [storeFields],
+      })
+    }
+  }
+
+  const result = Array.from(groups.values())
+  for (const group of result) {
+    group.stores.sort((a, b) => a.name.localeCompare(b.name, 'nb'))
+  }
+  return result.sort((a, b) => a.name.localeCompare(b.name, 'nb'))
 }
 
-export async function getStoresBoard(supabase: AdminSupabase) {
-  const { data: chains } = await supabase
-    .from('chains')
+export async function getStoresGroupedByChain(supabase: AdminSupabase, tenantId: string) {
+  // Scope by stores.tenant_id so stores linked to another tenant's chain still show.
+  const { data: stores } = await supabase
+    .from('stores')
+    .select('id, name, company_name, city, email, org_number, gln, chains(id, name, color), screens(id)')
+    .eq('tenant_id', tenantId)
+    .order('name')
+
+  type GroupedStore = {
+    id: string
+    name: string
+    company_name: string | null
+    city: string | null
+    email: string | null
+    org_number: string | null
+    gln: string | null
+    chains: EmbeddedChain | EmbeddedChain[] | null
+    screens: Array<{ id: string }> | null
+  }
+
+  return groupStoresByChain((stores as unknown as GroupedStore[]) ?? [])
+}
+
+export async function getStoresBoard(supabase: AdminSupabase, tenantId: string) {
+  // Scope by stores.tenant_id (correct join point). Previously scoped by
+  // chains.tenant_id, which hid stores whose chain is owned by another tenant.
+  const { data: stores } = await supabase
+    .from('stores')
     .select(
-      'id, name, color, stores(id, name, company_name, city, email, org_number, gln, screens(id), store_tags(tags(id, name, color)))'
+      'id, name, company_name, city, email, org_number, gln, chains(id, name, color), screens(id), store_tags(tags(id, name, color))'
     )
+    .eq('tenant_id', tenantId)
     .order('name')
 
-  return chains ?? []
+  type BoardStoreRow = {
+    id: string
+    name: string
+    company_name: string | null
+    city: string | null
+    email: string | null
+    org_number: string | null
+    gln: string | null
+    chains: EmbeddedChain | EmbeddedChain[] | null
+    screens: Array<{ id: string }> | null
+    store_tags: Array<{ tags: { id: string; name: string; color: string } | null }> | null
+  }
+
+  return groupStoresByChain((stores as unknown as BoardStoreRow[]) ?? [])
 }
 
-export async function getAllTags(supabase: AdminSupabase) {
+export async function getAllTags(supabase: AdminSupabase, tenantId: string) {
   const { data } = await supabase
     .from('tags')
     .select('id, name, color')
+    .eq('tenant_id', tenantId)
     .order('name')
 
   return data ?? []
 }
 
-export async function getTagsWithStores(supabase: AdminSupabase) {
+export async function getTagsWithStores(supabase: AdminSupabase, tenantId: string) {
   const { data } = await supabase
     .from('tags')
     .select('id, name, color, store_tags(stores(id, name))')
+    .eq('tenant_id', tenantId)
     .order('name')
 
   return data ?? []
 }
 
-export async function getUsersWithDetails(supabase: AdminSupabase) {
+export async function getUsersWithDetails(supabase: AdminSupabase, tenantId: string) {
   const { data } = await supabase
     .from('users')
     .select(`
@@ -149,6 +256,7 @@ export async function getUsersWithDetails(supabase: AdminSupabase) {
       chains(id, name, color),
       user_stores(stores(id, name))
     `)
+    .eq('tenant_id', tenantId)
     .order('full_name')
 
   return data ?? []
@@ -156,6 +264,7 @@ export async function getUsersWithDetails(supabase: AdminSupabase) {
 
 export async function getContentItems(
   supabase: AdminSupabase,
+  tenantId: string,
   type: Database['public']['Enums']['content_type']
 ) {
   const { data } = await supabase
@@ -164,25 +273,27 @@ export async function getContentItems(
       id, title, status, type, created_at, valid_from, valid_to,
       users!created_by(full_name)
     `)
+    .eq('tenant_id', tenantId)
     .eq('type', type)
     .order('created_at', { ascending: false })
 
   return data ?? []
 }
 
-export async function getAllContentItems(supabase: AdminSupabase) {
+export async function getAllContentItems(supabase: AdminSupabase, tenantId: string) {
   const { data } = await supabase
     .from('content_items')
     .select(`
       id, title, status, type, created_at, valid_from, valid_to,
       users!created_by(full_name)
     `)
+    .eq('tenant_id', tenantId)
     .order('created_at', { ascending: false })
 
   return data ?? []
 }
 
-export async function getPlaylistsWithItems(supabase: AdminSupabase) {
+export async function getPlaylistsWithItems(supabase: AdminSupabase, tenantId: string) {
   const { data } = await supabase
     .from('playlists')
     .select(`
@@ -192,18 +303,20 @@ export async function getPlaylistsWithItems(supabase: AdminSupabase) {
         content_items(id, title, type)
       )
     `)
+    .eq('tenant_id', tenantId)
     .order('name')
 
   return data ?? []
 }
 
-export async function getPendingContent(supabase: AdminSupabase) {
+export async function getPendingContent(supabase: AdminSupabase, tenantId: string) {
   const { data } = await supabase
     .from('content_items')
     .select(`
       id, title, type, status, created_at,
       users!created_by(full_name)
     `)
+    .eq('tenant_id', tenantId)
     .in('status', ['draft', 'pending_approval', 'approved'])
     .order('created_at', { ascending: false })
 

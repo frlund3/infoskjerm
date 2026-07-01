@@ -15,12 +15,12 @@ import { audienceForType, type Audience } from "../audience"
 const AUTHOR_ROLES = ["super_admin", "chain_manager", "area_manager", "store_manager", "store_employee"] as const
 
 export async function EditContentView({ id, listHref }: { id: string; listHref?: string }) {
-  const { supabase, role } = await requireRole([...AUTHOR_ROLES])
+  const { supabase, role, tenantId } = await requireRole([...AUTHOR_ROLES])
 
   const [{ data: item }, storeOptions, { data: tags }, { data: targets }] = await Promise.all([
-    supabase.from("content_items").select("id, title, type, body, valid_from, valid_to").eq("id", id).single(),
-    loadStoreOptions(supabase),
-    supabase.from("tags").select("id, name, color").order("name"),
+    supabase.from("content_items").select("id, title, type, body, valid_from, valid_to").eq("id", id).eq("tenant_id", tenantId).single(),
+    loadStoreOptions(supabase, tenantId),
+    supabase.from("tags").select("id, name, color").eq("tenant_id", tenantId).order("name"),
     supabase.from("content_targets").select("target_all, store_id, tag_id").eq("content_item_id", id),
   ])
 

@@ -22,8 +22,8 @@ export default async function BulkOfferPage({
   if (!hasFeature(config.features, "offerCards")) redirect("/admin/kundeinnhold")
   const { lenker } = await searchParams
   const [storeOptions, { data: tags }] = await Promise.all([
-    loadStoreOptions(supabase),
-    supabase.from("tags").select("id, name, color").order("name"),
+    loadStoreOptions(supabase, tenantId),
+    supabase.from("tags").select("id, name, color").eq("tenant_id", tenantId).order("name"),
   ])
   return (
     <BulkImport

@@ -37,6 +37,24 @@ export interface OfferFields {
   pant: boolean
 }
 
+/**
+ * Structured LANDSCAPE campaign card (bygges i CMS) — premium plakat-mal i stil
+ * med bilforhandler-kampanjer: helbilde-bakgrunn, mørk kategori-fane, stor
+ * overskrift + pris i farget snakkeboble, kjedelogo. Ligger på slide-innhold.
+ */
+export interface CampaignFields {
+  /** Mørk kategori-fane øverst, f.eks. "SOMMERTILBUD" / "SPØR OSS OM HJELP". */
+  category: string | null
+  /** Stor, fet overskrift. */
+  headline: string
+  /** Kursiv støttelinje under overskriften. */
+  subtext: string | null
+  /** Pris/rabatt i snakkeboble, f.eks. "Kun kr 990" / "-15 %". */
+  price: string | null
+  /** Overstyr aksentfarge på boble/fane (default = kjedefarge). */
+  accent: string | null
+}
+
 export interface LiveItem {
   id: string
   type: string
@@ -63,6 +81,8 @@ export interface LiveItem {
   statsChange: string | null
   /** Set when the offer was authored as a structured price card (not a poster). */
   offer: OfferFields | null
+  /** Set when authored as a landscape campaign card (Mobile-style poster). */
+  campaign: CampaignFields | null
   /** Department/category, e.g. "frukt"/"ferskvare". "felles" = whole store. */
   avdeling: string
   /** Optional card background colour (text cards). null = default dark theme. */
@@ -113,6 +133,7 @@ interface Body {
   statsValue?: string | null
   statsChange?: string | null
   offer?: OfferFields | null
+  campaign?: CampaignFields | null
   avdeling?: string | null
   bgColor?: string | null
   textColor?: string | null
@@ -272,6 +293,15 @@ export async function fetchLiveContent(storeId: string | null, types: string[], 
       statsValue: body.statsValue ?? null,
       statsChange: body.statsChange ?? null,
       offer: body.offer && body.offer.varenavn ? body.offer : null,
+      campaign: body.campaign && body.campaign.headline
+        ? {
+            category: body.campaign.category ?? null,
+            headline: body.campaign.headline,
+            subtext: body.campaign.subtext ?? null,
+            price: body.campaign.price ?? null,
+            accent: body.campaign.accent ?? null,
+          }
+        : null,
       avdeling: body.avdeling || "felles",
       bgColor: body.bgColor ?? null,
       textColor: body.textColor ?? null,

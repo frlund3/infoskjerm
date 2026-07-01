@@ -7,6 +7,7 @@ import { ChainThemeProvider } from "@/components/admin/chain-theme-provider"
 import { TenantConfigProvider } from "@/components/admin/tenant-config-provider"
 import { getTenantConfig } from "@/lib/tenant/config"
 import { createClient } from "@/lib/supabase/server"
+import { getAdminContext } from "@/lib/admin/admin-context"
 import { redirect } from "next/navigation"
 import { Toaster } from "sonner"
 
@@ -15,6 +16,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) redirect("/login")
+
+  const ctx = await getAdminContext()
 
   const { data: profile } = await supabase
     .from("users")
@@ -43,6 +46,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             role,
             chainName: chain?.name ?? null,
             chainColor: chain?.color ?? null,
+            isImpersonating: ctx?.isImpersonating ?? false,
+            activeTenantName: ctx?.activeTenant?.name ?? null,
           }
           return (
             <>

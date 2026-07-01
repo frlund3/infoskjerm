@@ -55,7 +55,7 @@ function toLiveItem(offer: OfferFields, imageUrl: string | null, validFrom: stri
     id: "p", type: "slide", title: offer.varenavn || "", blocks: [], imageUrl, imageUrls: imageUrl ? [imageUrl] : [],
     imageMode: "plakat", isPdf: false, isVideo: false, durationSeconds: null, pages: [], validFrom, validTo,
     author: "", date: "", contactPerson: null, applyUrl: null, statsValue: null, statsChange: null,
-    offer, avdeling: "felles", bgColor: null, textColor: null, klubb: null, invitation: null, gallery: null,
+    offer, campaign: null, avdeling: "felles", bgColor: null, textColor: null, klubb: null, invitation: null, gallery: null,
   }
 }
 
