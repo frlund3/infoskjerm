@@ -7,7 +7,7 @@ import { MediaUploader } from "@/components/admin/media-uploader"
 import { Button } from "@/components/ui/button"
 import { saveContent, type ContentType, type TargetMode, type ImageMode, type Audience, type InvitationFields, type GalleryFields, type GalleryItem } from "../actions"
 import { lookupSparProduct } from "../spar-actions"
-import type { OfferFields } from "@/lib/content/live"
+import type { OfferFields, CampaignFields } from "@/lib/content/live"
 import { LivePreview } from "./live-preview"
 import { useTenantConfig, useTenantFeature } from "@/components/admin/tenant-config-provider"
 import { toast } from "sonner"
@@ -67,6 +67,7 @@ export interface ContentInitial {
   statsValue?: string | null
   statsChange?: string | null
   offer?: OfferFields | null
+  campaign?: CampaignFields | null
   avdeling?: string | null
   bgColor?: string | null
   textColor?: string | null
@@ -93,6 +94,10 @@ const GALLERY_THEMES: { k: GalleryFields["theme"]; label: string }[] = [
 const EMPTY_OFFER: OfferFields = {
   varenavn: "", vareinfo: null, badge: null, pris: null, rabatt: null, forpris: null,
   tag: null, enhetspris: null, maks: null, pant: false,
+}
+
+const EMPTY_CAMPAIGN: CampaignFields = {
+  category: null, headline: "", subtext: null, price: null, accent: null,
 }
 
 const BADGES = ["TILBUD", "KNALLPRIS", "NYHET", "SUPERPRIS", "KAMPANJE"]
@@ -136,6 +141,8 @@ export function ContentForm({ stores, tags, initial, audience = "intern", defaul
   // Varekort-bygger (struktur) + spar.no-oppslag er dagligvare-spesifikt — kun
   // for tenants med «offerCards». Andre tenants laster kun opp plakat/PDF.
   const canOfferCards = useTenantFeature("offerCards")
+  // Liggende kampanjekort-bygger (premium plakat-mal) — f.eks. bilforhandler.
+  const canCampaignCards = useTenantFeature("campaignCards")
   const allowedTypes = AUDIENCE_TYPES[audience]
   // defaultType locks the picker to one type (dedicated entry points, e.g. Invitasjoner).
   const typeOptions = TYPES.filter((t) => (defaultType ? t.key === defaultType : allowedTypes.includes(t.key)))
@@ -157,8 +164,9 @@ export function ContentForm({ stores, tags, initial, audience = "intern", defaul
   const [contactPerson, setContactPerson] = useState(initial?.contactPerson ?? "")
   const [applyUrl, setApplyUrl] = useState(initial?.applyUrl ?? "")
   const [imageMode, setImageMode] = useState<ImageMode>(initial?.imageMode ?? "bakgrunn")
-  const [offerMode, setOfferMode] = useState<"struktur" | "plakat" | "klubb">(initial?.offer ? "struktur" : initial?.klubb ? "klubb" : "plakat")
+  const [offerMode, setOfferMode] = useState<"struktur" | "kampanje" | "plakat" | "klubb">(initial?.offer ? "struktur" : initial?.campaign ? "kampanje" : initial?.klubb ? "klubb" : "plakat")
   const [offer, setOffer] = useState<OfferFields>(initial?.offer ?? EMPTY_OFFER)
+  const [campaign, setCampaign] = useState<CampaignFields>(initial?.campaign ?? EMPTY_CAMPAIGN)
   const [klubb, setKlubb] = useState(initial?.klubb ?? { headline: "Bli medlem – det er gratis", subtext: "Medlemspriser, bonus og ukens beste tilbud." })
   const [avdeling, setAvdeling] = useState(initial?.avdeling ?? "felles")
   const [invitation, setInvitation] = useState<InvitationFields>(initial?.invitation ?? EMPTY_INVITATION)
@@ -175,15 +183,18 @@ export function ContentForm({ stores, tags, initial, audience = "intern", defaul
 
   const isOfferStruktur = type === "slide" && offerMode === "struktur"
   const isKlubb = type === "slide" && offerMode === "klubb"
+  const isCampaign = type === "slide" && offerMode === "kampanje"
   // Utseende (bakgrunn/skrift) på alt innhold unntatt ticker, strukturert
-  // tilbudskort og kundeklubb (de har egne, faste design).
-  const usesColors = type !== "ticker" && !isOfferStruktur && !isKlubb
+  // tilbudskort, kampanjekort og kundeklubb (de har egne, faste design).
+  const usesColors = type !== "ticker" && !isOfferStruktur && !isKlubb && !isCampaign
   // Kundeklubb styres per butikk (Butikker → butikk → Kundeklubb), ikke som
   // innholdselement — så ingen «klubb»-modus her.
-  const OFFER_MODES: { k: "struktur" | "plakat" | "klubb"; label: string }[] = [
+  const OFFER_MODES: { k: "struktur" | "kampanje" | "plakat" | "klubb"; label: string }[] = [
     ...(canOfferCards ? [{ k: "struktur" as const, label: "Bygg tilbudskort" }] : []),
+    ...(canCampaignCards ? [{ k: "kampanje" as const, label: "Bygg kampanjekort" }] : []),
     { k: "plakat", label: "Last opp plakat / PDF" },
   ]
+  const setCa = (k: "category" | "subtext" | "price" | "accent", v: string) => setCampaign((p) => ({ ...p, [k]: v.trim() || null }))
 
   // How many stores the current targeting reaches (live feedback).
   const reach = (() => {
@@ -317,6 +328,8 @@ export function ContentForm({ stores, tags, initial, audience = "intern", defaul
   function handleSave(publish: boolean) {
     if (isOfferStruktur) {
       if (!offer.varenavn.trim()) { toast.error("Skriv et varenavn"); return }
+    } else if (isCampaign) {
+      if (!campaign.headline.trim()) { toast.error("Skriv en overskrift"); return }
     } else if (isKlubb) {
       if (!klubb.headline.trim()) { toast.error("Skriv en overskrift"); return }
     } else if (!title.trim()) { toast.error("Skriv en tittel først"); return }
@@ -337,10 +350,11 @@ export function ContentForm({ stores, tags, initial, audience = "intern", defaul
     setSaving(true)
     const res = await saveContent(
       {
-        title: isKlubb ? klubb.headline.trim() : isOfferStruktur ? offer.varenavn.trim() : title,
+        title: isKlubb ? klubb.headline.trim() : isOfferStruktur ? offer.varenavn.trim() : isCampaign ? campaign.headline.trim() : title,
         type, audience, bodyHtml: usesBody ? bodyHtml : "", imageUrl: usesImage ? imageUrls[0] ?? null : null,
         imageUrls: usesImage ? imageUrls : [],
         offer: isOfferStruktur ? offer : null,
+        campaign: isCampaign ? campaign : null,
         klubb: isKlubb ? klubb : null,
         invitation: type === "invitation" ? invitation : null,
         gallery: type === "gallery" ? {
@@ -375,13 +389,14 @@ export function ContentForm({ stores, tags, initial, audience = "intern", defaul
   // Live preview payload — rendered by the real screen components in an iframe.
   const previewData = {
     type, audience,
-    title: isKlubb ? klubb.headline : isOfferStruktur ? offer.varenavn : title,
+    title: isKlubb ? klubb.headline : isOfferStruktur ? offer.varenavn : isCampaign ? campaign.headline : title,
     klubb: isKlubb ? klubb : null,
     bodyHtml: usesBody ? bodyHtml : "",
     imageUrl: imageUrls[0] ?? null,
     imageUrls,
     imageMode: (type === "slide" || isMulti ? "plakat" : imageMode) as ImageMode,
     offer: isOfferStruktur ? offer : null,
+    campaign: isCampaign ? campaign : null,
     invitation: type === "invitation" ? invitation : null,
     gallery: type === "gallery" ? gallery : null,
     avdeling,
@@ -436,7 +451,7 @@ export function ContentForm({ stores, tags, initial, audience = "intern", defaul
               <button type="button" onClick={discardDraft} className="font-semibold hover:underline">Forkast</button>
             </div>
           )}
-          {!isOfferStruktur && !isKlubb && (
+          {!isOfferStruktur && !isKlubb && !isCampaign && (
             <div>
               <input
                 type="text"
@@ -519,6 +534,41 @@ export function ContentForm({ stores, tags, initial, audience = "intern", defaul
                 </label>
               </div>
               <p className="text-[10px] text-zinc-400">Bildet du laster opp under blir produktbildet på kortet.</p>
+            </div>
+          )}
+
+          {isCampaign && (
+            <div className="space-y-4 rounded-xl border border-zinc-200 bg-white p-4">
+              <p className="text-[11px] text-zinc-500 bg-blue-50 border border-blue-100 rounded-lg px-3 py-2">
+                Liggende <strong>kampanjekort</strong>: helbilde-bakgrunn med kategori-fane, overskrift og pris i farget boble. Bildet du laster opp under blir bakgrunnen.
+              </p>
+              <div>
+                <label className="block text-[10px] text-zinc-400 mb-1">Kategori (fane øverst)</label>
+                <input value={campaign.category ?? ""} onChange={(e) => setCa("category", e.target.value)} placeholder="SOMMERTILBUD"
+                  className="w-full text-sm border border-zinc-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-zinc-300" />
+              </div>
+              <div>
+                <label className="block text-[10px] text-zinc-400 mb-1">Overskrift *</label>
+                <input value={campaign.headline} onChange={(e) => setCampaign((p) => ({ ...p, headline: e.target.value }))} placeholder="Sommerens smarteste oppgradering"
+                  className="w-full text-lg font-bold border border-zinc-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-zinc-300" />
+              </div>
+              <div>
+                <label className="block text-[10px] text-zinc-400 mb-1">Støttelinje</label>
+                <input value={campaign.subtext ?? ""} onChange={(e) => setCa("subtext", e.target.value)} placeholder="Tilbud på takbokser – ut juli."
+                  className="w-full text-sm border border-zinc-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-zinc-300" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[10px] text-zinc-400 mb-1">Pris / rabatt</label>
+                  <input value={campaign.price ?? ""} onChange={(e) => setCa("price", e.target.value)} placeholder="Kun kr 990 / -15 %"
+                    className="w-full text-sm border border-zinc-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-zinc-300" />
+                </div>
+                <div>
+                  <label className="block text-[10px] text-zinc-400 mb-1">Aksentfarge (valgfri)</label>
+                  <input type="text" value={campaign.accent ?? ""} onChange={(e) => setCa("accent", e.target.value)} placeholder="#ea6a1e"
+                    className="w-full text-sm border border-zinc-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-zinc-300 font-mono" />
+                </div>
+              </div>
             </div>
           )}
 
