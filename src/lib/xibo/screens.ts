@@ -49,13 +49,24 @@ interface XiboGroup {
   displayGroup: string
 }
 
-/** Xibo lastAccessed may be a unix timestamp (seconds) or an ISO string. */
+/**
+ * Xibo lastAccessed er enten et unix-tidsstempel (sekunder = absolutt instant)
+ * eller en naiv «YYYY-MM-DD HH:mm:ss»-streng som ALLEREDE er i CMS-ens tidssone
+ * (Europe/Oslo). Den naive strengen må IKKE tolkes som UTC og konverteres — da
+ * legger vi på +2 t på en UTC-server (Vercel). Vis den derfor verbatim som norsk
+ * tid; kun unix-tallet konverteres til Oslo.
+ */
 function parseLastSeen(raw: string | null): string | null {
   if (!raw) return null
   const asNum = Number(raw)
-  const d = Number.isFinite(asNum) && asNum > 0 ? new Date(asNum * 1000) : new Date(raw)
-  if (Number.isNaN(d.getTime())) return null
-  return d.toLocaleString("nb-NO", { timeZone: "Europe/Oslo" })
+  if (Number.isFinite(asNum) && asNum > 0) {
+    const d = new Date(asNum * 1000)
+    return Number.isNaN(d.getTime()) ? null : d.toLocaleString("nb-NO", { timeZone: "Europe/Oslo" })
+  }
+  const m = raw.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?/)
+  if (!m) return raw
+  const [, y, mo, da, hh, mm, ss] = m
+  return `${Number(da)}.${Number(mo)}.${y}, ${hh}:${mm}:${ss ?? "00"}`
 }
 
 function syncFrom(status: number | null | undefined): ScreenSync {

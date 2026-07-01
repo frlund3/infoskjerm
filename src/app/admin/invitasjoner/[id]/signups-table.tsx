@@ -33,7 +33,7 @@ export function SignupsTable({ rows, eventTitle }: { rows: SignupRow[]; eventTit
         r.email,
         r.phone,
         r.store,
-        new Date(r.createdAt).toLocaleString("nb-NO"),
+        new Date(r.createdAt).toLocaleString("nb-NO", { timeZone: "Europe/Oslo" }),
       ]
         .map(csvCell)
         .join(";")
@@ -89,7 +89,7 @@ export function SignupsTable({ rows, eventTitle }: { rows: SignupRow[]; eventTit
                 <td className="px-4 py-2.5 text-zinc-600">{r.guests > 0 ? `+${r.guests}` : "—"}</td>
                 <td className="px-4 py-2.5 text-zinc-600">{r.dietary ?? "—"}</td>
                 <td className="px-4 py-2.5 text-zinc-600">{r.email || r.phone || "—"}</td>
-                <td className="px-4 py-2.5 text-zinc-400">{new Date(r.createdAt).toLocaleDateString("nb-NO", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</td>
+                <td className="px-4 py-2.5 text-zinc-400">{new Date(r.createdAt).toLocaleDateString("nb-NO", { timeZone: "Europe/Oslo", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</td>
               </tr>
             ))}
           </tbody>

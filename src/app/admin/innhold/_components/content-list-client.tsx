@@ -60,7 +60,7 @@ function targetIcon(mode: ContentRow["target"]["mode"]) {
 
 function formatPeriod(from: string | null, to: string | null): string | null {
   if (!from && !to) return null
-  const fmt = (d: string) => new Date(d).toLocaleDateString("nb-NO", { day: "numeric", month: "short" })
+  const fmt = (d: string) => new Date(d).toLocaleDateString("nb-NO", { timeZone: "Europe/Oslo", day: "numeric", month: "short" })
   if (from && to) return `${fmt(from)} – ${fmt(to)}`
   if (from) return `Fra ${fmt(from)}`
   return `Til ${fmt(to!)}`
