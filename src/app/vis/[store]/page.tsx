@@ -74,11 +74,22 @@ export default async function KioskPage({
     }
   }
 
+  // Hjelper: velg mal etter eksplisitt ?orientation, ellers AUTO etter enhetens
+  // faktiske orientering. Samme oppførsel for både intern- og kundeskjerm.
+  const explicitPortrait = orientation === "staaende" || orientation === "stående" || orientation === "portrait"
+  const explicitLandscape = orientation === "liggende" || orientation === "landscape"
+
   // Intern skjerm (verksted/pauserom) via ?type=intern → FULL bakrom-rotasjon
   // (internt innhold + butikk-KPI + KPI-oversikt uke/år), akkurat som en ekte
-  // internskjerm. Alltid liggende (1920×1080).
+  // internskjerm. Auto-orientering: liggende internskjerm → 1920×1080, stående
+  // (f.eks. telefon på Mobile AS) → 1080×1920. Widgetene inne i bakrom oppdager
+  // selv orienteringen fra sin iframe-viewport og velger stående/liggende layout.
   if (type === "intern") {
-    return <KioskStage src={`/widget/bakrom?store=${row.id}${avd}`} title={row.name} width={1920} height={1080} />
+    const p = { src: `/widget/bakrom?store=${row.id}${avd}`, width: 1080, height: 1920 }
+    const l = { src: `/widget/bakrom?store=${row.id}${avd}`, width: 1920, height: 1080 }
+    if (explicitPortrait) return <KioskStage src={p.src} title={row.name} width={p.width} height={p.height} />
+    if (explicitLandscape) return <KioskStage src={l.src} title={row.name} width={l.width} height={l.height} />
+    return <KioskAuto portrait={p} landscape={l} title={row.name} />
   }
 
   // Kundeskjerm i to native orienteringer: stående (tilbud, 1080×1920) og
@@ -89,12 +100,7 @@ export default async function KioskPage({
 
   // Eksplisitt ?orientation i URL-en overstyrer (for skjermer montert fast i én
   // retning). Uten den: AUTO — fyll etter enhetens faktiske orientering.
-  const explicit =
-    orientation === "liggende" || orientation === "landscape"
-      ? landscapeVariant
-      : orientation === "staaende" || orientation === "stående" || orientation === "portrait"
-        ? portraitVariant
-        : null
+  const explicit = explicitLandscape ? landscapeVariant : explicitPortrait ? portraitVariant : null
 
   if (explicit) {
     return <KioskStage src={explicit.src} title={row.name} width={explicit.width} height={explicit.height} />
