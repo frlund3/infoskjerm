@@ -12,13 +12,16 @@ import { LoggClient, type LogRow } from "./logg-client"
 export const dynamic = "force-dynamic"
 
 export default async function LoggPage() {
-  await requireRole(["super_admin", "chain_manager"])
+  const { tenantId } = await requireRole(["super_admin", "chain_manager"])
   const admin = createAdminClient()
-  const { data } = await admin
+  // audit_log.tenant_id finnes ennå ikke i genererte typer (migrasjon 033) →
+  // cast query-builderen minimalt så .eq("tenant_id", …) kompilerer.
+  const query = admin
     .from("audit_log")
     .select("id, created_at, user_email, action, entity_type, summary")
     .order("created_at", { ascending: false })
-    .limit(400)
+    .limit(400) as unknown as { eq: (col: string, val: string) => PromiseLike<{ data: LogRow[] | null }> }
+  const { data } = await query.eq("tenant_id", tenantId)
 
   return (
     <div className="flex flex-col flex-1">

@@ -7,8 +7,6 @@ import { audienceForType, type Audience } from "./audience"
 import type { OfferFields, CampaignFields } from "@/lib/content/live"
 import type { Json } from "@/types/database"
 
-type AdminSupabase = Awaited<ReturnType<typeof requireRole>>["supabase"]
-
 const AUTHOR_ROLES = ["super_admin", "chain_manager", "area_manager", "store_manager", "store_employee"] as const
 
 export type ContentType = "news" | "competition" | "stats" | "weather" | "slide" | "job" | "birthday" | "ticker" | "invitation" | "gallery"
@@ -97,10 +95,15 @@ export interface SaveResult {
   error?: string
 }
 
-async function effectiveTenant(supabase: AdminSupabase, tenantId: string): Promise<string> {
-  if (tenantId) return tenantId
-  const { data } = await supabase.from("tenants").select("id").limit(1).single()
-  return data?.id ?? ""
+/**
+ * Effektiv tenant for skriveoperasjoner. Under act-as er dette den aktive tenanten
+ * fra requireRole. En tom tenant er en korrekthetsfare (id-baserte muteringer ville
+ * mistet sin .eq("tenant_id", …)-scoping), så vi kaster eksplisitt i stedet for å
+ * falle tilbake til en vilkårlig første tenant.
+ */
+function effectiveTenant(tenantId: string): string {
+  if (!tenantId) throw new Error("Ingen aktiv tenant")
+  return tenantId
 }
 
 /** Builds the content_items.body payload, including type-specific fields. */
@@ -130,7 +133,7 @@ function buildBody(input: ContentInput): Json {
 
 export async function saveContent(input: ContentInput, id?: string): Promise<SaveResult> {
   const { supabase, userId, tenantId: rawTenant } = await requireRole([...AUTHOR_ROLES])
-  const tenantId = await effectiveTenant(supabase, rawTenant)
+  const tenantId = effectiveTenant(rawTenant)
 
   if (!input.title.trim()) return { ok: false, error: "Tittel er påkrevd" }
 
@@ -152,6 +155,7 @@ export async function saveContent(input: ContentInput, id?: string): Promise<Sav
         published_at: input.publish ? new Date().toISOString() : null,
       })
       .eq("id", id)
+      .eq("tenant_id", tenantId)
     if (error) return { ok: false, error: error.message }
   } else {
     const { data, error } = await supabase
@@ -205,12 +209,14 @@ export async function saveContent(input: ContentInput, id?: string): Promise<Sav
 
 /** Publishes/unpublishes several items at once. */
 export async function bulkSetStatus(ids: string[], publish: boolean): Promise<SaveResult> {
-  const { supabase, userId } = await requireRole([...AUTHOR_ROLES])
+  const { supabase, userId, tenantId: rawTenant } = await requireRole([...AUTHOR_ROLES])
+  const tenantId = effectiveTenant(rawTenant)
   if (ids.length === 0) return { ok: true }
   const { error } = await supabase
     .from("content_items")
     .update({ status: publish ? "live" : "draft", published_at: publish ? new Date().toISOString() : null, updated_at: new Date().toISOString() })
     .in("id", ids)
+    .eq("tenant_id", tenantId)
   if (error) return { ok: false, error: error.message }
   await logAudit({ userId, action: publish ? "content.publish" : "content.unpublish", entityType: "content", summary: `${publish ? "Publiserte" : "Avpubliserte"} ${ids.length} element(er)`, metadata: { ids } })
   revalidatePath("/admin/innhold")
@@ -219,10 +225,11 @@ export async function bulkSetStatus(ids: string[], publish: boolean): Promise<Sa
 
 /** Deletes several items (and their targets) at once. */
 export async function bulkDeleteContent(ids: string[]): Promise<SaveResult> {
-  const { supabase, userId } = await requireRole([...AUTHOR_ROLES])
+  const { supabase, userId, tenantId: rawTenant } = await requireRole([...AUTHOR_ROLES])
+  const tenantId = effectiveTenant(rawTenant)
   if (ids.length === 0) return { ok: true }
   await supabase.from("content_targets").delete().in("content_item_id", ids)
-  const { error } = await supabase.from("content_items").delete().in("id", ids)
+  const { error } = await supabase.from("content_items").delete().in("id", ids).eq("tenant_id", tenantId)
   if (error) return { ok: false, error: error.message }
   await logAudit({ userId, action: "content.delete", entityType: "content", summary: `Slettet ${ids.length} element(er)`, metadata: { ids } })
   revalidatePath("/admin/innhold")
@@ -231,14 +238,16 @@ export async function bulkDeleteContent(ids: string[]): Promise<SaveResult> {
 
 /** Shifts the validity period of several items by N days (e.g. extend +7). */
 export async function bulkShiftPeriod(ids: string[], days: number): Promise<SaveResult> {
-  const { supabase, userId } = await requireRole([...AUTHOR_ROLES])
+  const { supabase, userId, tenantId: rawTenant } = await requireRole([...AUTHOR_ROLES])
+  const tenantId = effectiveTenant(rawTenant)
   if (ids.length === 0) return { ok: true }
-  const { data: rows } = await supabase.from("content_items").select("id, valid_from, valid_to").in("id", ids)
+  const { data: rows } = await supabase.from("content_items").select("id, valid_from, valid_to").in("id", ids).eq("tenant_id", tenantId)
   for (const r of rows ?? []) {
     await supabase
       .from("content_items")
       .update({ valid_from: shiftIso(r.valid_from, days), valid_to: shiftIso(r.valid_to, days), updated_at: new Date().toISOString() })
       .eq("id", r.id)
+      .eq("tenant_id", tenantId)
   }
   await logAudit({ userId, action: "content.extend", entityType: "content", summary: `Forlenget ${ids.length} element(er) med ${days} dager`, metadata: { ids, days } })
   revalidatePath("/admin/innhold")
@@ -258,13 +267,14 @@ export interface PlaylistEntry {
 }
 
 export async function reorderContent(entries: PlaylistEntry[]): Promise<SaveResult> {
-  const { supabase, userId } = await requireRole([...AUTHOR_ROLES])
+  const { supabase, userId, tenantId } = await requireRole([...AUTHOR_ROLES])
   if (entries.length === 0) return { ok: true }
   // Hent nåværende body-er så durationSeconds flettes inn uten å klobbe resten.
   const { data: rows } = await supabase
     .from("content_items")
     .select("id, body")
     .in("id", entries.map((e) => e.id))
+    .eq("tenant_id", tenantId)
   const bodyById = new Map((rows ?? []).map((r) => [r.id, { ...((r.body ?? {}) as Record<string, unknown>) }]))
   for (let i = 0; i < entries.length; i++) {
     const e = entries[i]
@@ -274,7 +284,7 @@ export async function reorderContent(entries: PlaylistEntry[]): Promise<SaveResu
     } else {
       delete body.durationSeconds
     }
-    const { error } = await supabase.from("content_items").update({ sort_order: i, body: body as Json }).eq("id", e.id)
+    const { error } = await supabase.from("content_items").update({ sort_order: i, body: body as Json }).eq("id", e.id).eq("tenant_id", tenantId)
     if (error) return { ok: false, error: error.message }
   }
   await logAudit({ userId, action: "content.reorder", entityType: "content", summary: `Oppdaterte rekkefølge/spilletid på ${entries.length} element(er)`, metadata: { count: entries.length } })
@@ -284,10 +294,11 @@ export async function reorderContent(entries: PlaylistEntry[]): Promise<SaveResu
 }
 
 export async function deleteContent(id: string): Promise<SaveResult> {
-  const { supabase, userId } = await requireRole([...AUTHOR_ROLES])
-  const { data: row } = await supabase.from("content_items").select("title").eq("id", id).maybeSingle()
+  const { supabase, userId, tenantId: rawTenant } = await requireRole([...AUTHOR_ROLES])
+  const tenantId = effectiveTenant(rawTenant)
+  const { data: row } = await supabase.from("content_items").select("title").eq("id", id).eq("tenant_id", tenantId).maybeSingle()
   await supabase.from("content_targets").delete().eq("content_item_id", id)
-  const { error } = await supabase.from("content_items").delete().eq("id", id)
+  const { error } = await supabase.from("content_items").delete().eq("id", id).eq("tenant_id", tenantId)
   if (error) return { ok: false, error: error.message }
   await logAudit({ userId, action: "content.delete", entityType: "content", entityId: id, summary: `Slettet «${row?.title ?? id}»` })
   revalidatePath("/admin/innhold")
@@ -309,11 +320,12 @@ function shiftIso(iso: string | null, days: number): string | null {
  */
 export async function duplicateContent(id: string, shiftDays = 0): Promise<SaveResult> {
   const { supabase, userId, tenantId: rawTenant } = await requireRole([...AUTHOR_ROLES])
-  const tenantId = await effectiveTenant(supabase, rawTenant)
+  const tenantId = effectiveTenant(rawTenant)
   const { data: orig } = await supabase
     .from("content_items")
     .select("title, type, body, valid_from, valid_to")
     .eq("id", id)
+    .eq("tenant_id", tenantId)
     .single()
   if (!orig) return { ok: false, error: "Fant ikke innholdet" }
 

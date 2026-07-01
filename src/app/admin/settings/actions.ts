@@ -4,7 +4,13 @@ import { randomBytes } from "crypto"
 import { revalidatePath } from "next/cache"
 import { createClient, createAdminClient } from "@/lib/supabase/server"
 import { getAdminContext } from "@/lib/admin/admin-context"
+import { requireRole } from "@/lib/admin/require-role"
 import { logAudit } from "@/lib/admin/audit"
+
+// Rollene som har tilgang til /admin/settings-sidebaren. super_admin bypasser RLS,
+// så .eq("tenant_id", tenantId) på id-baserte muteringer er selve tenant-isolasjonen
+// under act-as. tenantId = effektiv (aktiv) tenant fra requireRole.
+const SETTINGS_ROLES = ["super_admin", "chain_manager", "area_manager", "store_manager"] as const
 
 export type ScreenCommand = "power_on" | "power_off" | "reload" | "reboot"
 
@@ -16,11 +22,12 @@ async function requireUser() {
 }
 
 export async function sendCommand(screenId: string, command: ScreenCommand) {
-  const { supabase } = await requireUser()
+  const { supabase, tenantId } = await requireRole([...SETTINGS_ROLES])
   const { error } = await supabase
     .from("screens")
     .update({ pending_command: command })
     .eq("id", screenId)
+    .eq("tenant_id", tenantId)
   if (error) return { ok: false, error: error.message }
   revalidatePath("/admin/settings")
   return { ok: true }
@@ -52,12 +59,13 @@ export async function createScreen(storeId: string, name: string) {
 }
 
 export async function regenerateToken(screenId: string) {
-  const { supabase, userId } = await requireUser()
+  const { supabase, userId, tenantId } = await requireRole([...SETTINGS_ROLES])
   const token = "gr_" + randomBytes(24).toString("hex")
   const { error } = await supabase
     .from("screens")
     .update({ token })
     .eq("id", screenId)
+    .eq("tenant_id", tenantId)
   if (error) return { ok: false, error: error.message }
   await logAudit({ userId, action: "screen.token", entityType: "screen", entityId: screenId, summary: "Genererte ny skjerm-token" })
   revalidatePath("/admin/settings")
@@ -65,8 +73,8 @@ export async function regenerateToken(screenId: string) {
 }
 
 export async function deleteScreen(screenId: string) {
-  const { supabase, userId } = await requireUser()
-  const { error } = await supabase.from("screens").delete().eq("id", screenId)
+  const { supabase, userId, tenantId } = await requireRole([...SETTINGS_ROLES])
+  const { error } = await supabase.from("screens").delete().eq("id", screenId).eq("tenant_id", tenantId)
   if (error) return { ok: false, error: error.message }
   await logAudit({ userId, action: "screen.delete", entityType: "screen", entityId: screenId, summary: "Slettet skjerm" })
   revalidatePath("/admin/settings")
@@ -79,11 +87,12 @@ export async function updateChainBranding(
   brandLight: string,
   brandFg: string
 ) {
-  const { supabase, userId } = await requireUser()
+  const { supabase, userId, tenantId } = await requireRole([...SETTINGS_ROLES])
   const { error } = await supabase
     .from("chains")
     .update({ color, brand_light: brandLight, brand_fg: brandFg })
     .eq("id", chainId)
+    .eq("tenant_id", tenantId)
   if (error) return { ok: false, error: error.message }
   await logAudit({ userId, action: "settings.branding", entityType: "chain", entityId: chainId, summary: "Oppdaterte kjede-farger", metadata: { color, brandLight, brandFg } })
   revalidatePath("/admin/settings")
@@ -102,7 +111,7 @@ export async function uploadChainLogo(
   chainId: string,
   formData: FormData
 ): Promise<{ ok: true; url: string } | { ok: false; error: string }> {
-  const { supabase, userId } = await requireUser()
+  const { supabase, userId, tenantId } = await requireRole([...SETTINGS_ROLES])
 
   const file = formData.get("file")
   if (!(file instanceof File) || file.size === 0) return { ok: false, error: "Ingen fil valgt" }
@@ -118,7 +127,7 @@ export async function uploadChainLogo(
   if (upErr) return { ok: false, error: upErr.message }
 
   const { data: pub } = supabase.storage.from("media").getPublicUrl(path)
-  const { error } = await supabase.from("chains").update({ logo_url: pub.publicUrl }).eq("id", chainId)
+  const { error } = await supabase.from("chains").update({ logo_url: pub.publicUrl }).eq("id", chainId).eq("tenant_id", tenantId)
   if (error) return { ok: false, error: error.message }
 
   await logAudit({ userId, action: "settings.logo", entityType: "chain", entityId: chainId, summary: "Lastet opp ny kjede-logo" })

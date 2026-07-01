@@ -4,6 +4,8 @@ import { useEffect, useState, type CSSProperties } from "react"
 import type { LiveItem } from "@/lib/content/live"
 import type { ChainBrand } from "@/app/widget/tilbud/offer-card"
 import { CampaignCard } from "./campaign-card"
+import { CompetitionCard } from "@/app/widget/_shared/competition-card"
+import { GalleryCard } from "@/app/widget/_shared/gallery-card"
 
 /**
  * Liggende kunde-kampanjeskjerm (1920×1080). Roterer butikkens kunde-slides:
@@ -45,7 +47,7 @@ function LandscapePoster({ item, chain }: { item: LiveItem; chain?: ChainBrand |
   )
 }
 
-export function KampanjeRotator({ items, chain = null }: { items: LiveItem[]; chain?: ChainBrand | null }) {
+export function KampanjeRotator({ items, chain = null, qr = {} }: { items: LiveItem[]; chain?: ChainBrand | null; qr?: Record<string, string> }) {
   const [i, setI] = useState(0)
 
   useEffect(() => {
@@ -72,7 +74,15 @@ export function KampanjeRotator({ items, chain = null }: { items: LiveItem[]; ch
         </div>
       ) : (
         <div key={item.id} style={{ position: "absolute", inset: 0, animation: "grFade .6s ease-out" }}>
-          {item.campaign ? <CampaignCard item={item} chain={chain} /> : <LandscapePoster item={item} chain={chain} />}
+          {item.campaign ? (
+            <CampaignCard item={item} chain={chain} />
+          ) : item.type === "competition" ? (
+            <CompetitionCard item={item} qrUrl={qr[item.id]} />
+          ) : item.type === "gallery" ? (
+            <GalleryCard item={item} qrUrl={qr[item.id]} />
+          ) : (
+            <LandscapePoster item={item} chain={chain} />
+          )}
         </div>
       )}
     </main>

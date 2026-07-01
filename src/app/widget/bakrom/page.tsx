@@ -43,9 +43,13 @@ export default async function BakromWidgetPage({ searchParams }: { searchParams:
   if (store && newsItems.length > 0) {
     panels.push({ src: `/widget/nyheter?store=${store}&flate=intern`, seconds: newsDwell })
   }
-  if (store) panels.push({ src: `/widget/butikk-kpi?store=${store}`, seconds: KPI_SECONDS })
-  panels.push({ src: `/widget/kpi-oversikt`, seconds: KPI_SECONDS })
-  panels.push({ src: `/widget/kpi-oversikt?periode=ar`, seconds: KPI_SECONDS })
+  // KPI-panelene krever store (utleder tenant) — ellers vises de ikke (fail-closed,
+  // så konfidensielle tall aldri lekker på tvers av tenants).
+  if (store) {
+    panels.push({ src: `/widget/butikk-kpi?store=${store}`, seconds: KPI_SECONDS })
+    panels.push({ src: `/widget/kpi-oversikt?store=${store}`, seconds: KPI_SECONDS })
+    panels.push({ src: `/widget/kpi-oversikt?store=${store}&periode=ar`, seconds: KPI_SECONDS })
+  }
 
   return <BakromRotator panels={panels} />
 }

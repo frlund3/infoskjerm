@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/server"
+import { getAdminContext } from "@/lib/admin/admin-context"
 
 /**
  * Append-only audit trail. Every meaningful action (login, content changes,
@@ -19,6 +20,8 @@ export interface AuditEvent {
   /** Human-readable one-liner shown in the log viewer. */
   summary: string
   metadata?: Record<string, unknown> | null
+  /** Effektiv tenant. Utledes fra admin-konteksten når den ikke settes eksplisitt. */
+  tenantId?: string | null
 }
 
 export async function logAudit(event: AuditEvent): Promise<void> {
@@ -29,6 +32,22 @@ export async function logAudit(event: AuditEvent): Promise<void> {
       const { data } = await supabase.from("users").select("full_name, email").eq("id", event.userId).maybeSingle()
       label = data?.full_name || data?.email || null
     }
+
+    // Utled effektiv tenant selv, så ingen av de ~25 kallstedene må endres. I en
+    // public/uten-økt-kontekst (f.eks. auth-callback) finnes ingen admin-kontekst;
+    // da logger vi uten tenant.
+    let tenantId = event.tenantId ?? null
+    if (!tenantId) {
+      try {
+        const ctx = await getAdminContext()
+        tenantId = ctx?.effectiveTenantId ?? null
+      } catch {
+        /* public/no-session context */
+      }
+    }
+
+    // audit_log.tenant_id finnes ennå ikke i genererte typer (migrasjon 033) →
+    // cast payloaden slik den eksisterende metadata-casten gjør.
     await supabase.from("audit_log").insert({
       user_id: event.userId ?? null,
       user_email: label,
@@ -36,8 +55,9 @@ export async function logAudit(event: AuditEvent): Promise<void> {
       entity_type: event.entityType ?? null,
       entity_id: event.entityId ?? null,
       summary: event.summary,
-      metadata: (event.metadata ?? null) as never,
-    })
+      metadata: event.metadata ?? null,
+      tenant_id: tenantId,
+    } as never)
   } catch {
     // Never let auditing break the action it records.
   }

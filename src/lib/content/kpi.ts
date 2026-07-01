@@ -109,13 +109,20 @@ export interface AllStoresKpi {
   total: { omsetning: number; budsjett: number; fjor: number; ytdOmsetning: number; ytdBudsjett: number; ytdFjor: number }
 }
 
-/** Aggregates the latest week + YTD per store for the all-stores overview. */
-export async function fetchAllStoresKpi(): Promise<AllStoresKpi | null> {
+/**
+ * Aggregates the latest week + YTD per store for the all-stores overview.
+ * Tenant-scoping er OBLIGATORISK: uten en tenant returneres ingenting, så
+ * konfidensielle KPI-tall aldri lekker på tvers av tenants på skjerm. Butikker
+ * scopes til tenanten; KPI-rader for andre tenanters butikker faller bort (deres
+ * store-id finnes ikke i nameById → hoppes over).
+ */
+export async function fetchAllStoresKpi(tenantId: string | null): Promise<AllStoresKpi | null> {
+  if (!tenantId) return null
   const supabase = createAdminClient()
   const year = new Date().getFullYear()
 
   const [{ data: stores }, { data: rows }] = await Promise.all([
-    supabase.from("stores").select("id, name"),
+    supabase.from("stores").select("id, name").eq("tenant_id", tenantId),
     supabase
       .from("store_kpi_week")
       .select("store_id, uke, netto_omsetning, budsjett_omsetning, netto_omsetning_fjoraaret, brutto_kr, lonn_kr, svinn_total")

@@ -1,5 +1,6 @@
 import { fetchAllStoresKpi, kr, pct, diffPct, type StoreKpiRow } from "@/lib/content/kpi"
 import { AutoReload } from "@/app/widget/_shared/auto-reload"
+import { createAdminClient } from "@/lib/supabase/server"
 
 /**
  * Staff/HQ overview: all stores' key figures side by side, ranked by performance
@@ -82,10 +83,16 @@ function Row({ row, rank }: { row: RowView; rank: number }) {
   )
 }
 
-export default async function KpiOverviewPage({ searchParams }: { searchParams: Promise<{ periode?: string }> }) {
-  const { periode } = await searchParams
+export default async function KpiOverviewPage({ searchParams }: { searchParams: Promise<{ periode?: string; store?: string }> }) {
+  const { periode, store } = await searchParams
   const ytd = periode === "ar"
-  const data = await fetchAllStoresKpi()
+  // Tenant utledes fra butikken skjermen tilhører — KPI vises kun for den tenanten.
+  let tenantId: string | null = null
+  if (store) {
+    const { data: row } = await createAdminClient().from("stores").select("tenant_id").eq("id", store).maybeSingle()
+    tenantId = (row as { tenant_id: string | null } | null)?.tenant_id ?? null
+  }
+  const data = await fetchAllStoresKpi(tenantId)
 
   const frame: React.CSSProperties = {
     margin: 0,
