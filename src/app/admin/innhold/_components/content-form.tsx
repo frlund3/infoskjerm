@@ -363,7 +363,7 @@ export function ContentForm({ stores, tags, initial, audience = "intern", defaul
           theme: audience !== "intern" && gallery.theme === "ansattilbud" ? "catering" : gallery.theme,
           items: gallery.items.filter((it) => it.name.trim() || it.imageUrl),
         } : null,
-        avdeling: (type === "slide" || type === "competition") ? avdeling : null,
+        avdeling,
         // 2+ images always render full-page (side by side), so force plakat-style.
         imageMode: usesImage ? (type === "slide" || isMulti ? "plakat" : imageMode) : "bakgrunn",
         targetMode, storeIds, tagIds,
@@ -897,17 +897,15 @@ export function ContentForm({ stores, tags, initial, audience = "intern", defaul
             )}
           </section>
 
-          {/* Avdeling — for alt som vises på kundeskjerm (tilbud + konkurranse) */}
-          {(type === "slide" || type === "competition") && (
-            <section className="rounded-xl border border-zinc-200 bg-white p-4">
-              <h3 className="text-xs font-semibold text-zinc-600 mb-2.5">Avdeling</h3>
-              <select value={avdeling} onChange={(e) => setAvdeling(e.target.value)}
-                className="w-full text-xs border border-zinc-200 rounded-lg px-2.5 py-2 focus:outline-none focus:ring-1 focus:ring-zinc-300">
-                {AVDELINGER.map((a) => <option key={a.key} value={a.key}>{a.label}</option>)}
-              </select>
-              <p className="text-[10px] text-zinc-400 mt-1.5">Vises på skjermer i denne avdelingen. «Hele butikken» vises på alle kundeskjermer.</p>
-            </section>
-          )}
+          {/* Avdeling — gjelder alle innholdstyper; avdelingsskjermer filtrerer på dette. */}
+          <section className="rounded-xl border border-zinc-200 bg-white p-4">
+            <h3 className="text-xs font-semibold text-zinc-600 mb-2.5">Avdeling</h3>
+            <select value={avdeling} onChange={(e) => setAvdeling(e.target.value)}
+              className="w-full text-xs border border-zinc-200 rounded-lg px-2.5 py-2 focus:outline-none focus:ring-1 focus:ring-zinc-300">
+              {AVDELINGER.map((a) => <option key={a.key} value={a.key}>{a.label}</option>)}
+            </select>
+            <p className="text-[10px] text-zinc-400 mt-1.5">Vises på skjermer i denne avdelingen. «Hele butikken» vises på alle skjermer.</p>
+          </section>
 
           {/* Appearance — background + text colour for text cards */}
           {usesColors && (
