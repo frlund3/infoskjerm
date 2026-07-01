@@ -65,12 +65,20 @@ export default async function SkjermPage({ params }: { params: Promise<{ token: 
   const config = await getTenantConfig(supabase, row.tenant_id)
   const grocery = hasFeature(config.features, "offerCards")
 
+  // Lås til skjermens faktiske sideforhold uansett vindusstørrelse: stående = 9:16,
+  // liggende = 16:9. På Pi-en (montert i riktig orientering) fyller boksen hele
+  // skjermen; åpner du URL-en i en vanlig nettleser blir den «brev-boksa» så du ser
+  // eksakt slik skjermen viser — ikke strukket. (9/16 = 56.25 %, 16/9 = 177.7778 %.)
+  const landscape = row.orientation === "landscape" || row.orientation === "liggende"
+  const boxW = landscape ? "min(100dvw, 177.7778dvh)" : "min(100dvw, 56.25dvh)"
+  const boxH = landscape ? "min(100dvh, 56.25dvw)" : "min(100dvh, 177.7778dvw)"
+
   return (
-    <div style={{ position: "fixed", inset: 0, background: "#0a0a0a", overflow: "hidden" }}>
+    <div style={{ position: "fixed", inset: 0, background: "#0a0a0a", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
       <iframe
         src={widgetFor(row, grocery)}
         title="Skjerm"
-        style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: 0, display: "block" }}
+        style={{ width: boxW, height: boxH, border: 0, display: "block" }}
         allow="fullscreen"
       />
     </div>
