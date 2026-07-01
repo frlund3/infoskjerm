@@ -27,7 +27,8 @@ const frame: CSSProperties = {
   height: "100vh",
   overflow: "hidden",
   position: "relative",
-  background: "linear-gradient(135deg,#0a0a0a,#161616)",
+  // Subtil atmosfære-glød gir dybde bak alle kort — aldri flatt.
+  background: "radial-gradient(1200px 820px at 80% -10%, rgba(22,163,74,.16), transparent 62%), linear-gradient(135deg,#0a0a0a,#161616)",
   fontFamily: "Arial, Helvetica, sans-serif",
   color: "#fff",
 }
@@ -92,10 +93,12 @@ function ScrollText({ blocks, style }: { blocks: Block[]; style?: CSSProperties 
 }
 
 function Kicker({ children }: { children: string }) {
+  // Premium etikett: lysende aksent-bar + versaler. Konsistent på alle nyhets-kort.
   return (
-    <p style={{ color: "#16a34a", fontWeight: "bold", letterSpacing: 4, fontSize: 26, margin: "0 0 16px", textTransform: "uppercase" }}>
-      {children}
-    </p>
+    <div style={{ display: "inline-flex", alignItems: "center", gap: 16, margin: "0 0 20px" }}>
+      <span style={{ width: 46, height: 5, borderRadius: 9999, background: "#16a34a", boxShadow: "0 0 18px rgba(22,163,74,.75)" }} />
+      <span style={{ color: "#16a34a", fontWeight: 800, letterSpacing: 4, fontSize: 26, textTransform: "uppercase" }}>{children}</span>
+    </div>
   )
 }
 
