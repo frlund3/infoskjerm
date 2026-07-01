@@ -70,13 +70,15 @@ export default async function KioskPage({
     }
   }
 
-  // Intern skjerm (verksted/pauserom) via ?type=intern → ren intern nyhetsflate.
+  // Intern skjerm (verksted/pauserom) via ?type=intern → FULL bakrom-rotasjon
+  // (internt innhold + butikk-KPI + KPI-oversikt uke/år), akkurat som en ekte
+  // internskjerm — ikke bare nyhetsflaten.
   // Liggende kundeskjerm via ?orientation=liggende → premium kampanjemal.
   // Ellers stående kundeskjerm.
   const isIntern = type === "intern"
   const landscape = orientation === "liggende" || orientation === "landscape"
   const widget = isIntern
-    ? `/widget/nyheter?store=${row.id}&flate=intern`
+    ? `/widget/bakrom?store=${row.id}`
     : landscape
       ? `/widget/kampanje?store=${row.id}`
       : `/widget/tilbud?store=${row.id}`
