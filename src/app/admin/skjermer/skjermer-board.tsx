@@ -3,6 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { MonitorOff } from "lucide-react"
+import { useTenantConfig } from "@/components/admin/tenant-config-provider"
 import type { StoreScreen, ScreenRole } from "@/lib/xibo/screens"
 
 export interface BoardStore {
@@ -39,6 +40,7 @@ function Stat({ label, value, tone }: { label: string; value: number; tone?: "ok
 }
 
 export function SkjermerBoard({ stores }: { stores: BoardStore[] }) {
+  const { unitLabel } = useTenantConfig()
   const [filter, setFilter] = useState<Filter>("alle")
 
   const all = stores.flatMap((s) => s.screens)
@@ -78,7 +80,7 @@ export function SkjermerBoard({ stores }: { stores: BoardStore[] }) {
         <div className="rounded-2xl border border-dashed border-zinc-300 bg-white p-12 text-center">
           <MonitorOff className="w-10 h-10 text-zinc-300 mx-auto mb-3" />
           <p className="text-sm font-medium text-zinc-700">Ingen skjermer i denne visningen</p>
-          <p className="text-xs text-zinc-400 mt-1">Prøv et annet filter, eller koble til en skjerm i butikken.</p>
+          <p className="text-xs text-zinc-400 mt-1">Prøv et annet filter, eller koble til en skjerm i {unitLabel.toLowerCase()}en.</p>
         </div>
       ) : (
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
