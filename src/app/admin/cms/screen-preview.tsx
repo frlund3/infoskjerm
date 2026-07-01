@@ -95,11 +95,14 @@ export function ScreenPreview({
   const avdelingerForFlate = flate === "intern" ? AVDELINGER_INTERN : AVDELINGER
   const av = encodeURIComponent(avdeling)
   const tilbudSrc = `/widget/tilbud?store=${sid}&avdeling=${av}&o=${orient}`
+  // Kunde LIGGENDE bruker kampanje-rotatoren (kampanje/konkurranse/galleri/tilbud i
+  // liggende) — ikke tilbud (stående) strukket bredt.
+  const kampanjeSrc = `/widget/kampanje?store=${sid}&avdeling=${av}`
   const kpiSrc = `/widget/butikk-kpi?store=${sid}&o=${orient}`
   const oversiktSrc = `/widget/kpi-oversikt?store=${sid}&o=${orient}`
   const internInnholdSrc = `/widget/nyheter?store=${sid}&flate=intern&avdeling=${av}&o=${orient}`
   const kundeklubbSrc = `/widget/kundeklubb?store=${sid}`
-  const kundeSrc = kundeView === "klubb" ? kundeklubbSrc : tilbudSrc
+  const kundeSrc = kundeView === "klubb" ? kundeklubbSrc : (portrait ? tilbudSrc : kampanjeSrc)
   const topbarSrc = `/widget/topbar?butikk=${encodeURIComponent(store.name)}&lat=${store.lat ?? ""}&lon=${store.lon ?? ""}&navn=${encodeURIComponent(store.city ?? "")}${brand ? `&merke=${encodeURIComponent(brand)}` : ""}`
   // Internal "innhold" screen carries the top strip (store name + clock + date +
   // weather) above the rotating news + ticker — like the real bakrom layout.
@@ -189,7 +192,7 @@ export function ScreenPreview({
           </div>
         )}
         {flate === "kunde" && (
-          <span className="text-xs text-zinc-400">Stående — tilbud/kundeavis i full skjerm.</span>
+          <span className="text-xs text-zinc-400">{portrait ? "Stående — tilbud/kundeavis i full skjerm." : "Liggende — kampanje/tilbud i bredformat."}</span>
         )}
         {view === "intern-oversikt" && (
           <div className="inline-flex rounded-lg border border-zinc-200 p-0.5 bg-zinc-50 ml-1">
