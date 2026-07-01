@@ -48,7 +48,7 @@ export function ScreenPreview({
   screens: Record<string, StoreScreen[]>
   brand: string
 }) {
-  const { avdelinger: AVDELINGER, unitLabel, unitLabelPlural } = useTenantConfig()
+  const { avdelinger: AVDELINGER, avdelingerIntern: AVDELINGER_INTERN, unitLabel, unitLabelPlural } = useTenantConfig()
   // Butikk-KPI + «Alle butikker» er dagligvare (svinn/omsetning fra Gange-Rolv Drift)
   // — skjul dem for ikke-dagligvare-tenants (f.eks. bilforhandlere).
   const canKpi = useTenantFeature("offerCards")
@@ -84,10 +84,13 @@ export function ScreenPreview({
   // (kunde + avdeling); Internskjerm → bakrom only.
   const visibleScreens = storeScreens.filter((s) => (flate === "intern" ? s.role === "bakrom" : s.role !== "bakrom"))
   const sid = encodeURIComponent(store.id)
-  const tilbudSrc = `/widget/tilbud?store=${sid}&avdeling=${encodeURIComponent(avdeling)}`
+  // Avdelingene er ulike for kunde vs intern — velg riktig liste for aktiv flate.
+  const avdelingerForFlate = flate === "intern" ? AVDELINGER_INTERN : AVDELINGER
+  const av = encodeURIComponent(avdeling)
+  const tilbudSrc = `/widget/tilbud?store=${sid}&avdeling=${av}`
   const kpiSrc = `/widget/butikk-kpi?store=${sid}`
   const oversiktSrc = `/widget/kpi-oversikt?store=${sid}`
-  const internInnholdSrc = `/widget/nyheter?store=${sid}&flate=intern`
+  const internInnholdSrc = `/widget/nyheter?store=${sid}&flate=intern&avdeling=${av}`
   const kundeklubbSrc = `/widget/kundeklubb?store=${sid}`
   const kundeSrc = kundeView === "klubb" ? kundeklubbSrc : tilbudSrc
   const topbarSrc = `/widget/topbar?butikk=${encodeURIComponent(store.name)}&lat=${store.lat ?? ""}&lon=${store.lon ?? ""}&navn=${encodeURIComponent(store.city ?? "")}${brand ? `&merke=${encodeURIComponent(brand)}` : ""}`
@@ -128,10 +131,10 @@ export function ScreenPreview({
           <ChevronDown className="w-4 h-4 text-zinc-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
         </div>
         <div className="flex w-full sm:w-auto sm:inline-flex rounded-lg border border-zinc-200 p-0.5 bg-zinc-50">
-          <button onClick={() => setView("kunde-skjerm")} className={`flex flex-1 sm:flex-none items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${flate === "kunde" ? "bg-zinc-900 text-white" : "text-zinc-600"}`}>
+          <button onClick={() => { setView("kunde-skjerm"); setAvdeling("felles") }} className={`flex flex-1 sm:flex-none items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${flate === "kunde" ? "bg-zinc-900 text-white" : "text-zinc-600"}`}>
             <Megaphone className="w-3.5 h-3.5 shrink-0" /> Kundeskjerm
           </button>
-          <button onClick={() => setView("intern-innhold")} className={`flex flex-1 sm:flex-none items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${flate === "intern" ? "bg-zinc-900 text-white" : "text-zinc-600"}`}>
+          <button onClick={() => { setView("intern-innhold"); setAvdeling("felles") }} className={`flex flex-1 sm:flex-none items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${flate === "intern" ? "bg-zinc-900 text-white" : "text-zinc-600"}`}>
             <Monitor className="w-3.5 h-3.5 shrink-0" /> <span className="truncate">Internskjerm <span className="hidden sm:inline">(bakrom)</span></span>
           </button>
         </div>
@@ -146,24 +149,27 @@ export function ScreenPreview({
           </button>
         ))}
         {flate === "kunde" && (
-          <>
-            <div className="inline-flex rounded-lg border border-zinc-200 p-0.5 bg-zinc-50">
-              {([["tilbud", "Tilbud / avis"], ["klubb", "Kundeklubb"]] as const).map(([key, label]) => (
-                <button key={key} onClick={() => setKundeView(key)}
-                  className={`px-2.5 py-1.5 rounded-md text-[11px] font-semibold transition-all ${kundeView === key ? "bg-zinc-900 text-white" : "text-zinc-600"}`}>
-                  {label}
-                </button>
-              ))}
-            </div>
-            <div className="relative">
-              <select value={avdeling} onChange={(e) => setAvdeling(e.target.value)}
-                className="appearance-none text-xs font-medium text-zinc-700 bg-white border border-zinc-200 rounded-lg pl-2.5 pr-7 py-1.5 focus:outline-none focus:ring-1 focus:ring-zinc-300">
-                {AVDELINGER.map((a) => <option key={a.key} value={a.key}>Avdeling: {a.label}</option>)}
-              </select>
-              <ChevronDown className="w-3.5 h-3.5 text-zinc-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
-            </div>
-            <span className="text-xs text-zinc-400">Stående — tilbud/kundeavis i full skjerm. Ticker kun når den er laget for kundeskjerm.</span>
-          </>
+          <div className="inline-flex rounded-lg border border-zinc-200 p-0.5 bg-zinc-50">
+            {([["tilbud", "Tilbud / avis"], ["klubb", "Kundeklubb"]] as const).map(([key, label]) => (
+              <button key={key} onClick={() => setKundeView(key)}
+                className={`px-2.5 py-1.5 rounded-md text-[11px] font-semibold transition-all ${kundeView === key ? "bg-zinc-900 text-white" : "text-zinc-600"}`}>
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
+        {/* Avdeling — for BEGGE flater (kunde-skjerm + intern nyhetsflate). Egne lister per flate. */}
+        {(flate === "kunde" || view === "intern-innhold") && (
+          <div className="relative">
+            <select value={avdeling} onChange={(e) => setAvdeling(e.target.value)}
+              className="appearance-none text-xs font-medium text-zinc-700 bg-white border border-zinc-200 rounded-lg pl-2.5 pr-7 py-1.5 focus:outline-none focus:ring-1 focus:ring-zinc-300">
+              {avdelingerForFlate.map((a) => <option key={a.key} value={a.key}>Avdeling: {a.label}</option>)}
+            </select>
+            <ChevronDown className="w-3.5 h-3.5 text-zinc-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+          </div>
+        )}
+        {flate === "kunde" && (
+          <span className="text-xs text-zinc-400">Stående — tilbud/kundeavis i full skjerm.</span>
         )}
         {view === "intern-oversikt" && (
           <div className="inline-flex rounded-lg border border-zinc-200 p-0.5 bg-zinc-50 ml-1">
