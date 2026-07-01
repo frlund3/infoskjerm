@@ -7,6 +7,54 @@ import { getAdminContext } from "@/lib/admin/admin-context"
 import { requireRole } from "@/lib/admin/require-role"
 import { logAudit } from "@/lib/admin/audit"
 
+/** Stabil nøkkel fra label (æøå→ae/oe/aa, resten kebab-case). */
+function slugify(label: string): string {
+  return label.trim().toLowerCase()
+    .replace(/æ/g, "ae").replace(/ø/g, "oe").replace(/å/g, "aa")
+    .replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "avdeling"
+}
+
+/**
+ * Lagrer avdelinger for KUNDE- eller INTERN-skjermer for den aktive tenanten.
+ * «felles» (Hele enheten) er implisitt og lagres aldri — den injiseres med label
+ * fra terminologi ved lasting (getTenantConfig). Kun ledelse.
+ */
+export async function saveAvdelinger(
+  flate: "kunde" | "intern",
+  items: { key?: string; label: string }[]
+): Promise<{ ok: boolean; error?: string }> {
+  const ctx = await getAdminContext()
+  if (!ctx) return { ok: false, error: "Ikke innlogget" }
+  if (ctx.role !== "super_admin" && ctx.role !== "chain_manager") return { ok: false, error: "Ikke tillatt" }
+  const tenantId = ctx.effectiveTenantId
+  if (!tenantId) return { ok: false, error: "Ingen aktiv organisasjon" }
+
+  // Fjern «felles» + tomme, generer stabile nøkler, avvis duplikater.
+  const seen = new Set<string>()
+  const clean: { key: string; label: string }[] = []
+  for (const it of items) {
+    const label = (it.label || "").trim()
+    if (!label) continue
+    const key = (it.key?.trim() || slugify(label))
+    if (key === "felles" || seen.has(key)) continue
+    seen.add(key)
+    clean.push({ key, label })
+  }
+
+  const column = flate === "intern" ? "avdelinger_intern" : "avdelinger"
+  const admin = createAdminClient()
+  const { error } = await (admin.from("tenants") as unknown as {
+    update: (v: Record<string, unknown>) => { eq: (c: string, val: string) => Promise<{ error: { message: string } | null }> }
+  })
+    .update({ [column]: clean })
+    .eq("id", tenantId)
+  if (error) return { ok: false, error: error.message }
+
+  await logAudit({ userId: ctx.userId, action: "settings.avdelinger", entityType: "tenant", entityId: tenantId, summary: `Oppdaterte ${flate}-avdelinger (${clean.length})`, metadata: { flate, count: clean.length } })
+  revalidatePath("/admin", "layout")
+  return { ok: true }
+}
+
 // Destruktive skjerm-/branding-operasjoner er kun for ledelse (super_admin,
 // chain_manager) — ikke area/store-roller. super_admin bypasser RLS, så
 // .eq("tenant_id", tenantId) på id-baserte muteringer er selve tenant-isolasjonen
