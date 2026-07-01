@@ -137,7 +137,10 @@ const AUDIENCE_TYPES: Record<Audience, ContentType[]> = {
 
 export function ContentForm({ stores, tags, initial, audience = "intern", defaultType, listHref: listHrefProp, prefillImage, canTargetAll = true }: { stores: StoreOption[]; tags: TagOption[]; initial?: ContentInitial; audience?: Audience; defaultType?: ContentType; listHref?: string; prefillImage?: string; canTargetAll?: boolean }) {
   const router = useRouter()
-  const { avdelinger: AVDELINGER, unitLabel, unitLabelPlural } = useTenantConfig()
+  // Avdeling-lista følger flaten: intern-innhold merkes med INTERNE avdelinger,
+  // kunde-innhold med kunde-avdelinger (egne lister per tenant, migrasjon 037).
+  const { avdelinger: AVDELINGER_KUNDE, avdelingerIntern: AVDELINGER_INTERN, unitLabel, unitLabelPlural } = useTenantConfig()
+  const AVDELINGER = audience === "intern" ? AVDELINGER_INTERN : AVDELINGER_KUNDE
   // Varekort-bygger (struktur) + spar.no-oppslag er dagligvare-spesifikt — kun
   // for tenants med «offerCards». Andre tenants laster kun opp plakat/PDF.
   const canOfferCards = useTenantFeature("offerCards")
