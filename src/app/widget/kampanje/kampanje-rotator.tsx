@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type CSSProperties } from "react"
 import type { LiveItem } from "@/lib/content/live"
-import type { ChainBrand } from "@/app/widget/tilbud/offer-card"
+import { OfferCard, type ChainBrand } from "@/app/widget/tilbud/offer-card"
 import { CampaignCard } from "./campaign-card"
 import { CompetitionCard } from "@/app/widget/_shared/competition-card"
 import { GalleryCard } from "@/app/widget/_shared/gallery-card"
@@ -124,6 +124,8 @@ export function KampanjeRotator({ items, chain = null, qr = {} }: { items: LiveI
             <CompetitionCard item={item} qrUrl={qr[item.id]} />
           ) : item.type === "gallery" ? (
             <GalleryCard item={item} qrUrl={qr[item.id]} />
+          ) : item.offer ? (
+            <OfferCard item={item} chain={chain} orientation="landscape" />
           ) : (
             <LandscapePoster item={item} chain={chain} qrUrl={qr[item.id]} />
           )}

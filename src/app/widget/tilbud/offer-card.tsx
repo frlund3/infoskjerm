@@ -1,14 +1,17 @@
 import type { LiveItem, OfferFields } from "@/lib/content/live"
+import { SPACE, RADIUS, SHADOW, pad, typeScale } from "@/app/widget/_shared/tokens"
 
 /**
- * A structured retail offer as a bold SPAR/EUROSPAR-style poster, portrait-first:
- *   • top: product name + info, full width
- *   • middle: product image, full width, with a tilted red price/discount circle
- *     and a tilted badge ribbon laid over it
- *   • bottom: multi-buy + before-price + fine print, period, and the chain logo
- * Sized in `cqmin` so it scales on the portrait customer screens. A generic
- * "Gange-Rolv" name is never shown to customers — only the chain logo.
+ * A structured retail offer as a bold SPAR/EUROSPAR-style poster.
+ *   • Portrait (kundeskjerm 9:16): name top, product image with a tilted red
+ *     price/discount circle in the middle, fine print + period + logo bottom.
+ *   • Landscape (kampanje/bakrom 16:9): horizontal split — product image LEFT
+ *     with the price circle, name + info + fine print + period + logo RIGHT.
+ * Portrait is sized in `cqmin` (unchanged, proven); landscape uses the shared
+ * design tokens. A generic "Gange-Rolv" name is never shown — only the chain logo.
  */
+
+export type Orientation = "portrait" | "landscape"
 
 export interface ChainBrand {
   name: string
@@ -79,9 +82,61 @@ function BrandFooter({ chain }: { chain: ChainBrand | null }) {
   )
 }
 
-export function OfferCard({ item, chain = null }: { item: LiveItem; chain?: ChainBrand | null }) {
-  const offer = item.offer
-  if (!offer) return null
+export function OfferCard({ item, chain = null, orientation = "portrait" }: { item: LiveItem; chain?: ChainBrand | null; orientation?: Orientation }) {
+  if (!item.offer) return null
+  return orientation === "landscape"
+    ? <LandscapeOffer item={item} offer={item.offer} chain={chain} />
+    : <PortraitOffer item={item} offer={item.offer} chain={chain} />
+}
+
+const OC_KEYFRAMES = `@keyframes grOcShine{0%{transform:translateX(-60%) skewX(-14deg)}100%{transform:translateX(260%) skewX(-14deg)}}@keyframes grOcPop{from{transform:rotate(-8deg) scale(.55);opacity:0}to{transform:rotate(-8deg) scale(1);opacity:1}}@keyframes grOcGlow{0%,100%{box-shadow:0 1.5cqmin 5cqmin rgba(0,0,0,.22)}50%{box-shadow:0 1.5cqmin 7cqmin rgba(228,0,43,.5)}}@keyframes grOcKen{from{transform:scale(1)}to{transform:scale(1.07)}}@keyframes grOcWobble{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(-8deg)}}`
+
+/** LIGGENDE (16:9): produktbilde til venstre med pris-sirkel, navn + info + finpris
+ *  + periode + logo til høyre. Token-basert (px). */
+function LandscapeOffer({ item, offer, chain }: { item: LiveItem; offer: OfferFields; chain: ChainBrand | null }) {
+  const period = formatPeriod(item.validFrom, item.validTo)
+  const img = item.imageUrl
+  const fine = [offer.pant ? "+ pant" : null, offer.maks, offer.enhetspris].filter(Boolean) as string[]
+  const t = typeScale(false)
+  const accent = chain?.color || GREEN
+  return (
+    <div style={{ position: "absolute", inset: 0, background: "#fff", containerType: "size", overflow: "hidden", display: "flex", fontFamily: "Arial, Helvetica, sans-serif", color: INK }}>
+      <style>{OC_KEYFRAMES}</style>
+      {/* Venstre: bilde + badge + pris-sirkel */}
+      <div style={{ flex: "0 0 50%", position: "relative", minWidth: 0, background: "#f6f7f8" }}>
+        {img && <div style={{ position: "absolute", inset: 0, backgroundImage: `url('${img}')`, backgroundSize: "contain", backgroundPosition: "center", backgroundRepeat: "no-repeat", animation: "grOcKen 14s ease-in-out infinite alternate" }} />}
+        {offer.badge && (
+          <div style={{ position: "absolute", top: 60, left: -8, background: RED, color: "#fff", fontWeight: 900, fontSize: t.h3, letterSpacing: 1, padding: `${SPACE.sm}px ${SPACE.lg}px`, borderRadius: RADIUS.md, textTransform: "uppercase", transform: "rotate(-4deg)", transformOrigin: "left center", boxShadow: SHADOW.soft, animation: "grOcWobble 3.2s ease-in-out infinite" }}>
+            {offer.badge}
+          </div>
+        )}
+        {(offer.rabatt || offer.pris) && <PriceCircle offer={offer} />}
+      </div>
+      {/* Høyre: navn + info + finpris + periode + logo */}
+      <div style={{ flex: "1 1 auto", minWidth: 0, display: "flex", flexDirection: "column", justifyContent: "center", padding: pad(false), boxSizing: "border-box" }}>
+        <h1 style={{ fontSize: t.hero, fontWeight: 900, margin: 0, lineHeight: 0.96, letterSpacing: -2, overflowWrap: "break-word" }}>{offer.varenavn}</h1>
+        {offer.vareinfo && <p style={{ fontSize: t.h3, color: MUTED, margin: `${SPACE.sm}px 0 0`, fontWeight: 600 }}>{offer.vareinfo}</p>}
+        <div style={{ display: "flex", flexDirection: "column", gap: SPACE.sm, marginTop: SPACE.lg, alignItems: "flex-start" }}>
+          {offer.tag && <span style={{ background: GREEN, color: "#fff", fontWeight: 900, fontSize: t.h3, padding: `${SPACE.xs}px ${SPACE.md}px`, borderRadius: RADIUS.md, textTransform: "uppercase", letterSpacing: 1, lineHeight: 1 }}>{offer.tag}</span>}
+          {offer.forpris && <span style={{ fontSize: t.body, color: "#9aa0a6", fontWeight: 700 }}>Førpris <span style={{ textDecoration: "line-through" }}>{offer.forpris}</span></span>}
+          {fine.length > 0 && <span style={{ fontSize: t.label, color: MUTED, fontWeight: 600 }}>{fine.join("  ·  ")}</span>}
+          {period && <span style={{ background: GREEN, color: "#fff", fontWeight: 800, fontSize: t.body, padding: `${SPACE.xs}px ${SPACE.md}px`, borderRadius: RADIUS.pill }}>{period}</span>}
+        </div>
+        {chain && (chain.logoUrl || chain.name) && (
+          <div style={{ marginTop: SPACE.xl, borderTop: `4px solid ${accent}`, paddingTop: SPACE.md }}>
+            {chain.logoUrl
+              // eslint-disable-next-line @next/next/no-img-element
+              ? <img src={chain.logoUrl} alt={chain.name} style={{ maxHeight: 90, maxWidth: "60%", objectFit: "contain" }} />
+              : <span style={{ color: accent, fontWeight: 900, fontSize: t.h3, textTransform: "uppercase", letterSpacing: 1 }}>{chain.name}</span>}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+/** STÅENDE (9:16): uendret SPAR-plakat (cqmin). */
+function PortraitOffer({ item, offer, chain }: { item: LiveItem; offer: OfferFields; chain: ChainBrand | null }) {
   const period = formatPeriod(item.validFrom, item.validTo)
   const img = item.imageUrl
   const fine = [offer.pant ? "+ pant" : null, offer.maks, offer.enhetspris].filter(Boolean) as string[]
