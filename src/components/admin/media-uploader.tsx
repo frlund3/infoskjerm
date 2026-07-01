@@ -2,7 +2,8 @@
 
 import { useState, useCallback } from "react"
 import { createClient } from "@/lib/supabase/client"
-import { Upload, X, ImageIcon, CheckCircle2, AlertCircle } from "lucide-react"
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from "@/lib/supabase/config"
+import { Upload, ImageIcon, CheckCircle2, AlertCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface UploadedFile {
@@ -18,6 +19,54 @@ interface MediaUploaderProps {
   accept?: string[]
 }
 
+// Supabase-bucketens grense (og prosjektets globale storage-grense). Filer over
+// dette avvises av serveren — vi fanger det FØR opplasting for umiddelbar beskjed.
+const MAX_SIZE = 50 * 1024 * 1024
+
+const EXT_MIME: Record<string, string> = {
+  pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  ppt: "application/vnd.ms-powerpoint",
+  pdf: "application/pdf",
+  jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", webp: "image/webp", gif: "image/gif", avif: "image/avif",
+  mp4: "video/mp4", webm: "video/webm", mov: "video/quicktime", m4v: "video/x-m4v",
+}
+
+/** En fil vi kan validere/laste opp — Files matcher denne, men vi tar bare det
+ * vi trenger så logikken er enhetstestbar uten en ekte File. */
+export interface UploadCandidate {
+  name: string
+  size: number
+  type: string
+}
+
+/** Content-Type for en fil: nettleserens type, ellers utledet fra filendelsen
+ * (noen OS gir tom/feil type for .pptx, som da ville blitt avvist av Storage). */
+export function contentTypeFor(file: UploadCandidate): string {
+  const ext = file.name.toLowerCase().split(".").pop() ?? ""
+  return file.type || EXT_MIME[ext] || "application/octet-stream"
+}
+
+function isPptName(name: string): boolean {
+  const n = name.toLowerCase()
+  return n.endsWith(".pptx") || n.endsWith(".ppt")
+}
+
+/** Validér fila FØR opplasting — gir umiddelbar beskjed i stedet for at en for
+ * stor / feil fil overføres i minutter og deretter avvises av serveren.
+ * Returnerer en feilmelding, eller null når fila er OK. */
+export function checkFile(file: UploadCandidate, accept: string[]): string | null {
+  if (file.size > MAX_SIZE) {
+    const mb = (file.size / 1024 / 1024).toFixed(1)
+    return isPptName(file.name)
+      ? `Presentasjonen er ${mb} MB — maks 50 MB. Komprimer den i PowerPoint (Fil → Komprimer bilder) eller del den i to.`
+      : `Filen er ${mb} MB — maks 50 MB. Komprimer eller velg en mindre fil.`
+  }
+  if (accept.length > 0 && !accept.includes(contentTypeFor(file))) {
+    return "Filtypen støttes ikke her."
+  }
+  return null
+}
+
 export function MediaUploader({ onUpload, maxFiles = 10, accept = ["image/jpeg", "image/png", "image/webp", "image/gif"] }: MediaUploaderProps) {
   const [dragging, setDragging] = useState(false)
   const [uploads, setUploads] = useState<{ name: string; progress: number; status: "uploading" | "done" | "error"; url?: string; message?: string }[]>([])
@@ -28,40 +77,66 @@ export function MediaUploader({ onUpload, maxFiles = 10, accept = ["image/jpeg",
   // Transient storage hiccups (rate limit / connection spikes / cold service)
   // surface as 429 or 5xx. Retry a few times with backoff before giving up.
   const isTransient = (error: unknown): boolean => {
-    const status = (error as { statusCode?: string | number })?.statusCode
-    const code = Number(status)
+    const code = Number((error as { statusCode?: string | number })?.statusCode)
     return code === 429 || (code >= 500 && code < 600)
   }
 
+  /** XHR-opplasting mot Storage med EKTE fremdrift (supabase-js .upload() gir
+   * ingen progress-event). Content-Type settes eksplisitt så Storage godtar
+   * .pptx også når nettleseren ikke satte MIME. */
+  const putToStorage = (file: File, path: string, token: string): Promise<void> =>
+    new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest()
+      xhr.open("POST", `${SUPABASE_URL}/storage/v1/object/media/${path}`)
+      xhr.setRequestHeader("apikey", SUPABASE_ANON_KEY)
+      xhr.setRequestHeader("Authorization", `Bearer ${token}`)
+      xhr.setRequestHeader("x-upsert", "false")
+      xhr.setRequestHeader("Content-Type", contentTypeFor(file))
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) setUpload(file.name, { progress: Math.round((e.loaded / e.total) * 100), message: undefined })
+      }
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) return resolve()
+        let message = `Opplasting feilet (${xhr.status})`
+        try { message = JSON.parse(xhr.responseText).message || message } catch { /* behold status-melding */ }
+        reject({ statusCode: xhr.status, message })
+      }
+      xhr.onerror = () => reject({ statusCode: 0, message: "Nettverksfeil under opplasting" })
+      xhr.send(file)
+    })
+
   const uploadFile = async (file: File) => {
+    const validationError = checkFile(file, accept)
+    if (validationError) {
+      setUploads((prev) => [...prev, { name: file.name, progress: 0, status: "error", message: validationError }])
+      return
+    }
+
     const supabase = createClient()
     const ext = file.name.split(".").pop()
     const path = `uploads/${crypto.randomUUID()}.${ext}`
-
     setUploads((prev) => [...prev, { name: file.name, progress: 0, status: "uploading" }])
+
+    const { data: { session } } = await supabase.auth.getSession()
+    const token = session?.access_token ?? SUPABASE_ANON_KEY
 
     const MAX_ATTEMPTS = 4
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-      const { data, error } = await supabase.storage.from("media").upload(path, file, {
-        cacheControl: "3600",
-        upsert: false,
-      })
-
-      if (!error) {
+      try {
+        await putToStorage(file, path, token)
         const { data: { publicUrl } } = supabase.storage.from("media").getPublicUrl(path)
         setUpload(file.name, { progress: 100, status: "done", url: publicUrl, message: undefined })
-        onUpload?.([{ id: data.id ?? path, url: publicUrl, name: file.name, size: file.size }])
+        onUpload?.([{ id: path, url: publicUrl, name: file.name, size: file.size }])
+        return
+      } catch (err) {
+        if (isTransient(err) && attempt < MAX_ATTEMPTS) {
+          setUpload(file.name, { progress: 0, message: `Prøver igjen (${attempt}/${MAX_ATTEMPTS - 1})…` })
+          await new Promise((r) => setTimeout(r, attempt * 1500))
+          continue
+        }
+        setUpload(file.name, { status: "error", message: (err as { message?: string })?.message || "Ukjent feil ved opplasting" })
         return
       }
-
-      if (isTransient(error) && attempt < MAX_ATTEMPTS) {
-        setUpload(file.name, { message: `Prøver igjen (${attempt}/${MAX_ATTEMPTS - 1})…` })
-        await new Promise((r) => setTimeout(r, attempt * 1500))
-        continue
-      }
-
-      setUpload(file.name, { status: "error", message: error.message || "Ukjent feil ved opplasting" })
-      return
     }
   }
 
@@ -143,9 +218,12 @@ export function MediaUploader({ onUpload, maxFiles = 10, accept = ["image/jpeg",
                 <p className="text-xs font-medium text-zinc-700 truncate">{upload.name}</p>
                 {upload.status === "uploading" && (
                   <>
-                    <div className="h-1 bg-zinc-100 rounded-full mt-1.5 overflow-hidden">
-                      <div className="h-full bg-zinc-900 rounded-full animate-pulse w-2/3" />
+                    <div className="h-1.5 bg-zinc-100 rounded-full mt-1.5 overflow-hidden">
+                      <div className="h-full bg-zinc-900 rounded-full transition-[width] duration-200 ease-out" style={{ width: `${Math.max(3, upload.progress)}%` }} />
                     </div>
+                    <p className="text-[10px] text-zinc-400 mt-1 tabular-nums">
+                      {upload.progress >= 100 ? "Fullfører …" : `${upload.progress} %`}
+                    </p>
                     {upload.message && <p className="text-xs text-amber-600 mt-1">{upload.message}</p>}
                   </>
                 )}
