@@ -24,7 +24,7 @@ export default async function CustomerContentListPage() {
     <div className="flex flex-col flex-1">
       <Topbar
         title="Innhold kundeskjerm"
-        subtitle="Tilbud, annonser og plakater til kundene i butikken"
+        subtitle={`Tilbud, annonser og plakater til kundene i ${config.unitLabel.toLowerCase()}en`}
         actions={
           <div className="flex items-center gap-2">
             {showBulkImport && (
