@@ -121,7 +121,7 @@ function buildBody(input: ContentInput): Json {
     ...(input.type === "stats" ? { statsValue: input.statsValue ?? null, statsChange: input.statsChange ?? null } : {}),
     ...(input.type === "slide" && input.offer ? { offer: input.offer } : {}),
     ...(input.type === "slide" && input.campaign && input.campaign.headline ? { campaign: input.campaign } : {}),
-    ...((input.type === "slide" || input.type === "competition") ? { avdeling: input.avdeling || "felles" } : {}),
+    avdeling: input.avdeling || "felles",
     ...(input.bgColor ? { bgColor: input.bgColor } : {}),
     ...(input.textColor ? { textColor: input.textColor } : {}),
     ...(input.type === "slide" && input.klubb ? { klubb: input.klubb } : {}),
