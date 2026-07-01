@@ -7,7 +7,12 @@ import { createClient } from "@supabase/supabase-js"
 import { createAdminClient } from "@/lib/supabase/server"
 import { getBaseUrl } from "@/lib/base-url"
 import { sendInviteEmail } from "@/lib/email/resend"
-import { type UserRole } from "@/lib/roles"
+import {
+  type UserRole,
+  USER_MANAGER_ROLES,
+  invitableRolesFor,
+  isStoreScopedRole,
+} from "@/lib/roles"
 
 type InvitableRole = Exclude<UserRole, "super_admin">
 
@@ -15,21 +20,46 @@ type InvitableRole = Exclude<UserRole, "super_admin">
 // ingen eksplisitt butikkliste. Øvrige roller er butikk-scopet.
 const TENANT_WIDE_ROLES: UserRole[] = ["chain_manager"]
 
+// Butikkene den innloggede faktisk har tilgang til (fra user_stores). Leses via
+// admin-klient etter at rollen er verifisert, så den ikke avhenger av RLS.
+async function getActorStoreIds(
+  admin: ReturnType<typeof createAdminClient>,
+  actorId: string
+): Promise<string[]> {
+  const { data } = await admin.from("user_stores").select("store_id").eq("user_id", actorId)
+  return (data ?? []).map((r) => r.store_id)
+}
+
 export async function inviteUser(
   email: string,
   role: InvitableRole,
   storeIds: string[] = []
 ) {
-  const { tenantId, userId: actorId } = await requireRole(["super_admin", "chain_manager"])
+  const { tenantId, userId: actorId, role: actorRole } = await requireRole(USER_MANAGER_ROLES)
   const cleanEmail = email.trim().toLowerCase()
   if (!cleanEmail) return { ok: false, error: "E-post mangler" }
 
-  const isTenantWide = TENANT_WIDE_ROLES.includes(role)
-  if (!isTenantWide && storeIds.length === 0) {
-    return { ok: false, error: "Velg minst én butikk for denne rollen" }
+  // Actor kan kun invitere roller den har lov til (butikk-admins → kun enhetsadmin).
+  if (!invitableRolesFor(actorRole).includes(role)) {
+    return { ok: false, error: "Du har ikke tilgang til å invitere denne rollen" }
   }
 
   const admin = createAdminClient()
+
+  const isTenantWide = TENANT_WIDE_ROLES.includes(role)
+  let cleanStoreIds = storeIds
+
+  if (isStoreScopedRole(actorRole)) {
+    // Butikk-admin: kan kun tildele egne enheter (invitableRolesFor har allerede
+    // låst rollen til en butikk-scopet rolle, så isTenantWide er alltid false).
+    const actorStoreIds = await getActorStoreIds(admin, actorId)
+    cleanStoreIds = storeIds.filter((sid) => actorStoreIds.includes(sid))
+    if (cleanStoreIds.length === 0) {
+      return { ok: false, error: "Velg minst én av dine egne enheter" }
+    }
+  } else if (!isTenantWide && cleanStoreIds.length === 0) {
+    return { ok: false, error: "Velg minst én butikk for denne rollen" }
+  }
 
   // 1) Opprett auth-bruker og hent en invitasjons-token (token_hash) vi selv
   //    bygger lenken rundt — så vi slipper å være avhengig av Supabase sin
@@ -66,14 +96,14 @@ export async function inviteUser(
 
   // 3) Butikktilgang (kun for butikk-scopede roller).
   let storeNames: string[] = []
-  if (!isTenantWide && storeIds.length > 0) {
+  if (!isTenantWide && cleanStoreIds.length > 0) {
     await admin.from("user_stores").delete().eq("user_id", userId)
     const { error: storeError } = await admin
       .from("user_stores")
-      .insert(storeIds.map((sid) => ({ user_id: userId, store_id: sid })))
+      .insert(cleanStoreIds.map((sid) => ({ user_id: userId, store_id: sid })))
     if (storeError) return { ok: false, error: `Butikktilgang: ${storeError.message}` }
 
-    const { data: stores } = await admin.from("stores").select("name").in("id", storeIds)
+    const { data: stores } = await admin.from("stores").select("name").in("id", cleanStoreIds)
     storeNames = (stores ?? []).map((s) => s.name)
   }
 
@@ -138,9 +168,12 @@ export async function updateUserRole(userId: string, role: UserRole) {
 }
 
 export async function setUserStores(userId: string, storeIds: string[]) {
+  // Kun tenant-brede admins kan redigere butikktilgang på eksisterende brukere.
+  // Butikk-admins kan invitere (med egne enheter), men ikke omfordele tilgang –
+  // det ville kreve å bevare mål utenfor deres eget scope ved replace.
   const { supabase, userId: actorId, tenantId } = await requireRole(["super_admin", "chain_manager"])
   // Verifiser at målbruker OG butikkene tilhører kallers tenant (RLS håndhever
-  // også via user_stores_write — dette gir tydelig feil + forsvar i dybden).
+  // også via user_stores_write – dette gir tydelig feil + forsvar i dybden).
   const { data: target } = await supabase.from("users").select("id").eq("id", userId).eq("tenant_id", tenantId).maybeSingle()
   if (!target) return { ok: false, error: "Bruker ikke funnet" }
   if (storeIds.length > 0) {
