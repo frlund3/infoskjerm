@@ -100,9 +100,9 @@ const ROLE_LABEL: Record<InvitableRole, string> = {
 }
 
 export async function deleteUser(userId: string) {
-  const { supabase, userId: actorId } = await requireRole(["super_admin", "chain_manager"])
-  const { data: target } = await supabase.from("users").select("email").eq("id", userId).maybeSingle()
-  const { error } = await supabase.from("users").delete().eq("id", userId)
+  const { supabase, userId: actorId, tenantId } = await requireRole(["super_admin", "chain_manager"])
+  const { data: target } = await supabase.from("users").select("email").eq("id", userId).eq("tenant_id", tenantId).maybeSingle()
+  const { error } = await supabase.from("users").delete().eq("id", userId).eq("tenant_id", tenantId)
   if (error) return { ok: false, error: error.message }
   await logAudit({ userId: actorId, action: "user.delete", entityType: "user", entityId: userId, summary: `Slettet bruker ${target?.email ?? userId}` })
 
@@ -122,11 +122,12 @@ export async function deleteUser(userId: string) {
 }
 
 export async function updateUserRole(userId: string, role: UserRole) {
-  const { supabase, userId: actorId } = await requireRole(["super_admin", "chain_manager"])
+  const { supabase, userId: actorId, tenantId } = await requireRole(["super_admin", "chain_manager"])
   const { error } = await supabase
     .from("users")
     .update({ role })
     .eq("id", userId)
+    .eq("tenant_id", tenantId)
   if (error) return { ok: false, error: error.message }
   await logAudit({ userId: actorId, action: "user.role", entityType: "user", entityId: userId, summary: `Endret rolle til ${role}`, metadata: { role } })
   revalidatePath("/admin/users")

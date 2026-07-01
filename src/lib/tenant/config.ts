@@ -16,6 +16,7 @@ export interface Avdeling {
 export interface TenantConfig {
   unitLabel: string        // «Butikk» | «Forhandler»
   unitLabelPlural: string  // «Butikker» | «Forhandlere»
+  brand: string            // tenant-merke for topbar/branding (navn uten «AS»-suffiks); «» = ingen
   avdelinger: Avdeling[]
   features: TenantFeatures // per-tenant funksjonsflagg (offerCards, gln, …)
 }
@@ -23,6 +24,7 @@ export interface TenantConfig {
 export const DEFAULT_TENANT_CONFIG: TenantConfig = {
   unitLabel: "Butikk",
   unitLabelPlural: "Butikker",
+  brand: "",
   avdelinger: [{ key: "felles", label: "Hele butikken" }],
   features: {},
 }
@@ -36,17 +38,19 @@ export async function getTenantConfig(supabase: AdminSupabase, tenantId: string 
   const { data } = await (supabase.from("tenants") as unknown as {
     select: (cols: string) => { eq: (c: string, v: string) => { single: () => Promise<{ data: unknown }> } }
   })
-    .select("unit_label, unit_label_plural, avdelinger, features")
+    .select("name, unit_label, unit_label_plural, avdelinger, features")
     .eq("id", tenantId)
     .single()
   if (!data) return DEFAULT_TENANT_CONFIG
-  const raw = data as { unit_label: string | null; unit_label_plural: string | null; avdelinger: unknown; features: unknown }
+  const raw = data as { name: string | null; unit_label: string | null; unit_label_plural: string | null; avdelinger: unknown; features: unknown }
   const avdelinger = Array.isArray(raw.avdelinger)
     ? (raw.avdelinger as Avdeling[]).filter((a) => a && typeof a.key === "string" && typeof a.label === "string")
     : DEFAULT_TENANT_CONFIG.avdelinger
   return {
     unitLabel: raw.unit_label?.trim() || DEFAULT_TENANT_CONFIG.unitLabel,
     unitLabelPlural: raw.unit_label_plural?.trim() || DEFAULT_TENANT_CONFIG.unitLabelPlural,
+    // Merke = tenant-navn uten «AS»-suffiks (f.eks. «Gange-Rolv AS»→«Gange-Rolv», «Mobile AS»→«Mobile»).
+    brand: (raw.name?.trim() || "").replace(/\s+AS$/i, ""),
     avdelinger: avdelinger.length ? avdelinger : DEFAULT_TENANT_CONFIG.avdelinger,
     features: parseTenantFeatures(raw.features),
   }

@@ -42,9 +42,11 @@ const SYNC_BADGE: Record<ScreenSync, { label: string; cls: string }> = {
 export function ScreenPreview({
   stores,
   screens,
+  brand,
 }: {
   stores: PreviewStore[]
   screens: Record<string, StoreScreen[]>
+  brand: string
 }) {
   const { avdelinger: AVDELINGER } = useTenantConfig()
   const [storeId, setStoreId] = useState(stores[0]?.id ?? "")
@@ -85,7 +87,7 @@ export function ScreenPreview({
   const internInnholdSrc = `/widget/nyheter?store=${sid}&flate=intern`
   const kundeklubbSrc = `/widget/kundeklubb?store=${sid}`
   const kundeSrc = kundeView === "klubb" ? kundeklubbSrc : tilbudSrc
-  const topbarSrc = `/widget/topbar?butikk=${encodeURIComponent(store.name)}&lat=${store.lat ?? ""}&lon=${store.lon ?? ""}&navn=${encodeURIComponent(store.city ?? "")}`
+  const topbarSrc = `/widget/topbar?butikk=${encodeURIComponent(store.name)}&lat=${store.lat ?? ""}&lon=${store.lon ?? ""}&navn=${encodeURIComponent(store.city ?? "")}${brand ? `&merke=${encodeURIComponent(brand)}` : ""}`
   // Internal "innhold" screen carries the top strip (store name + clock + date +
   // weather) above the rotating news + ticker — like the real bakrom layout.
   const showStrip = view === "intern-innhold"
