@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation"
 import type { Viewport } from "next"
 import { createAdminClient } from "@/lib/supabase/server"
+import { getTenantConfig } from "@/lib/tenant/config-server"
+import { hasFeature } from "@/lib/tenant/features"
 
 /**
  * ENHETS-STYRT skjerm-URL. Hver fysiske Raspberry Pi laster ÉN stabil URL
@@ -30,16 +32,18 @@ type ScreenRow = {
   orientation: string | null
 }
 
-/** Bygger widget-URL fra skjermens tildeling. */
-function widgetFor(row: ScreenRow): string {
+/**
+ * Bygger widget-URL fra skjermens tildeling. `grocery` = tenanten har dagligvare-
+ * KPI (offerCards) → intern viser bakrom (KPI + intern nyheter), ellers ren
+ * intern nyhetsflate (bil o.l.).
+ */
+function widgetFor(row: ScreenRow, grocery: boolean): string {
   const store = row.store_id ?? ""
   const avdeling = row.avdeling || "felles"
   const landscape = row.orientation === "landscape" || row.orientation === "liggende"
   const q = `store=${store}&avdeling=${encodeURIComponent(avdeling)}`
   if (row.flate === "intern") {
-    // Intern flate: ren intern nyhetsflate (uten dagligvare-KPI). Liggende variant
-    // deler samme widget inntil egen liggende intern-mal er bygget.
-    return `/widget/nyheter?${q}&flate=intern`
+    return grocery ? `/widget/bakrom?${q}` : `/widget/nyheter?${q}&flate=intern`
   }
   // Kunde: liggende → premium kampanjemal, stående → tilbud/plakat.
   return landscape ? `/widget/kampanje?${q}` : `/widget/tilbud?${q}`
@@ -52,16 +56,19 @@ export default async function SkjermPage({ params }: { params: Promise<{ token: 
   const supabase = createAdminClient()
   const { data } = await supabase
     .from("screens")
-    .select("store_id, flate, avdeling, orientation")
+    .select("store_id, tenant_id, flate, avdeling, orientation")
     .eq("token", token)
     .maybeSingle()
-  const row = data as ScreenRow | null
+  const row = data as (ScreenRow & { tenant_id: string | null }) | null
   if (!row) notFound()
+
+  const config = await getTenantConfig(supabase, row.tenant_id)
+  const grocery = hasFeature(config.features, "offerCards")
 
   return (
     <div style={{ position: "fixed", inset: 0, background: "#0a0a0a", overflow: "hidden" }}>
       <iframe
-        src={widgetFor(row)}
+        src={widgetFor(row, grocery)}
         title="Skjerm"
         style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: 0, display: "block" }}
         allow="fullscreen"
