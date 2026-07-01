@@ -7,11 +7,12 @@ import { deleteContent, duplicateContent, bulkSetStatus, bulkDeleteContent, bulk
 import { useTenantConfig } from "@/components/admin/tenant-config-provider"
 import { toast } from "sonner"
 import {
-  Newspaper, Trophy, ImageIcon, Briefcase, PartyPopper, BarChart3, Megaphone, Globe, Store as StoreIcon, Tag,
+  Newspaper, Globe, Store as StoreIcon, Tag,
   Copy, Trash2, Pencil, MoreVertical, Calendar, CalendarPlus, Search, ChevronLeft, ChevronRight, FileText,
   Send, EyeOff, X, Check, Clock, ArrowUpDown, Timer, LayoutGrid,
 } from "lucide-react"
 import { ReorderDialog } from "./reorder-dialog"
+import { TYPE_META, isPdfUrl, isVideoUrl } from "./content-thumb"
 
 export interface ContentRow {
   id: string
@@ -34,16 +35,7 @@ export interface ContentRow {
 
 interface Option { id: string; name: string }
 
-const TYPE_META: Record<string, { label: string; icon: React.ElementType; badge: string; gradient: string }> = {
-  news: { label: "Nyhet", icon: Newspaper, badge: "bg-blue-600 text-white", gradient: "from-blue-500 to-blue-700" },
-  competition: { label: "Konkurranse", icon: Trophy, badge: "bg-amber-500 text-white", gradient: "from-amber-400 to-amber-600" },
-  slide: { label: "Tilbud", icon: ImageIcon, badge: "bg-zinc-700 text-white", gradient: "from-zinc-600 to-zinc-800" },
-  job: { label: "Stilling", icon: Briefcase, badge: "bg-indigo-600 text-white", gradient: "from-indigo-500 to-indigo-700" },
-  birthday: { label: "Gratulerer", icon: PartyPopper, badge: "bg-pink-500 text-white", gradient: "from-pink-400 to-pink-600" },
-  stats: { label: "Salgstall", icon: BarChart3, badge: "bg-emerald-600 text-white", gradient: "from-emerald-500 to-emerald-700" },
-  weather: { label: "Vær", icon: ImageIcon, badge: "bg-sky-500 text-white", gradient: "from-sky-400 to-sky-600" },
-  ticker: { label: "Ticker", icon: Megaphone, badge: "bg-orange-500 text-white", gradient: "from-orange-400 to-orange-600" },
-}
+// TYPE_META flyttet til content-thumb.tsx (delt med rekkefølge-dialogen).
 
 const STATUS_META: Record<string, { label: string; color: string }> = {
   draft: { label: "Utkast", color: "bg-white/90 text-zinc-600 ring-1 ring-zinc-200" },
@@ -304,12 +296,12 @@ export function ContentListClient({ items, stores, tags, newHref = "/admin/innho
                   <Check className="w-4 h-4" />
                 </button>
                 <Link href={`${editBase}/${item.id}`} className="block relative aspect-[16/9] overflow-hidden">
-                  {item.imageUrl && (item.imageUrl).toLowerCase().split("?")[0].endsWith(".pdf") ? (
+                  {item.imageUrl && isPdfUrl(item.imageUrl) ? (
                     <div className="w-full h-full bg-gradient-to-br from-zinc-800 to-zinc-950 flex flex-col items-center justify-center gap-1.5 text-white/70">
                       <FileText className="w-9 h-9" />
                       <span className="text-[11px] font-semibold tracking-wide">PDF</span>
                     </div>
-                  ) : item.imageUrl && /\.(mp4|webm|mov|m4v)$/.test(item.imageUrl.toLowerCase().split("?")[0]) ? (
+                  ) : item.imageUrl && isVideoUrl(item.imageUrl) ? (
                     // eslint-disable-next-line jsx-a11y/media-has-caption
                     <video src={`${item.imageUrl}#t=1`} muted playsInline preload="metadata" className="w-full h-full object-cover bg-zinc-900" />
                   ) : item.imageUrl ? (

@@ -12,8 +12,9 @@ import {
   SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, arrayMove, useSortable,
 } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
-import { GripVertical, X, Clock, ImageIcon } from "lucide-react"
+import { GripVertical, X, Clock } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { ContentThumb } from "./content-thumb"
 
 function SortableRow({ item, index, onDuration }: { item: ContentRow; index: number; onDuration: (id: string, secs: number | null) => void }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id })
@@ -36,13 +37,8 @@ function SortableRow({ item, index, onDuration }: { item: ContentRow; index: num
         <GripVertical className="w-4 h-4" />
       </button>
       <span className="w-5 text-center text-[11px] font-semibold text-zinc-400 flex-shrink-0 tabular-nums">{index + 1}</span>
-      <span className="w-10 h-10 rounded-md overflow-hidden bg-zinc-100 flex-shrink-0 flex items-center justify-center">
-        {item.imageUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={item.imageUrl} alt="" className="w-full h-full object-cover" />
-        ) : (
-          <ImageIcon className="w-4 h-4 text-zinc-300" />
-        )}
+      <span className="w-10 h-10 rounded-md overflow-hidden bg-zinc-100 flex-shrink-0">
+        <ContentThumb imageUrl={item.imageUrl} type={item.type} className="w-full h-full" />
       </span>
       <span className="flex-1 min-w-0 text-sm font-medium text-zinc-900 truncate">{item.title || "Uten tittel"}</span>
       <label className="flex items-center gap-1 flex-shrink-0 text-[11px] text-zinc-400" title="Spilletid i sekunder (tom = standard for typen)">
