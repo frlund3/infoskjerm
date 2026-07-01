@@ -191,7 +191,7 @@ export function InviteUserForm({ stores }: { stores: Store[] }) {
               <div className="flex items-start gap-2 rounded-xl bg-blue-50 border border-blue-100 px-3 py-2.5">
                 <StoreIcon className="w-4 h-4 text-blue-600 mt-0.5 shrink-0" />
                 <p className="text-xs text-blue-800">
-                  Tenant Admin får automatisk tilgang til <strong>alle butikker</strong>.
+                  Tenant Admin får automatisk tilgang til <strong>alle {unitLabelPlural.toLowerCase()}</strong>.
                 </p>
               </div>
             )}

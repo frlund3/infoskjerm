@@ -1,4 +1,5 @@
 import { requireRole } from "@/lib/admin/require-role"
+import { getTenantConfig } from "@/lib/tenant/config-server"
 import { createAdminClient } from "@/lib/supabase/server"
 import { Topbar } from "@/components/admin/topbar"
 import Link from "next/link"
@@ -13,6 +14,7 @@ interface ChainRow { name: string }
 export default async function KundeklubbOverviewPage() {
   const { userId, role, tenantId } = await requireRole([...MANAGER_ROLES])
   const admin = createAdminClient()
+  const { unitLabel, unitLabelPlural } = await getTenantConfig(admin, tenantId)
 
   const { data: allStores } = await admin
     .from("stores")
@@ -43,7 +45,7 @@ export default async function KundeklubbOverviewPage() {
 
   return (
     <div className="flex flex-col flex-1">
-      <Topbar title="Kundeklubb" subtitle="QR-påmelding til kundeklubben — tekst, status og medlemmer per butikk" />
+      <Topbar title="Kundeklubb" subtitle={`QR-påmelding til kundeklubben — tekst, status og medlemmer per ${unitLabel.toLowerCase()}`} />
 
       <div className="flex-1 p-6 max-w-5xl space-y-5">
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -52,7 +54,7 @@ export default async function KundeklubbOverviewPage() {
             <p className="mt-1 text-2xl font-black text-zinc-900">{totalMembers}</p>
           </div>
           <div className="rounded-xl border border-zinc-200 bg-white p-4">
-            <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-zinc-400"><QrCode className="h-3.5 w-3.5" /> Aktive butikker</p>
+            <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-zinc-400"><QrCode className="h-3.5 w-3.5" /> Aktive {unitLabelPlural.toLowerCase()}</p>
             <p className="mt-1 text-2xl font-black text-zinc-900">{(stores ?? []).filter((s) => s.kundeklubb_enabled).length}</p>
           </div>
         </div>
@@ -79,7 +81,7 @@ export default async function KundeklubbOverviewPage() {
           {(stores ?? []).length === 0 && (
             <div className="px-4 py-12 text-center">
               <Users className="mx-auto mb-2 h-9 w-9 text-zinc-300" />
-              <p className="text-sm font-medium text-zinc-600">Ingen butikker ennå</p>
+              <p className="text-sm font-medium text-zinc-600">Ingen {unitLabelPlural.toLowerCase()} ennå</p>
             </div>
           )}
         </div>

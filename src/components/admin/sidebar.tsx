@@ -1,6 +1,5 @@
 "use client"
 
-import Image from "next/image"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
@@ -74,6 +73,7 @@ interface SidebarProps {
     role: string
     chainName: string | null
     chainColor: string | null
+    chainLogoUrl: string | null
     isImpersonating: boolean
     activeTenantName: string | null
     tenants: SwitcherTenant[]
@@ -112,15 +112,18 @@ export function Sidebar({ user }: SidebarProps) {
     <aside className="fixed left-0 top-0 h-screen w-60 bg-white border-r border-zinc-100 flex flex-col z-40">
       {/* Logo/brand */}
       <div className="flex items-center gap-3 px-5 py-4 border-b border-zinc-100">
-        <div className="w-8 h-8 rounded-lg overflow-hidden flex-shrink-0">
-          <Image
-            src="/icon-192.png"
-            alt="Framtidmedia"
-            width={32}
-            height={32}
-            className="w-full h-full object-cover"
-            priority
-          />
+        <div
+          className="w-8 h-8 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center"
+          style={user.chainLogoUrl ? { backgroundColor: "white" } : { backgroundColor: "var(--brand-primary)" }}
+        >
+          {user.chainLogoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={user.chainLogoUrl} alt={user.chainName ?? "Logo"} className="w-full h-full object-contain" />
+          ) : (
+            <span className="text-sm font-bold" style={{ color: "var(--brand-fg)" }}>
+              {(user.chainName ?? "Infoskjerm").charAt(0).toUpperCase()}
+            </span>
+          )}
         </div>
         <div className="min-w-0">
           <p className="text-zinc-900 font-bold text-sm leading-tight truncate">

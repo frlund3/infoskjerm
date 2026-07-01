@@ -8,7 +8,7 @@ import Link from "next/link"
 import { fetchScreensByStore } from "@/lib/xibo/screens"
 import { KundeklubbSettings } from "../_components/kundeklubb-settings"
 import { KioskSettings } from "./kiosk-settings"
-import { getTenantConfig } from "@/lib/tenant/config"
+import { getTenantConfig } from "@/lib/tenant/config-server"
 import { hasFeature } from "@/lib/tenant/features"
 
 export const dynamic = "force-dynamic"

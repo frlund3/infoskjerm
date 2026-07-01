@@ -12,6 +12,7 @@ interface MobileNavProps {
     role: string
     chainName: string | null
     chainColor: string | null
+    chainLogoUrl: string | null
     isImpersonating: boolean
     activeTenantName: string | null
     tenants: SwitcherTenant[]

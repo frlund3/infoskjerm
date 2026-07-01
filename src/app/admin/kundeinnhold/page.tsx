@@ -4,7 +4,7 @@ import { Plus, Layers } from "lucide-react"
 import { ContentListClient } from "../innhold/_components/content-list-client"
 import { loadContentForAudience } from "../innhold/content-data"
 import { requireRole } from "@/lib/admin/require-role"
-import { getTenantConfig } from "@/lib/tenant/config"
+import { getTenantConfig } from "@/lib/tenant/config-server"
 import { hasFeature } from "@/lib/tenant/features"
 
 export const dynamic = "force-dynamic"
