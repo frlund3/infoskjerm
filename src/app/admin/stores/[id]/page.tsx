@@ -7,8 +7,13 @@ import { Building2, Mail, Monitor, ArrowLeft } from "lucide-react"
 import Link from "next/link"
 import { fetchScreensByStore } from "@/lib/xibo/screens"
 import { KundeklubbSettings } from "../_components/kundeklubb-settings"
+import { getTenantConfig } from "@/lib/tenant/config"
+import { hasFeature } from "@/lib/tenant/features"
 
 export const dynamic = "force-dynamic"
+
+// GLN-plassholderen som brukes for enheter uten reelt EPD-lokasjonsnummer.
+const GLN_PLACEHOLDER = "0000000000000"
 
 interface PageProps {
   params: Promise<{ id: string }>
@@ -27,6 +32,11 @@ export default async function StoreDetailPage({ params }: PageProps) {
   if (!store) notFound()
 
   const chain = (store.chains as unknown as { name: string; color: string } | null)
+  // GLN / EPD-lokasjonsnummer er dagligvare-spesifikt — vis kun for tenants som
+  // har «gln»-funksjonen, og aldri plassholderverdien.
+  const tenantConfig = await getTenantConfig(supabase, (store as { tenant_id: string | null }).tenant_id)
+  const showGln = hasFeature(tenantConfig.features, "gln")
+    && !!store.gln && store.gln !== GLN_PLACEHOLDER
   // Real screens from the engine (Xibo), not a local table — truthful status.
   const screensByStore = await fetchScreensByStore([{ id: store.id, name: store.name }])
   const screens = screensByStore.get(store.id) ?? []
@@ -70,6 +80,12 @@ export default async function StoreDetailPage({ params }: PageProps) {
                 <p className="text-[10px] text-zinc-400 uppercase tracking-wide mb-1">Org.nr</p>
                 <p className="text-sm font-mono text-zinc-700">{store.org_number}</p>
               </div>
+              {showGln && (
+                <div>
+                  <p className="text-[10px] text-zinc-400 uppercase tracking-wide mb-1">GLN</p>
+                  <p className="text-sm font-mono text-zinc-700">{store.gln}</p>
+                </div>
+              )}
               <div>
                 <p className="text-[10px] text-zinc-400 uppercase tracking-wide mb-1">By</p>
                 <p className="text-sm text-zinc-700">{store.city}</p>

@@ -74,7 +74,7 @@ function LoginInner() {
         {/* Card */}
         <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-8 shadow-2xl">
           <h2 className="text-lg font-semibold text-white mb-1">Logg inn</h2>
-          <p className="text-zinc-500 text-sm mb-6">Administrer infoskjermer for alle butikker</p>
+          <p className="text-zinc-500 text-sm mb-6">Administrer infoskjermene dine</p>
 
           <form onSubmit={handleLogin} className="space-y-4">
             <div>

@@ -1,5 +1,8 @@
+import { redirect } from "next/navigation"
 import { requireRole } from "@/lib/admin/require-role"
 import { canTargetAllStores } from "@/lib/roles"
+import { getTenantConfig } from "@/lib/tenant/config"
+import { hasFeature } from "@/lib/tenant/features"
 import { loadStoreOptions } from "../../innhold/store-options"
 import type { TagOption } from "../../innhold/_components/content-form"
 import { BulkImport } from "./bulk-import"
@@ -13,7 +16,10 @@ export default async function BulkOfferPage({
 }: {
   searchParams: Promise<{ lenker?: string }>
 }) {
-  const { supabase, role } = await requireRole([...AUTHOR_ROLES])
+  const { supabase, role, tenantId } = await requireRole([...AUTHOR_ROLES])
+  // Masseimport av tilbud er dagligvare-spesifikt — sperr ruten for andre tenants.
+  const config = await getTenantConfig(supabase, tenantId)
+  if (!hasFeature(config.features, "offerCards")) redirect("/admin/kundeinnhold")
   const { lenker } = await searchParams
   const [storeOptions, { data: tags }] = await Promise.all([
     loadStoreOptions(supabase),

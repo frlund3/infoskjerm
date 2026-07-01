@@ -9,7 +9,7 @@ import { saveContent, type ContentType, type TargetMode, type ImageMode, type Au
 import { lookupSparProduct } from "../spar-actions"
 import type { OfferFields } from "@/lib/content/live"
 import { LivePreview } from "./live-preview"
-import { useTenantConfig } from "@/components/admin/tenant-config-provider"
+import { useTenantConfig, useTenantFeature } from "@/components/admin/tenant-config-provider"
 import { toast } from "sonner"
 import {
   Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription,
@@ -133,6 +133,9 @@ const AUDIENCE_TYPES: Record<Audience, ContentType[]> = {
 export function ContentForm({ stores, tags, initial, audience = "intern", defaultType, listHref: listHrefProp, prefillImage, canTargetAll = true }: { stores: StoreOption[]; tags: TagOption[]; initial?: ContentInitial; audience?: Audience; defaultType?: ContentType; listHref?: string; prefillImage?: string; canTargetAll?: boolean }) {
   const router = useRouter()
   const { avdelinger: AVDELINGER, unitLabelPlural } = useTenantConfig()
+  // Varekort-bygger (struktur) + spar.no-oppslag er dagligvare-spesifikt — kun
+  // for tenants med «offerCards». Andre tenants laster kun opp plakat/PDF.
+  const canOfferCards = useTenantFeature("offerCards")
   const allowedTypes = AUDIENCE_TYPES[audience]
   // defaultType locks the picker to one type (dedicated entry points, e.g. Invitasjoner).
   const typeOptions = TYPES.filter((t) => (defaultType ? t.key === defaultType : allowedTypes.includes(t.key)))
@@ -178,7 +181,7 @@ export function ContentForm({ stores, tags, initial, audience = "intern", defaul
   // Kundeklubb styres per butikk (Butikker → butikk → Kundeklubb), ikke som
   // innholdselement — så ingen «klubb»-modus her.
   const OFFER_MODES: { k: "struktur" | "plakat" | "klubb"; label: string }[] = [
-    { k: "struktur", label: "Bygg tilbudskort" },
+    ...(canOfferCards ? [{ k: "struktur" as const, label: "Bygg tilbudskort" }] : []),
     { k: "plakat", label: "Last opp plakat / PDF" },
   ]
 
@@ -452,7 +455,7 @@ export function ContentForm({ stores, tags, initial, audience = "intern", defaul
           )}
 
           {/* Offer authoring mode: structured price card vs uploaded poster */}
-          {type === "slide" && (
+          {type === "slide" && OFFER_MODES.length > 1 && (
             <div className="flex gap-1.5">
               {OFFER_MODES.map(({ k, label }) => (
                 <button key={k} type="button" onClick={() => setOfferMode(k)}
