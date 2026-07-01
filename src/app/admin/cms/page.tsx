@@ -7,7 +7,7 @@ import { ScreenPreview, type PreviewStore } from "./screen-preview"
 import { InsightPanel } from "./insight-panel"
 import { ContentStatus, type ContentStatusCounts } from "./content-status"
 import { RefreshKpiButton } from "./refresh-kpi-button"
-import { getTenantConfig } from "@/lib/tenant/config"
+import { getTenantConfig } from "@/lib/tenant/config-server"
 
 /**
  * "Skjermsystem" — the CMS user's window into what each store's screen is

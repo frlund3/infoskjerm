@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation"
 import { requireRole } from "@/lib/admin/require-role"
 import { canTargetAllStores } from "@/lib/roles"
-import { getTenantConfig } from "@/lib/tenant/config"
+import { getTenantConfig } from "@/lib/tenant/config-server"
 import { hasFeature } from "@/lib/tenant/features"
 import { loadStoreOptions } from "../../innhold/store-options"
 import type { TagOption } from "../../innhold/_components/content-form"

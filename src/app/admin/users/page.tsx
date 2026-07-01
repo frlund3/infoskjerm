@@ -1,6 +1,6 @@
 import { getUsersWithDetails } from "@/lib/admin/queries"
 import { requireRole } from "@/lib/admin/require-role"
-import { getTenantConfig } from "@/lib/tenant/config"
+import { getTenantConfig } from "@/lib/tenant/config-server"
 import { Topbar } from "@/components/admin/topbar"
 import { Card, CardContent } from "@/components/ui/card"
 import { Shield, Building2, LayoutGrid, UserCircle, Network } from "lucide-react"
