@@ -259,14 +259,35 @@ export async function bulkShiftPeriod(ids: string[], days: number): Promise<Save
  * Id-ene kommer fra den tenant-scopede innholdslista, så rekkefølgen påvirker kun
  * innhold admin allerede ser. Brukes av «Rekkefølge»-dialogen.
  */
-export async function reorderContent(orderedIds: string[]): Promise<SaveResult> {
+/** Én rad i «Rekkefølge på skjerm»-dialogen: posisjon (via array-index) + spilletid. */
+export interface PlaylistEntry {
+  id: string
+  /** Spilletid i sekunder (3–600). null = bruk standard for typen. */
+  durationSeconds: number | null
+}
+
+export async function reorderContent(entries: PlaylistEntry[]): Promise<SaveResult> {
   const { supabase, userId, tenantId } = await requireRole([...AUTHOR_ROLES])
-  if (orderedIds.length === 0) return { ok: true }
-  for (let i = 0; i < orderedIds.length; i++) {
-    const { error } = await supabase.from("content_items").update({ sort_order: i }).eq("id", orderedIds[i]).eq("tenant_id", tenantId)
+  if (entries.length === 0) return { ok: true }
+  // Hent nåværende body-er så durationSeconds flettes inn uten å klobbe resten.
+  const { data: rows } = await supabase
+    .from("content_items")
+    .select("id, body")
+    .in("id", entries.map((e) => e.id))
+    .eq("tenant_id", tenantId)
+  const bodyById = new Map((rows ?? []).map((r) => [r.id, { ...((r.body ?? {}) as Record<string, unknown>) }]))
+  for (let i = 0; i < entries.length; i++) {
+    const e = entries[i]
+    const body = bodyById.get(e.id) ?? {}
+    if (e.durationSeconds && e.durationSeconds > 0) {
+      body.durationSeconds = Math.max(3, Math.min(600, Math.round(e.durationSeconds)))
+    } else {
+      delete body.durationSeconds
+    }
+    const { error } = await supabase.from("content_items").update({ sort_order: i, body: body as Json }).eq("id", e.id).eq("tenant_id", tenantId)
     if (error) return { ok: false, error: error.message }
   }
-  await logAudit({ userId, action: "content.reorder", entityType: "content", summary: `Endret rekkefølge på ${orderedIds.length} element(er)`, metadata: { count: orderedIds.length } })
+  await logAudit({ userId, action: "content.reorder", entityType: "content", summary: `Oppdaterte rekkefølge/spilletid på ${entries.length} element(er)`, metadata: { count: entries.length } })
   revalidatePath("/admin/innhold")
   revalidatePath("/admin/kundeinnhold")
   return { ok: true }
