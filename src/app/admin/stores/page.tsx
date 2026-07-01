@@ -26,7 +26,6 @@ export default async function StoresPage() {
     "super_admin",
     "chain_manager",
     "area_manager",
-    "store_manager",
   ])
 
   const [rawChains, allTags] = await Promise.all([
