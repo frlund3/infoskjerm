@@ -45,15 +45,17 @@ export function StoreKioskInline({
       <div className="flex items-center gap-1.5">
         <Smartphone className="w-3 h-3 text-zinc-400 flex-shrink-0" />
         <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-400">Mobil visning</span>
+        {protectedNow && (
+          <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-emerald-700" title="Passordbeskyttet">
+            <Lock className="w-2.5 h-2.5" /> Beskyttet
+          </span>
+        )}
         <button
           onClick={() => { setEditing((e) => !e); setError(null) }}
-          className={`ml-auto inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full transition-colors ${
-            protectedNow ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100" : "bg-zinc-100 text-zinc-500 hover:bg-zinc-200"
-          }`}
-          title="Sett eller endre passord"
+          className="ml-auto inline-flex items-center gap-1 text-[10px] font-semibold px-2.5 py-1 rounded-lg border border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-50 hover:border-zinc-400 transition-colors"
         >
           <Lock className="w-2.5 h-2.5" />
-          {protectedNow ? "Passord" : "Åpen"}
+          {editing ? "Lukk" : protectedNow ? "Endre passord" : "Sett passord"}
         </button>
       </div>
 
