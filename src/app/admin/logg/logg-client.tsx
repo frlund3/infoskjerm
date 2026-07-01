@@ -47,7 +47,7 @@ function relTime(iso: string): string {
   if (min < 60) return `${min} min siden`
   const h = Math.round(min / 60)
   if (h < 24) return `${h} t siden`
-  return d.toLocaleDateString("nb-NO", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })
+  return d.toLocaleDateString("nb-NO", { timeZone: "Europe/Oslo", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })
 }
 
 const ENTITY_FILTERS = [

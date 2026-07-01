@@ -18,7 +18,7 @@ function csvCell(v: string | null): string {
 export function MembersTable({ rows, storeName }: { rows: MemberRow[]; storeName: string }) {
   const exportCsv = () => {
     const header = ["Navn", "Telefon", "E-post", "Påmeldt"]
-    const lines = rows.map((r) => [r.name, r.phone, r.email, new Date(r.createdAt).toLocaleString("nb-NO")].map(csvCell).join(";"))
+    const lines = rows.map((r) => [r.name, r.phone, r.email, new Date(r.createdAt).toLocaleString("nb-NO", { timeZone: "Europe/Oslo" })].map(csvCell).join(";"))
     const csv = "﻿" + [header.join(";"), ...lines].join("\n")
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8" })
     const url = URL.createObjectURL(blob)
@@ -56,7 +56,7 @@ export function MembersTable({ rows, storeName }: { rows: MemberRow[]; storeName
                 <tr key={r.id} className="border-b border-zinc-50 last:border-0 hover:bg-zinc-50/60">
                   <td className="px-4 py-2.5 font-medium text-zinc-900">{r.name}</td>
                   <td className="px-4 py-2.5 text-zinc-600">{r.phone || r.email || "—"}</td>
-                  <td className="px-4 py-2.5 text-zinc-400">{new Date(r.createdAt).toLocaleDateString("nb-NO", { day: "numeric", month: "short", year: "numeric" })}</td>
+                  <td className="px-4 py-2.5 text-zinc-400">{new Date(r.createdAt).toLocaleDateString("nb-NO", { timeZone: "Europe/Oslo", day: "numeric", month: "short", year: "numeric" })}</td>
                 </tr>
               ))}
             </tbody>
