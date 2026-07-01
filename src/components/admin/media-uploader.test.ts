@@ -34,11 +34,11 @@ describe("checkFile", () => {
   it("godtar .pptx selv når nettleseren ikke satte MIME (utledes fra endelsen)", () => {
     expect(checkFile({ name: "deck.pptx", size: 5 * MB, type: "" }, SLIDE_ACCEPT)).toBeNull()
   })
-  it("avviser en for stor presentasjon med PowerPoint-spesifikt råd", () => {
+  it("avviser en for stor presentasjon og tipser om PDF-eksport", () => {
     const msg = checkFile({ name: "stor.pptx", size: 80 * MB, type: "" }, SLIDE_ACCEPT)
     expect(msg).toContain("80.0 MB")
     expect(msg).toContain("maks 50 MB")
-    expect(msg).toContain("Komprimer") // PowerPoint-spesifikt råd
+    expect(msg).toContain("PDF") // PowerPoint-spesifikt råd: eksporter til PDF
   })
   it("avviser for stort bilde med generisk råd (ikke PowerPoint-teksten)", () => {
     const msg = checkFile({ name: "svær.png", size: 60 * MB, type: "image/png" }, SLIDE_ACCEPT)

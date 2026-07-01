@@ -58,7 +58,7 @@ export function checkFile(file: UploadCandidate, accept: string[]): string | nul
   if (file.size > MAX_SIZE) {
     const mb = (file.size / 1024 / 1024).toFixed(1)
     return isPptName(file.name)
-      ? `Presentasjonen er ${mb} MB — maks 50 MB. Komprimer den i PowerPoint (Fil → Komprimer bilder) eller del den i to.`
+      ? `Presentasjonen er ${mb} MB — maks 50 MB. Enklest: lagre den som PDF (Fil → Eksporter → PDF) — det blir mye mindre og ser likt ut på skjermen. Alternativt komprimer bildene (Fil → Komprimer bilder).`
       : `Filen er ${mb} MB — maks 50 MB. Komprimer eller velg en mindre fil.`
   }
   if (accept.length > 0 && !accept.includes(contentTypeFor(file))) {
