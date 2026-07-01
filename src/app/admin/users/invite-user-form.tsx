@@ -7,27 +7,42 @@ import { useTenantConfig } from "@/components/admin/tenant-config-provider"
 
 import { ROLE_LABELS, ROLE_DESCRIPTIONS } from "@/lib/roles"
 
-type InviteRole = "chain_manager" | "area_manager" | "store_manager"
+export type InviteRole = "chain_manager" | "area_manager" | "store_manager"
 
 type Store = { id: string; name: string }
 
 // Redaktør (store_employee) er utfaset — ikke lenger tildelbar.
-const ROLE_OPTIONS: { value: InviteRole; label: string; desc: string }[] = [
-  { value: "chain_manager", label: ROLE_LABELS.chain_manager, desc: ROLE_DESCRIPTIONS.chain_manager },
-  { value: "area_manager", label: ROLE_LABELS.area_manager, desc: ROLE_DESCRIPTIONS.area_manager },
-  { value: "store_manager", label: ROLE_LABELS.store_manager, desc: ROLE_DESCRIPTIONS.store_manager },
-]
+const ROLE_META: Record<InviteRole, { label: string; desc: string }> = {
+  chain_manager: { label: ROLE_LABELS.chain_manager, desc: ROLE_DESCRIPTIONS.chain_manager },
+  area_manager: { label: ROLE_LABELS.area_manager, desc: ROLE_DESCRIPTIONS.area_manager },
+  store_manager: { label: ROLE_LABELS.store_manager, desc: ROLE_DESCRIPTIONS.store_manager },
+}
+
+const ALL_INVITE_ROLES: InviteRole[] = ["chain_manager", "area_manager", "store_manager"]
 
 // Roller som er scopet til spesifikke butikker (Tenant Admin får alle).
 const STORE_SCOPED: InviteRole[] = ["area_manager", "store_manager"]
 // Roller som kun kan ha én butikk.
 const SINGLE_STORE: InviteRole[] = ["store_manager"]
 
-export function InviteUserForm({ stores }: { stores: Store[] }) {
+export function InviteUserForm({
+  stores,
+  allowedRoles = ALL_INVITE_ROLES,
+}: {
+  stores: Store[]
+  allowedRoles?: InviteRole[]
+}) {
   const { unitLabel, unitLabelPlural } = useTenantConfig()
+  const roleOptions = (allowedRoles.length > 0 ? allowedRoles : ALL_INVITE_ROLES).map((value) => ({
+    value,
+    label: ROLE_META[value].label,
+    desc: ROLE_META[value].desc,
+  }))
+  const singleRole = roleOptions.length === 1
+
   const [open, setOpen] = useState(false)
   const [email, setEmail] = useState("")
-  const [role, setRole] = useState<InviteRole>("store_manager")
+  const [role, setRole] = useState<InviteRole>(roleOptions[0].value)
   const [storeIds, setStoreIds] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -55,7 +70,7 @@ export function InviteUserForm({ stores }: { stores: Store[] }) {
 
   function reset() {
     setEmail("")
-    setRole("store_manager")
+    setRole(roleOptions[0].value)
     setStoreIds([])
     setError(null)
   }
@@ -126,29 +141,36 @@ export function InviteUserForm({ stores }: { stores: Store[] }) {
             </div>
             <div>
               <label className="block text-xs font-medium text-zinc-600 mb-2">Rolle</label>
-              <div className="space-y-2">
-                {ROLE_OPTIONS.map((opt) => (
-                  <label
-                    key={opt.value}
-                    className={`flex items-start gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${
-                      role === opt.value ? "border-zinc-900 bg-zinc-50" : "border-zinc-200 hover:border-zinc-300"
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="role"
-                      value={opt.value}
-                      checked={role === opt.value}
-                      onChange={() => selectRole(opt.value)}
-                      className="sr-only"
-                    />
-                    <div className="flex-1">
-                      <p className="text-sm font-semibold text-zinc-900">{opt.label}</p>
-                      <p className="text-xs text-zinc-500">{opt.desc}</p>
-                    </div>
-                  </label>
-                ))}
-              </div>
+              {singleRole ? (
+                <div className="rounded-xl border-2 border-zinc-900 bg-zinc-50 p-3">
+                  <p className="text-sm font-semibold text-zinc-900">{roleOptions[0].label}</p>
+                  <p className="text-xs text-zinc-500">{roleOptions[0].desc}</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {roleOptions.map((opt) => (
+                    <label
+                      key={opt.value}
+                      className={`flex items-start gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${
+                        role === opt.value ? "border-zinc-900 bg-zinc-50" : "border-zinc-200 hover:border-zinc-300"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="role"
+                        value={opt.value}
+                        checked={role === opt.value}
+                        onChange={() => selectRole(opt.value)}
+                        className="sr-only"
+                      />
+                      <div className="flex-1">
+                        <p className="text-sm font-semibold text-zinc-900">{opt.label}</p>
+                        <p className="text-xs text-zinc-500">{opt.desc}</p>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              )}
             </div>
 
             {needsStores ? (

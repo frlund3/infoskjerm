@@ -8,8 +8,10 @@ import Link from "next/link"
 import { fetchScreensByStore } from "@/lib/xibo/screens"
 import { KundeklubbSettings } from "../_components/kundeklubb-settings"
 import { KioskSettings } from "./kiosk-settings"
+import { ScreenAssignment, type ScreenRow } from "./screen-assignment"
 import { getTenantConfig } from "@/lib/tenant/config-server"
 import { hasFeature } from "@/lib/tenant/features"
+import { getBaseUrl } from "@/lib/base-url"
 
 export const dynamic = "force-dynamic"
 
@@ -42,6 +44,15 @@ export default async function StoreDetailPage({ params }: PageProps) {
   // Real screens from the engine (Xibo), not a local table — truthful status.
   const screensByStore = await fetchScreensByStore([{ id: store.id, name: store.name }])
   const screens = screensByStore.get(store.id) ?? []
+
+  // Våre screens-rader (enhets-styring: token + flate/avdeling/orientering).
+  const { data: assignRows } = await supabase
+    .from("screens")
+    .select("id, name, token, flate, avdeling, orientation")
+    .eq("store_id", store.id)
+    .order("name")
+  const assignScreens = (assignRows ?? []) as unknown as ScreenRow[]
+  const origin = await getBaseUrl()
 
   return (
     <div className="flex flex-col flex-1">
@@ -99,6 +110,13 @@ export default async function StoreDetailPage({ params }: PageProps) {
                 </div>
               )}
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Enhets-styring: flate/avdeling/orientering per fysiske skjerm */}
+        <Card>
+          <CardContent className="p-0">
+            <ScreenAssignment screens={assignScreens} origin={origin} />
           </CardContent>
         </Card>
 

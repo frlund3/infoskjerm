@@ -6,6 +6,7 @@ import { BrandingPanel } from "./branding-panel"
 import { NotificationsCard } from "./notifications-card"
 import { BiometricCard } from "./biometric-card"
 import { TenantTerminologyCard } from "./tenant-terminology-card"
+import { AvdelingerCard } from "./avdelinger-card"
 import { requireRole } from "@/lib/admin/require-role"
 import Link from "next/link"
 
@@ -31,6 +32,8 @@ export default async function SettingsPage() {
 
       <div className="flex-1 p-4 sm:p-6 space-y-6 max-w-4xl">
         {(role === "super_admin" || role === "chain_manager") && <TenantTerminologyCard />}
+
+        {(role === "super_admin" || role === "chain_manager") && <AvdelingerCard />}
 
         {chains && chains.length > 0 && (
           <BrandingPanel

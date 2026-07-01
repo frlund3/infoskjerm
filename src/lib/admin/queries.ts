@@ -248,8 +248,12 @@ export async function getTagsWithStores(supabase: AdminSupabase, tenantId: strin
   return data ?? []
 }
 
-export async function getUsersWithDetails(supabase: AdminSupabase, tenantId: string) {
-  const { data } = await supabase
+export async function getUsersWithDetails(
+  supabase: AdminSupabase,
+  tenantId: string,
+  userIds?: string[]
+) {
+  let query = supabase
     .from('users')
     .select(`
       id, email, full_name, role,
@@ -257,8 +261,14 @@ export async function getUsersWithDetails(supabase: AdminSupabase, tenantId: str
       user_stores(stores(id, name))
     `)
     .eq('tenant_id', tenantId)
-    .order('full_name')
 
+  // Butikk-scopet visning: kun brukere som deler enhet med den innloggede.
+  if (userIds) {
+    if (userIds.length === 0) return []
+    query = query.in('id', userIds)
+  }
+
+  const { data } = await query.order('full_name')
   return data ?? []
 }
 
