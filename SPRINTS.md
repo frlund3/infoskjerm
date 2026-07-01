@@ -6,6 +6,21 @@ Gjeldende arkitektur (kort): **Xibo = motoren** (displays, display-grupper 1:1 m
 
 ---
 
+## Multi-tenant + Mobile AS + sikkerhet (2026-07-01) ✅
+
+**Multi-tenant / Mobile AS (bilforhandler-kjede) onboardet:**
+- Per-tenant terminologi (`Butikk`↔`Forhandler`), dynamiske avdelinger, per-tenant **feature-flagg** (`tenants.features` + `src/lib/tenant/features.ts`): `offerCards`/`gln` (dagligvare), `campaignCards` (liggende kampanjemal). Bygg tenant-spesifikke maler via flagg — aldri hardkod tenant-navn.
+- Mobile: 34 forhandlere + 19 bilmerker som tagger, Mobile-logo (mobile.no), Mobile-kjede.
+- **Liggende premium kampanjemal** (`/widget/kampanje`, `campaign`-struktur) + editor («Bygg kampanjekort»). Galleri/konkurranse også i liggende.
+- **Kiosk «telefon/nettbrett som skjerm»** (`/vis/<enhet>`, `?type=intern`, `?orientation=liggende`) med valgfritt passord per enhet.
+- **Xibo:** alle 34 forhandlere satt opp — kundeskjerm (stående) + internskjerm (`– Bakrom`, liggende, uten dagligvare-KPI). Klare for Pi-innmelding.
+
+**Sikkerhetshardening (revisjon: 3 agenter + DB-simulering):** kjerne-tenant/rolle-isolasjon verifisert vanntett; alle funn tettet (content_targets, KPI-oversikt, settings-roller, skjermbilde-IDOR, kundeklubb/invitasjoner-scoping, user_stores/reg_codes RLS). Migrasjoner 026–036.
+
+**Gjenstår (oppfølging):** fang untracked act-as-migrasjon som fil; ekte org.nr/GLN per forhandler; Mobile-wordmark-logo; velg skjermorientering på fysiske Mobile-skjermer.
+
+---
+
 ## Sprint 1 — `/admin/cms` fra forhåndsvisning til driftsverktøy ✅ aktiv
 Mål: en butikkleder ser om skjermen lever, hva den viser, og kan tvinge oppdatering — uten å logge inn i Xibo.
 
