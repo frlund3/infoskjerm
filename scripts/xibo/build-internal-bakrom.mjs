@@ -28,7 +28,7 @@ const api = makeApi(env, await getToken(env))
 const internNewsUri = (storeId) => `${APP_URL}/widget/nyheter?store=${storeId}&flate=intern`
 
 async function fetchStores() {
-  const url = `${env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/stores?select=id,name,latitude,longitude,city&order=name`
+  const url = `${env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/stores?select=id,name,latitude,longitude,city,tenants(name)&order=name`
   const r = await fetch(url, { headers: { apikey: env.SUPABASE_SERVICE_ROLE_KEY, Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}` } })
   if (!r.ok) throw new Error(`Supabase stores ${r.status}: ${await r.text()}`)
   return r.json()
@@ -72,9 +72,12 @@ for (const store of stores) {
   const lon = store.longitude ?? 6.1495
   const groupId = await findOrCreateGroup(`${store.name}${GROUP_SUFFIX}`)
 
+  const tenantName = Array.isArray(store.tenants) ? store.tenants[0]?.name : store.tenants?.name
+  const merke = tenantName?.replace(/\s+AS$/i, "")
+
   const { layoutId, campaignId } = await findOrCreateLayout(name)
   await buildLayout(api, layoutId, {
-    topbarUri: topbarUri(APP_URL, { butikk: store.name, lat, lon, navn: store.city || store.name }),
+    topbarUri: topbarUri(APP_URL, { butikk: store.name, lat, lon, navn: store.city || store.name, merke }),
     newsUri: internNewsUri(store.id),
   })
   built++
