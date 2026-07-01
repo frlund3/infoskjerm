@@ -55,12 +55,15 @@ export default async function KioskPage({
   searchParams,
 }: {
   params: Promise<{ store: string }>
-  searchParams: Promise<{ type?: string; orientation?: string }>
+  searchParams: Promise<{ type?: string; orientation?: string; avdeling?: string }>
 }) {
   const { store } = await params
-  const { type, orientation } = await searchParams
+  const { type, orientation, avdeling } = await searchParams
   const row = await resolveStore(store)
   if (!row) notFound()
+
+  // Avdeling-filter (valgfritt) — «felles» er standard og trenger ikke sendes.
+  const avd = avdeling && avdeling !== "felles" ? `&avdeling=${encodeURIComponent(avdeling)}` : ""
 
   // Privat visning: krev passord når enheten har satt ett og cookie mangler/ugyldig.
   if (row.kiosk_password_hash) {
@@ -75,14 +78,14 @@ export default async function KioskPage({
   // (internt innhold + butikk-KPI + KPI-oversikt uke/år), akkurat som en ekte
   // internskjerm. Alltid liggende (1920×1080).
   if (type === "intern") {
-    return <KioskStage src={`/widget/bakrom?store=${row.id}`} title={row.name} width={1920} height={1080} />
+    return <KioskStage src={`/widget/bakrom?store=${row.id}${avd}`} title={row.name} width={1920} height={1080} />
   }
 
   // Kundeskjerm i to native orienteringer: stående (tilbud, 1080×1920) og
   // liggende (premium kampanjemal, 1920×1080). KioskStage skalerer hver til
   // å passe enheten.
-  const portraitVariant = { src: `/widget/tilbud?store=${row.id}`, width: 1080, height: 1920 }
-  const landscapeVariant = { src: `/widget/kampanje?store=${row.id}`, width: 1920, height: 1080 }
+  const portraitVariant = { src: `/widget/tilbud?store=${row.id}${avd}`, width: 1080, height: 1920 }
+  const landscapeVariant = { src: `/widget/kampanje?store=${row.id}${avd}`, width: 1920, height: 1080 }
 
   // Eksplisitt ?orientation i URL-en overstyrer (for skjermer montert fast i én
   // retning). Uten den: AUTO — fyll etter enhetens faktiske orientering.

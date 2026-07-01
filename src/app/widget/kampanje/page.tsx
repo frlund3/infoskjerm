@@ -26,15 +26,15 @@ function normalizeUrl(raw: string): string {
   return /^https?:\/\//i.test(v) ? v : `https://${v}`
 }
 
-export default async function KampanjeWidgetPage({ searchParams }: { searchParams: Promise<{ store?: string }> }) {
-  const { store } = await searchParams
+export default async function KampanjeWidgetPage({ searchParams }: { searchParams: Promise<{ store?: string; avdeling?: string }> }) {
+  const { store, avdeling } = await searchParams
   const supabase = createAdminClient()
 
   const [slides, comps, galleries, articles, storeRow] = await Promise.all([
-    fetchLiveContent(store ?? null, ["slide"], "kunde"),
-    fetchLiveContent(store ?? null, ["competition"], "kunde"),
-    fetchLiveContent(store ?? null, ["gallery"], "kunde"),
-    fetchLiveContent(store ?? null, ["news"], "kunde"),
+    fetchLiveContent(store ?? null, ["slide"], "kunde", avdeling),
+    fetchLiveContent(store ?? null, ["competition"], "kunde", avdeling),
+    fetchLiveContent(store ?? null, ["gallery"], "kunde", avdeling),
+    fetchLiveContent(store ?? null, ["news"], "kunde", avdeling),
     store
       ? supabase.from("stores").select("chains(name, logo_url, color, brand_fg)").eq("id", store).maybeSingle()
       : Promise.resolve({ data: null }),

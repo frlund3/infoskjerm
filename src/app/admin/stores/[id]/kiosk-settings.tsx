@@ -1,13 +1,20 @@
 "use client"
 
 import { useState } from "react"
-import { Monitor, Wrench, Copy, Check, Lock, Loader2, ExternalLink } from "lucide-react"
+import { Copy, Check, Lock, Loader2, ExternalLink } from "lucide-react"
 import { setKioskPassword } from "../actions"
+import { useTenantConfig } from "@/components/admin/tenant-config-provider"
+import { withFelles } from "@/lib/tenant/config"
 
 /**
- * Kiosk-innstillinger for én enhet: delbare «telefon/nettbrett som skjerm»-lenker
- * (kunde + intern) og valgfritt passord for privat visning. Kunden setter det selv.
+ * Kiosk-innstillinger for én enhet: bygg en delbar «telefon/nettbrett som skjerm»-
+ * lenke med FLATE (kunde/intern) + AVDELING + ORIENTERING — samme valg som en
+ * fysisk skjerm — pluss valgfritt passord for privat visning.
  */
+
+type Flate = "kunde" | "intern"
+type Orient = "auto" | "staaende" | "liggende"
+
 export function KioskSettings({
   storeId,
   storeName,
@@ -17,21 +24,43 @@ export function KioskSettings({
   storeName: string
   hasPassword: boolean
 }) {
+  const { avdelinger, avdelingerIntern, unitLabel } = useTenantConfig()
   const slug = encodeURIComponent(storeName)
-  const customerUrl = `/vis/${slug}`
-  const internalUrl = `/vis/${slug}?type=intern`
+
+  const [flate, setFlate] = useState<Flate>("kunde")
+  const [avdeling, setAvdeling] = useState("felles")
+  const [orient, setOrient] = useState<Orient>("auto")
 
   const [protectedNow, setProtectedNow] = useState(hasPassword)
   const [password, setPassword] = useState("")
   const [saving, setSaving] = useState(false)
   const [msg, setMsg] = useState<string | null>(null)
 
+  const avdList = withFelles(flate === "intern" ? avdelingerIntern : avdelinger, unitLabel)
+
+  // Bygg /vis-URL fra valgene. Avdeling «felles» og orientering «auto» er
+  // standard og utelates for pene lenker. Intern er alltid liggende (bakrom).
+  const params = new URLSearchParams()
+  if (flate === "intern") params.set("type", "intern")
+  if (avdeling && avdeling !== "felles") params.set("avdeling", avdeling)
+  if (flate === "kunde" && orient !== "auto") params.set("orientation", orient)
+  const qs = params.toString()
+  const url = `/vis/${slug}${qs ? `?${qs}` : ""}`
+
+  function selectFlate(next: Flate) {
+    setFlate(next)
+    setAvdeling("felles") // avdelinger er ulike for kunde vs intern
+  }
+
   async function save(next: string) {
     setSaving(true)
     setMsg(null)
     const res = await setKioskPassword(storeId, next)
     setSaving(false)
-    if (!res.ok) { setMsg(res.error ?? "Kunne ikke lagre"); return }
+    if (!res.ok) {
+      setMsg(res.error ?? "Kunne ikke lagre")
+      return
+    }
     setProtectedNow(!!next.trim())
     setPassword("")
     setMsg(next.trim() ? "Passord lagret." : "Passord fjernet – visningen er åpen.")
@@ -41,11 +70,40 @@ export function KioskSettings({
     <div className="p-5 space-y-4">
       <div>
         <h2 className="font-semibold text-zinc-900">Skjerm-visning (kiosk)</h2>
-        <p className="text-xs text-zinc-500 mt-0.5">Åpne lenken på en telefon, nettbrett eller PC og sett i fullskjerm — samme visning som en fysisk skjerm.</p>
+        <p className="text-xs text-zinc-500 mt-0.5">
+          Velg flate, avdeling og orientering — så får du en delbar lenke du åpner på en telefon, nettbrett eller PC i fullskjerm.
+        </p>
       </div>
 
-      <KioskLink icon={<Monitor className="w-4 h-4 text-zinc-400" />} label="Kundeskjerm" url={customerUrl} />
-      <KioskLink icon={<Wrench className="w-4 h-4 text-zinc-400" />} label="Intern skjerm (verksted/pauserom)" url={internalUrl} />
+      {/* URL-bygger: flate + avdeling + orientering */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+        <Field label="Flate">
+          <Select value={flate} onChange={(v) => selectFlate(v as Flate)}>
+            <option value="kunde">Kundeskjerm</option>
+            <option value="intern">Intern skjerm</option>
+          </Select>
+        </Field>
+        <Field label="Avdeling">
+          <Select value={avdeling} onChange={setAvdeling}>
+            {avdList.map((a) => (
+              <option key={a.key} value={a.key}>{a.label}</option>
+            ))}
+          </Select>
+        </Field>
+        <Field label="Orientering">
+          {flate === "kunde" ? (
+            <Select value={orient} onChange={(v) => setOrient(v as Orient)}>
+              <option value="auto">Auto (etter enhet)</option>
+              <option value="staaende">Stående</option>
+              <option value="liggende">Liggende</option>
+            </Select>
+          ) : (
+            <div className="w-full border border-zinc-200 rounded-lg px-3 py-2 text-sm text-zinc-400 bg-zinc-50/60">Liggende</div>
+          )}
+        </Field>
+      </div>
+
+      <KioskLink url={url} />
 
       <div className="pt-3 border-t border-zinc-100 space-y-2">
         <div className="flex items-center gap-2">
@@ -89,7 +147,28 @@ export function KioskSettings({
   )
 }
 
-function KioskLink({ icon, label, url }: { icon: React.ReactNode; label: string; url: string }) {
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label className="block">
+      <span className="block text-[10px] font-semibold uppercase tracking-wide text-zinc-400 mb-1">{label}</span>
+      {children}
+    </label>
+  )
+}
+
+function Select({ value, onChange, children }: { value: string; onChange: (v: string) => void; children: React.ReactNode }) {
+  return (
+    <select
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className="w-full border border-zinc-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-zinc-300"
+    >
+      {children}
+    </select>
+  )
+}
+
+function KioskLink({ url }: { url: string }) {
   const [copied, setCopied] = useState(false)
   const full = typeof window !== "undefined" ? `${window.location.origin}${url}` : url
 
@@ -104,16 +183,15 @@ function KioskLink({ icon, label, url }: { icon: React.ReactNode; label: string;
   }
 
   return (
-    <div className="flex items-center gap-2 rounded-xl border border-zinc-200 bg-zinc-50/60 px-3 py-2">
-      {icon}
+    <div className="flex items-center gap-2 rounded-xl border border-zinc-200 bg-zinc-50/60 px-3 py-2.5">
       <div className="min-w-0 flex-1">
-        <p className="text-xs font-medium text-zinc-700">{label}</p>
-        <p className="text-xs text-zinc-400 truncate font-mono">{url}</p>
+        <p className="text-[10px] font-semibold uppercase tracking-wide text-zinc-400 mb-0.5">Lenke</p>
+        <p className="text-xs text-zinc-600 truncate font-mono">{url}</p>
       </div>
-      <button onClick={copy} title="Kopier lenke" className="p-1.5 rounded-lg text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700">
+      <button onClick={copy} title="Kopier lenke" className="p-1.5 rounded-lg text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 flex-shrink-0">
         {copied ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
       </button>
-      <a href={url} target="_blank" rel="noopener noreferrer" title="Åpne" className="p-1.5 rounded-lg text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700">
+      <a href={url} target="_blank" rel="noopener noreferrer" title="Åpne" className="p-1.5 rounded-lg text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 flex-shrink-0">
         <ExternalLink className="w-4 h-4" />
       </a>
     </div>
