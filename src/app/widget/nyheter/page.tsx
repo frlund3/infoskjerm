@@ -26,8 +26,10 @@ function normalizeUrl(raw: string): string {
   return /^https?:\/\//i.test(v) ? v : `https://${v}`
 }
 
-export default async function NewsWidgetPage({ searchParams }: { searchParams: Promise<{ store?: string; flate?: string; avdeling?: string }> }) {
-  const { store, flate, avdeling } = await searchParams
+export default async function NewsWidgetPage({ searchParams }: { searchParams: Promise<{ store?: string; flate?: string; avdeling?: string; o?: string }> }) {
+  const { store, flate, avdeling, o } = await searchParams
+  // Orientering: ?o=portrait → stående layout (nå ekte for alle intern-kort).
+  const portrait = o === "portrait"
   // flate=intern → bakrom/ansatte: internt innhold (nyheter/gratulerer/stilling) + ticker.
   // ellers → kundeskjerm: kun kunde-innhold, aldri ticker.
   const audience = flate === "intern" ? "intern" : "kunde"
@@ -68,5 +70,5 @@ export default async function NewsWidgetPage({ searchParams }: { searchParams: P
     }
   }
 
-  return <NewsRotator items={items as LiveItem[]} qr={qr} ticker={ticker} />
+  return <NewsRotator items={items as LiveItem[]} qr={qr} ticker={ticker} portrait={portrait} />
 }

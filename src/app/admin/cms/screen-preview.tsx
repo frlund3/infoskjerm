@@ -60,12 +60,16 @@ export function ScreenPreview({
   const [view, setView] = useState<View>("intern-innhold")
   const [oversiktPeriode, setOversiktPeriode] = useState<"uke" | "ar">("uke")
   const [kundeView, setKundeView] = useState<"tilbud" | "klubb">("tilbud")
+  // Orienterings-overstyring: null = naturlig (kunde stående, intern liggende);
+  // ellers tvunget stående/liggende så begge kan forhåndsvises.
+  const [orientPref, setOrientPref] = useState<"portrait" | "landscape" | null>(null)
   const wrapRef = useRef<HTMLDivElement>(null)
   const [scale, setScale] = useState(0.5)
   const flate = view.startsWith("kunde") ? "kunde" : "intern"
 
-  // Customer = portrait 1080×1920, internal = landscape 1920×1080.
-  const portrait = flate === "kunde"
+  // Standard: kunde = stående 1080×1920, intern = liggende 1920×1080. Toggle overstyrer.
+  const portrait = orientPref ? orientPref === "portrait" : flate === "kunde"
+  const orient = portrait ? "portrait" : "landscape"
   const STAGE_W = portrait ? 1080 : 1920
   const STAGE_H = portrait ? 1920 : 1080
 
@@ -90,10 +94,10 @@ export function ScreenPreview({
   // Avdelingene er ulike for kunde vs intern — velg riktig liste for aktiv flate.
   const avdelingerForFlate = flate === "intern" ? AVDELINGER_INTERN : AVDELINGER
   const av = encodeURIComponent(avdeling)
-  const tilbudSrc = `/widget/tilbud?store=${sid}&avdeling=${av}`
-  const kpiSrc = `/widget/butikk-kpi?store=${sid}`
-  const oversiktSrc = `/widget/kpi-oversikt?store=${sid}`
-  const internInnholdSrc = `/widget/nyheter?store=${sid}&flate=intern&avdeling=${av}`
+  const tilbudSrc = `/widget/tilbud?store=${sid}&avdeling=${av}&o=${orient}`
+  const kpiSrc = `/widget/butikk-kpi?store=${sid}&o=${orient}`
+  const oversiktSrc = `/widget/kpi-oversikt?store=${sid}&o=${orient}`
+  const internInnholdSrc = `/widget/nyheter?store=${sid}&flate=intern&avdeling=${av}&o=${orient}`
   const kundeklubbSrc = `/widget/kundeklubb?store=${sid}`
   const kundeSrc = kundeView === "klubb" ? kundeklubbSrc : tilbudSrc
   const topbarSrc = `/widget/topbar?butikk=${encodeURIComponent(store.name)}&lat=${store.lat ?? ""}&lon=${store.lon ?? ""}&navn=${encodeURIComponent(store.city ?? "")}${brand ? `&merke=${encodeURIComponent(brand)}` : ""}`
@@ -141,12 +145,18 @@ export function ScreenPreview({
           <ChevronDown className="w-4 h-4 text-zinc-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
         </div>
         <div className="flex w-full sm:w-auto sm:inline-flex rounded-lg border border-zinc-200 p-0.5 bg-zinc-50">
-          <button onClick={() => { setView("kunde-skjerm"); setAvdeling("felles") }} className={`flex flex-1 sm:flex-none items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${flate === "kunde" ? "bg-zinc-900 text-white" : "text-zinc-600"}`}>
+          <button onClick={() => { setView("kunde-skjerm"); setAvdeling("felles"); setOrientPref(null) }} className={`flex flex-1 sm:flex-none items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${flate === "kunde" ? "bg-zinc-900 text-white" : "text-zinc-600"}`}>
             <Megaphone className="w-3.5 h-3.5 shrink-0" /> Kundeskjerm
           </button>
-          <button onClick={() => { setView("intern-innhold"); setAvdeling("felles") }} className={`flex flex-1 sm:flex-none items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${flate === "intern" ? "bg-zinc-900 text-white" : "text-zinc-600"}`}>
+          <button onClick={() => { setView("intern-innhold"); setAvdeling("felles"); setOrientPref(null) }} className={`flex flex-1 sm:flex-none items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${flate === "intern" ? "bg-zinc-900 text-white" : "text-zinc-600"}`}>
             <Monitor className="w-3.5 h-3.5 shrink-0" /> <span className="truncate">Internskjerm <span className="hidden sm:inline">(bakrom)</span></span>
           </button>
+        </div>
+
+        {/* Orientering — forhåndsvis samme skjerm stående og liggende. */}
+        <div className="flex w-full sm:w-auto sm:inline-flex rounded-lg border border-zinc-200 p-0.5 bg-zinc-50">
+          <button onClick={() => setOrientPref("portrait")} className={`flex flex-1 sm:flex-none items-center justify-center px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${portrait ? "bg-zinc-900 text-white" : "text-zinc-600"}`}>Stående</button>
+          <button onClick={() => setOrientPref("landscape")} className={`flex flex-1 sm:flex-none items-center justify-center px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${!portrait ? "bg-zinc-900 text-white" : "text-zinc-600"}`}>Liggende</button>
         </div>
       </div>
 
