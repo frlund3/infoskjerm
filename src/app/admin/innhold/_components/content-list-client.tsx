@@ -89,8 +89,10 @@ const PAGE_SIZE = 12
 
 const selectCls = "w-full sm:w-auto text-xs bg-white border border-zinc-200 rounded-lg px-2.5 py-2.5 sm:py-2 text-zinc-600 focus:outline-none focus:ring-1 focus:ring-zinc-300"
 
-export function ContentListClient({ items, stores, tags, newHref = "/admin/innhold/ny", editBase = "/admin/innhold" }: { items: ContentRow[]; stores: Option[]; tags: Option[]; newHref?: string; editBase?: string }) {
-  const { avdelinger: AVDELINGER, unitLabelPlural } = useTenantConfig()
+export function ContentListClient({ items, stores, tags, newHref = "/admin/innhold/ny", editBase = "/admin/innhold", audience = "intern" }: { items: ContentRow[]; stores: Option[]; tags: Option[]; newHref?: string; editBase?: string; audience?: "kunde" | "intern" }) {
+  // Avdeling-filteret følger flaten: intern-liste bruker interne avdelinger.
+  const { avdelinger: AVD_KUNDE, avdelingerIntern: AVD_INTERN, unitLabelPlural } = useTenantConfig()
+  const AVDELINGER = audience === "intern" ? AVD_INTERN : AVD_KUNDE
   const router = useRouter()
   const [busyId, setBusyId] = useState<string | null>(null)
   const [menuId, setMenuId] = useState<string | null>(null)
