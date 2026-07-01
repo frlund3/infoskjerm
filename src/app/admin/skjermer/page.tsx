@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server"
+import { requireRole } from "@/lib/admin/require-role"
 import { getStoresBoard } from "@/lib/admin/queries"
 import { fetchScreensByStore } from "@/lib/xibo/screens"
 import { Topbar } from "@/components/admin/topbar"
@@ -19,8 +19,13 @@ interface RawStore {
 }
 
 export default async function SkjermerPage() {
-  const supabase = await createClient()
-  const chains = await getStoresBoard(supabase)
+  const { supabase, tenantId } = await requireRole([
+    "super_admin",
+    "chain_manager",
+    "area_manager",
+    "store_manager",
+  ])
+  const chains = await getStoresBoard(supabase, tenantId)
 
   const stores = chains.flatMap((c) =>
     ((c.stores as unknown as RawStore[]) ?? []).map((s) => ({

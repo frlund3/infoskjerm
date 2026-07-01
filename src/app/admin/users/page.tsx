@@ -1,4 +1,3 @@
-import { createClient } from "@/lib/supabase/server"
 import { getUsersWithDetails } from "@/lib/admin/queries"
 import { requireRole } from "@/lib/admin/require-role"
 import { getTenantConfig } from "@/lib/tenant/config"
@@ -47,11 +46,10 @@ function AccessCell({
 }
 
 export default async function UsersPage() {
-  const { tenantId } = await requireRole(["super_admin", "chain_manager"])
-  const supabase = await createClient()
+  const { supabase, tenantId } = await requireRole(["super_admin", "chain_manager"])
   const { unitLabelPlural } = await getTenantConfig(supabase, tenantId)
-  const users = await getUsersWithDetails(supabase)
-  const { data: storesData } = await supabase.from("stores").select("id, name").order("name")
+  const users = await getUsersWithDetails(supabase, tenantId)
+  const { data: storesData } = await supabase.from("stores").select("id, name").eq("tenant_id", tenantId).order("name")
   const allStores = (storesData ?? []) as { id: string; name: string }[]
 
   const rows = users.map((user) => {

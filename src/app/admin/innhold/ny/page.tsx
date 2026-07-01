@@ -12,12 +12,12 @@ export default async function NewContentPage({
 }: {
   searchParams: Promise<{ image?: string }>
 }) {
-  const { supabase, role } = await requireRole([...AUTHOR_ROLES])
+  const { supabase, role, tenantId } = await requireRole([...AUTHOR_ROLES])
   const { image } = await searchParams
 
   const [storeOptions, { data: tags }] = await Promise.all([
-    loadStoreOptions(supabase),
-    supabase.from("tags").select("id, name, color").order("name"),
+    loadStoreOptions(supabase, tenantId),
+    supabase.from("tags").select("id, name, color").eq("tenant_id", tenantId).order("name"),
   ])
 
   return <ContentForm stores={storeOptions} tags={(tags ?? []) as TagOption[]} prefillImage={image} canTargetAll={canTargetAllStores(role)} />

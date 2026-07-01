@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server"
+import { requireRole } from "@/lib/admin/require-role"
 import { notFound } from "next/navigation"
 import { Topbar } from "@/components/admin/topbar"
 import { Card, CardContent } from "@/components/ui/card"
@@ -22,13 +22,14 @@ interface PageProps {
 
 export default async function StoreDetailPage({ params }: PageProps) {
   const { id } = await params
-  const supabase = await createClient()
+  const { supabase, tenantId } = await requireRole(["super_admin", "chain_manager", "area_manager"])
 
   const { data: store } = await supabase
     .from("stores")
     .select("*, chains(name, color)")
     .eq("id", id)
-    .single()
+    .eq("tenant_id", tenantId)
+    .maybeSingle()
 
   if (!store) notFound()
 

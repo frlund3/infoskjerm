@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server"
+import { requireRole } from "@/lib/admin/require-role"
 import { getStoresBoard, getAllTags } from "@/lib/admin/queries"
 import { fetchScreensByStore } from "@/lib/xibo/screens"
 import { Topbar } from "@/components/admin/topbar"
@@ -22,11 +22,15 @@ interface RawStore {
 }
 
 export default async function StoresPage() {
-  const supabase = await createClient()
+  const { supabase, tenantId } = await requireRole([
+    "super_admin",
+    "chain_manager",
+    "area_manager",
+  ])
 
   const [rawChains, allTags] = await Promise.all([
-    getStoresBoard(supabase),
-    getAllTags(supabase),
+    getStoresBoard(supabase, tenantId),
+    getAllTags(supabase, tenantId),
   ])
 
   // Real screen counts from the engine (Xibo), keyed by store id.
