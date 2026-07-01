@@ -27,21 +27,38 @@ const frame: CSSProperties = {
 }
 
 function LandscapePoster({ item, chain }: { item: LiveItem; chain?: ChainBrand | null }) {
-  const img = item.imageUrl
+  // Manglende/ødelagt bilde skal ALDRI gi svart slide med brutt bilde-ikon:
+  // fall tilbake til en branded gradient (kjedefarge) med stor tittel.
+  const [imgOk, setImgOk] = useState(true)
+  const hasImg = !!item.imageUrl && imgOk
+  const brand = chain?.color || "#0a5c2b"
   return (
-    <div style={{ position: "absolute", inset: 0, containerType: "size", background: "#0a0a0c", overflow: "hidden" }}>
-      {img && (
+    <div
+      style={{
+        position: "absolute",
+        inset: 0,
+        containerType: "size",
+        overflow: "hidden",
+        background: hasImg ? "#0a0a0c" : `radial-gradient(125% 125% at 22% 12%, ${brand} 0%, #0a0a0c 62%)`,
+      }}
+    >
+      {item.imageUrl && (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={img} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", animation: "grKb 22s ease-in-out infinite alternate" }} />
+        <img
+          src={item.imageUrl}
+          alt=""
+          onError={() => setImgOk(false)}
+          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", opacity: hasImg ? 1 : 0, animation: "grKb 22s ease-in-out infinite alternate" }}
+        />
       )}
-      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(0deg, rgba(10,10,12,.85) 0%, rgba(10,10,12,.25) 40%, rgba(10,10,12,0) 70%)" }} />
+      <div style={{ position: "absolute", inset: 0, background: hasImg ? "linear-gradient(0deg, rgba(10,10,12,.85) 0%, rgba(10,10,12,.25) 40%, rgba(10,10,12,0) 70%)" : "linear-gradient(0deg, rgba(0,0,0,.35) 0%, rgba(0,0,0,0) 55%)" }} />
+      {chain?.name && (
+        <span style={{ position: "absolute", right: "6cqh", top: "6cqh", fontSize: "4cqh", fontWeight: 900, letterSpacing: "0.2cqh", textShadow: "0 2px 6px rgba(0,0,0,.5)" }}>{chain.name}</span>
+      )}
       {item.title && (
         <h1 style={{ position: "absolute", left: "6cqw", right: "6cqw", bottom: "8cqh", margin: 0, fontSize: "8cqh", fontWeight: 900, lineHeight: 1, letterSpacing: "-0.3cqh", textShadow: "0 1.5cqh 4cqh rgba(0,0,0,.5)" }}>
           {item.title}
         </h1>
-      )}
-      {chain?.name && (
-        <span style={{ position: "absolute", right: "6cqh", top: "6cqh", fontSize: "4cqh", fontWeight: 900, letterSpacing: "0.2cqh", textShadow: "0 2px 6px rgba(0,0,0,.5)" }}>{chain.name}</span>
       )}
     </div>
   )

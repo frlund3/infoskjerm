@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/server"
 import { kioskCookieName, kioskCookieValid } from "@/lib/kiosk/auth"
 import { KioskGate } from "./kiosk-gate"
 import { KioskStage } from "./kiosk-stage"
+import { KioskAuto } from "./kiosk-auto"
 
 /**
  * «Telefon/nettbrett som skjerm» — en offentlig kiosk-URL du åpner på en
@@ -72,22 +73,29 @@ export default async function KioskPage({
 
   // Intern skjerm (verksted/pauserom) via ?type=intern → FULL bakrom-rotasjon
   // (internt innhold + butikk-KPI + KPI-oversikt uke/år), akkurat som en ekte
-  // internskjerm — ikke bare nyhetsflaten.
-  // Liggende kundeskjerm via ?orientation=liggende → premium kampanjemal.
-  // Ellers stående kundeskjerm.
-  const isIntern = type === "intern"
-  const landscape = orientation === "liggende" || orientation === "landscape"
-  const widget = isIntern
-    ? `/widget/bakrom?store=${row.id}`
-    : landscape
-      ? `/widget/kampanje?store=${row.id}`
-      : `/widget/tilbud?store=${row.id}`
+  // internskjerm. Alltid liggende (1920×1080).
+  if (type === "intern") {
+    return <KioskStage src={`/widget/bakrom?store=${row.id}`} title={row.name} width={1920} height={1080} />
+  }
 
-  // Native design-oppløsning: stående kundeskjerm (tilbud) = portrett 1080×1920;
-  // kampanje + intern = liggende 1920×1080. KioskStage skalerer til å passe enheten.
-  const stagePortrait = !isIntern && !landscape
-  const stageW = stagePortrait ? 1080 : 1920
-  const stageH = stagePortrait ? 1920 : 1080
+  // Kundeskjerm i to native orienteringer: stående (tilbud, 1080×1920) og
+  // liggende (premium kampanjemal, 1920×1080). KioskStage skalerer hver til
+  // å passe enheten.
+  const portraitVariant = { src: `/widget/tilbud?store=${row.id}`, width: 1080, height: 1920 }
+  const landscapeVariant = { src: `/widget/kampanje?store=${row.id}`, width: 1920, height: 1080 }
 
-  return <KioskStage src={widget} title={row.name} width={stageW} height={stageH} />
+  // Eksplisitt ?orientation i URL-en overstyrer (for skjermer montert fast i én
+  // retning). Uten den: AUTO — fyll etter enhetens faktiske orientering.
+  const explicit =
+    orientation === "liggende" || orientation === "landscape"
+      ? landscapeVariant
+      : orientation === "staaende" || orientation === "stående" || orientation === "portrait"
+        ? portraitVariant
+        : null
+
+  if (explicit) {
+    return <KioskStage src={explicit.src} title={row.name} width={explicit.width} height={explicit.height} />
+  }
+
+  return <KioskAuto portrait={portraitVariant} landscape={landscapeVariant} title={row.name} />
 }
