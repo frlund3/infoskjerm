@@ -179,7 +179,7 @@ export function ContentForm({ stores, tags, initial, audience = "intern", defaul
   const [chainF, setChainF] = useState("")
   const [durationSeconds, setDurationSeconds] = useState<string>(initial?.durationSeconds ? String(initial.durationSeconds) : "")
   const [saving, setSaving] = useState(false)
-  const [confirmNoEndDate, setConfirmNoEndDate] = useState(false)
+  const [confirmPublish, setConfirmPublish] = useState(false)
 
   const isOfferStruktur = type === "slide" && offerMode === "struktur"
   const isKlubb = type === "slide" && offerMode === "klubb"
@@ -204,6 +204,14 @@ export function ContentForm({ stores, tags, initial, audience = "intern", defaul
     for (const s of stores) if ((s.tagIds ?? []).some((t) => tagIds.includes(t))) hit.add(s.id)
     return hit.size
   })()
+  // Faktiske enheter innholdet treffer (navn) — vises i publiserings-bekreftelsen,
+  // så man ser nøyaktig hvor det havner (særlig ved tag-målretting).
+  const resolvedUnits = (() => {
+    if (targetMode === "all") return stores.map((s) => s.name)
+    if (targetMode === "stores") return stores.filter((s) => storeIds.includes(s.id)).map((s) => s.name)
+    return stores.filter((s) => (s.tagIds ?? []).some((t) => tagIds.includes(t))).map((s) => s.name)
+  })()
+  const avdelingLabel = AVDELINGER.find((a) => a.key === avdeling)?.label ?? avdeling
   const setOf = (k: keyof OfferFields, v: string) => setOffer((p) => ({ ...p, [k]: v.trim() || null }))
 
   const [gtinInput, setGtinInput] = useState("")
@@ -341,9 +349,9 @@ export function ContentForm({ stores, tags, initial, audience = "intern", defaul
       toast.error("Tilbud må ha både fra- og til-dato")
       return
     }
-    // Andre typer: myk bekreftelse ved publisering uten sluttdato.
-    if (publish && !periodRequired && !validTo) { setConfirmNoEndDate(true); return }
-    doSave(publish)
+    // Publisering krever bekreftelse — vis nøyaktig hvilke enheter det treffer.
+    if (publish) { setConfirmPublish(true); return }
+    doSave(false)
   }
 
   async function doSave(publish: boolean) {
@@ -977,29 +985,58 @@ export function ContentForm({ stores, tags, initial, audience = "intern", defaul
         </div>
       </div>
 
-      <Dialog open={confirmNoEndDate} onOpenChange={setConfirmNoEndDate}>
+      <Dialog open={confirmPublish} onOpenChange={setConfirmPublish}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <div className="mx-auto sm:mx-0 flex h-11 w-11 items-center justify-center rounded-full bg-amber-100 text-amber-600 mb-1">
-              <CalendarOff className="h-5 w-5" />
+            <div className="mx-auto sm:mx-0 flex h-11 w-11 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 mb-1">
+              <Send className="h-5 w-5" />
             </div>
-            <DialogTitle>Ingen sluttdato satt</DialogTitle>
+            <DialogTitle>
+              Publisere til {reach} {reach === 1 ? unitLabel.toLowerCase() : unitLabelPlural.toLowerCase()}?
+            </DialogTitle>
             <DialogDescription>
-              Dette innholdet har ingen sluttdato og vil vises på skjermen til du fjerner det manuelt.
-              Er du sikker på at det ikke skal ha en sluttdato?
+              {audience === "kunde" ? "Vises på kundeskjermene" : "Vises på interne skjermer"}
+              {(type === "slide" || type === "competition") && avdeling && avdeling !== "felles" ? ` · avdeling: ${avdelingLabel}` : ""}
+              {" — "}
+              {targetMode === "all"
+                ? `alle ${unitLabelPlural.toLowerCase()}`
+                : targetMode === "tags"
+                  ? `${tagIds.length} tagg${tagIds.length === 1 ? "" : "er"}`
+                  : `valgte ${unitLabelPlural.toLowerCase()}`}
+              .
             </DialogDescription>
           </DialogHeader>
+
+          {reach === 0 ? (
+            <p className="text-sm text-red-600">Ingen {unitLabelPlural.toLowerCase()} treffes med dette valget — juster «Vis på» først.</p>
+          ) : (
+            <div className="max-h-52 overflow-y-auto rounded-lg border border-zinc-200 divide-y divide-zinc-50">
+              {resolvedUnits.map((name) => (
+                <div key={name} className="flex items-center gap-2 px-3 py-2 text-sm text-zinc-700">
+                  <StoreIcon className="w-3.5 h-3.5 text-zinc-400 flex-shrink-0" />
+                  <span className="truncate">{name}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {!validTo && reach > 0 && (
+            <p className="flex items-center gap-1.5 text-[11px] text-amber-600">
+              <CalendarOff className="w-3.5 h-3.5 flex-shrink-0" /> Ingen sluttdato — vises til du fjerner det manuelt.
+            </p>
+          )}
+
           <DialogFooter className="gap-2 sm:gap-2">
-            <Button variant="outline" size="sm" onClick={() => setConfirmNoEndDate(false)} disabled={saving}>
-              Sett sluttdato
+            <Button variant="outline" size="sm" onClick={() => setConfirmPublish(false)} disabled={saving}>
+              Avbryt
             </Button>
             <Button
               size="sm"
-              onClick={() => { setConfirmNoEndDate(false); doSave(true) }}
-              disabled={saving}
+              onClick={() => { setConfirmPublish(false); doSave(true) }}
+              disabled={saving || reach === 0}
               style={{ backgroundColor: "var(--brand-primary)" }}
             >
-              <Send className="w-3.5 h-3.5 mr-1.5" /> Publiser likevel
+              <Send className="w-3.5 h-3.5 mr-1.5" /> Bekreft publisering
             </Button>
           </DialogFooter>
         </DialogContent>
