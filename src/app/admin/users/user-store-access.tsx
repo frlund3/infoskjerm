@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { setUserStores } from "./actions"
 import { Store, Check, ChevronDown } from "lucide-react"
 import { toast } from "sonner"
+import { useTenantConfig } from "@/components/admin/tenant-config-provider"
 
 interface StoreOpt { id: string; name: string }
 
@@ -18,6 +19,7 @@ export function UserStoreAccess({
   currentStoreIds: string[]
 }) {
   const router = useRouter()
+  const { unitLabel, unitLabelPlural } = useTenantConfig()
   const [open, setOpen] = useState(false)
   const [selected, setSelected] = useState<string[]>(currentStoreIds)
   const [saving, setSaving] = useState(false)
@@ -32,7 +34,7 @@ export function UserStoreAccess({
     else toast.error(res.error ?? "Feil")
   }
 
-  const label = selected.length === 0 ? "Velg butikker" : `${selected.length} butikk${selected.length === 1 ? "" : "er"}`
+  const label = selected.length === 0 ? `Velg ${unitLabelPlural.toLowerCase()}` : `${selected.length} ${selected.length === 1 ? unitLabel.toLowerCase() : unitLabelPlural.toLowerCase()}`
 
   return (
     <div className="relative">
