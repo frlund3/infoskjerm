@@ -4,7 +4,7 @@ import { requireRole } from "@/lib/admin/require-role"
 import { logAudit } from "@/lib/admin/audit"
 import { revalidatePath } from "next/cache"
 import { audienceForType, type Audience } from "./audience"
-import type { OfferFields } from "@/lib/content/live"
+import type { OfferFields, CampaignFields } from "@/lib/content/live"
 import type { Json } from "@/types/database"
 
 type AdminSupabase = Awaited<ReturnType<typeof requireRole>>["supabase"]
@@ -74,6 +74,8 @@ export interface ContentInput {
   statsChange?: string | null
   /** Offer (slide) only: structured price-card fields (when not a poster). */
   offer?: OfferFields | null
+  /** Campaign (slide) only: landscape campaign-card fields (Mobile-style poster). */
+  campaign?: CampaignFields | null
   /** Customer offers: department/category ("felles" = whole store). */
   avdeling?: string | null
   /** Text cards: optional background + text colour. */
@@ -115,6 +117,7 @@ function buildBody(input: ContentInput): Json {
     ...(input.type === "news" ? { applyUrl: input.applyUrl ?? null } : {}),
     ...(input.type === "stats" ? { statsValue: input.statsValue ?? null, statsChange: input.statsChange ?? null } : {}),
     ...(input.type === "slide" && input.offer ? { offer: input.offer } : {}),
+    ...(input.type === "slide" && input.campaign && input.campaign.headline ? { campaign: input.campaign } : {}),
     ...((input.type === "slide" || input.type === "competition") ? { avdeling: input.avdeling || "felles" } : {}),
     ...(input.bgColor ? { bgColor: input.bgColor } : {}),
     ...(input.textColor ? { textColor: input.textColor } : {}),

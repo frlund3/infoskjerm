@@ -1,5 +1,6 @@
 import QRCode from "qrcode"
 import { htmlToBlocks, type LiveItem } from "@/lib/content/live"
+import { CampaignCard } from "@/app/widget/kampanje/campaign-card"
 import { getBaseUrl } from "@/lib/base-url"
 import { TilbudRotator } from "@/app/widget/tilbud/tilbud-rotator"
 import { NewsRotator } from "@/app/widget/nyheter/news-rotator"
@@ -26,6 +27,7 @@ interface PreviewData {
   imageUrls?: string[]
   imageMode?: "plakat" | "bakgrunn" | "liten"
   offer?: LiveItem["offer"]
+  campaign?: LiveItem["campaign"]
   avdeling?: string | null
   bgColor?: string | null
   textColor?: string | null
@@ -79,7 +81,15 @@ export default async function PreviewWidgetPage({ searchParams }: { searchParams
     statsValue: data.statsValue ?? null,
     statsChange: data.statsChange ?? null,
     offer: data.offer && data.offer.varenavn ? data.offer : null,
-    campaign: null,
+    campaign: data.campaign && data.campaign.headline
+      ? {
+          category: data.campaign.category ?? null,
+          headline: data.campaign.headline,
+          subtext: data.campaign.subtext ?? null,
+          price: data.campaign.price ?? null,
+          accent: data.campaign.accent ?? null,
+        }
+      : null,
     avdeling: data.avdeling || "felles",
     bgColor: data.bgColor ?? null,
     textColor: data.textColor ?? null,
@@ -131,6 +141,15 @@ export default async function PreviewWidgetPage({ searchParams }: { searchParams
   const chain: ChainBrand | null = data.chain
     ? { name: data.chain.name, logoUrl: data.chain.logoUrl, color: data.chain.color, brandFg: data.chain.brandFg }
     : null
+
+  // Liggende kampanjekort forhåndsvises i sin egen fullskjerm-ramme.
+  if (item.campaign) {
+    return (
+      <main style={{ position: "relative", width: "100%", height: "100vh", overflow: "hidden", background: "#0a0a0c" }}>
+        <CampaignCard item={item} chain={chain} />
+      </main>
+    )
+  }
 
   if (data.audience === "intern") {
     return <NewsRotator items={[item]} qr={qr} ticker={[]} />

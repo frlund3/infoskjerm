@@ -31,6 +31,7 @@ export async function EditContentView({ id, listHref }: { id: string; listHref?:
     audience?: Audience
     contactPerson?: string | null; applyUrl?: string | null; statsValue?: string | null; statsChange?: string | null
     offer?: import("@/lib/content/live").OfferFields | null
+    campaign?: import("@/lib/content/live").CampaignFields | null
     avdeling?: string | null
     bgColor?: string | null; textColor?: string | null
     klubb?: { headline: string; subtext: string } | null
@@ -59,6 +60,7 @@ export async function EditContentView({ id, listHref }: { id: string; listHref?:
     validTo: item.valid_to ? item.valid_to.slice(0, 10) : null,
     imageMode: body.imageMode ?? "bakgrunn",
     offer: body.offer ?? null,
+    campaign: body.campaign ?? null,
     avdeling: body.avdeling ?? "felles",
     contactPerson: body.contactPerson ?? null,
     applyUrl: body.applyUrl ?? null,

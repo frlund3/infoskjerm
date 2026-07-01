@@ -19,6 +19,8 @@ export const TENANT_FEATURES = {
   offerCards: "Varekort & masseimport",
   /** GLN / EPD-lokasjonsnummer på enheter — dagligvare (EDI mot Tradesolution). */
   gln: "GLN / EPD-lokasjonsnummer",
+  /** Liggende kampanjekort-bygger (premium plakat-mal, /widget/kampanje) — f.eks. bilforhandler. */
+  campaignCards: "Kampanjekort (liggende)",
 } as const
 
 export type TenantFeature = keyof typeof TENANT_FEATURES
