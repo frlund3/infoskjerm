@@ -17,7 +17,8 @@ function slugify(label: string): string {
 /**
  * Lagrer avdelinger for KUNDE- eller INTERN-skjermer for den aktive tenanten.
  * «felles» (Hele enheten) er implisitt og lagres aldri — den injiseres med label
- * fra terminologi ved lasting (getTenantConfig). Kun ledelse.
+ * fra terminologi ved lasting (getTenantConfig). Alle admin-roller (også
+ * enhets-/flerenhetsadmin), men ikke redaktør.
  */
 export async function saveAvdelinger(
   flate: "kunde" | "intern",
@@ -25,7 +26,10 @@ export async function saveAvdelinger(
 ): Promise<{ ok: boolean; error?: string }> {
   const ctx = await getAdminContext()
   if (!ctx) return { ok: false, error: "Ikke innlogget" }
-  if (ctx.role !== "super_admin" && ctx.role !== "chain_manager") return { ok: false, error: "Ikke tillatt" }
+  // Alle admin-roller kan sette avdelinger (de bygger egne skjermer). Kun
+  // redaktør er utestengt. Tenant-scopet via ctx.effectiveTenantId under.
+  const AVDELING_ROLES: string[] = ["super_admin", "chain_manager", "area_manager", "store_manager"]
+  if (!AVDELING_ROLES.includes(ctx.role)) return { ok: false, error: "Ikke tillatt" }
   const tenantId = ctx.effectiveTenantId
   if (!tenantId) return { ok: false, error: "Ingen aktiv organisasjon" }
 

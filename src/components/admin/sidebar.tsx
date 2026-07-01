@@ -61,7 +61,7 @@ const navGroups: NavGroup[] = [
       { href: "/admin/skjermer", label: "Skjermer", icon: Tv, roles: ["super_admin", "chain_manager", "area_manager", "store_manager"], matchPrefix: true },
       { href: "/admin/users", label: "Brukere", icon: Users, roles: ["super_admin", "chain_manager", "area_manager", "store_manager"] },
       { href: "/admin/logg", label: "Logg", icon: ScrollText, roles: ["super_admin", "chain_manager"], matchPrefix: true },
-      { href: "/admin/settings", label: "Innstillinger", icon: Settings, roles: ["super_admin", "chain_manager"] },
+      { href: "/admin/settings", label: "Innstillinger", icon: Settings, roles: ["super_admin", "chain_manager", "area_manager", "store_manager"] },
     ],
   },
 ]

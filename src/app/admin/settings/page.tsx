@@ -13,8 +13,10 @@ import Link from "next/link"
 export const dynamic = "force-dynamic"
 
 export default async function SettingsPage() {
-  // Innstillinger (terminologi, branding, skjermer) er kun for ledelse.
-  const { tenantId, role } = await requireRole(["super_admin", "chain_manager"])
+  // Ledelse (super/chain) styrer terminologi og merkevare. Enhets- og
+  // flerenhetsadmin slippes inn for å sette egne avdelinger (+ personlige valg
+  // som passkey/varsler) — men ser IKKE terminologi/branding-kortene.
+  const { tenantId, role } = await requireRole(["super_admin", "chain_manager", "area_manager", "store_manager"])
   const supabase = await createClient()
 
   const { data: { user } } = await supabase.auth.getUser()
@@ -33,9 +35,10 @@ export default async function SettingsPage() {
       <div className="flex-1 p-4 sm:p-6 space-y-6 max-w-4xl">
         {(role === "super_admin" || role === "chain_manager") && <TenantTerminologyCard />}
 
-        {(role === "super_admin" || role === "chain_manager") && <AvdelingerCard />}
+        {/* Avdelinger: også enhets-/flerenhetsadmin (de bygger egne skjermer). */}
+        <AvdelingerCard />
 
-        {chains && chains.length > 0 && (
+        {(role === "super_admin" || role === "chain_manager") && chains && chains.length > 0 && (
           <BrandingPanel
             chains={chains.map((c) => ({
               id: c.id,
