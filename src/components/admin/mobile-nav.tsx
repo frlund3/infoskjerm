@@ -40,6 +40,11 @@ export function MobileNav({ user }: MobileNavProps) {
           </span>
           <span className="font-bold text-sm text-zinc-900 truncate">{user.chainName ?? "Infoskjerm"}</span>
         </div>
+        {user.isImpersonating && user.activeTenantName && (
+          <span className="ml-auto text-[10px] font-semibold uppercase tracking-wide bg-amber-50 border border-amber-200 text-amber-700 rounded-full px-2 py-0.5 truncate max-w-[40%]">
+            {user.activeTenantName}
+          </span>
+        )}
       </header>
 
       {/* Drawer */}

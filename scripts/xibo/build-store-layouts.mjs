@@ -25,7 +25,7 @@ const api = makeApi(env, token)
 
 // ---------- stores from Supabase ----------
 async function fetchStores() {
-  const url = `${env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/stores?select=id,name,latitude,longitude,city&order=name`
+  const url = `${env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/stores?select=id,name,latitude,longitude,city,tenants(name)&order=name`
   const r = await fetch(url, {
     headers: {
       apikey: env.SUPABASE_SERVICE_ROLE_KEY,
@@ -87,9 +87,12 @@ for (const store of stores) {
   const lat = store.latitude ?? 62.4722
   const lon = store.longitude ?? 6.1495
 
+  const tenantName = Array.isArray(store.tenants) ? store.tenants[0]?.name : store.tenants?.name
+  const merke = tenantName?.replace(/\s+AS$/i, "")
+
   const { layoutId, campaignId } = await findOrCreateLayout(name)
   await buildLayout(api, layoutId, {
-    topbarUri: topbarUri(APP_URL, { butikk: store.name, lat, lon, navn: store.city || store.name }),
+    topbarUri: topbarUri(APP_URL, { butikk: store.name, lat, lon, navn: store.city || store.name, merke }),
     newsUri: newsUri(APP_URL, store.id),
   })
   built++

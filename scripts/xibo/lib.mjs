@@ -150,12 +150,13 @@ export function tilbudUri(appUrl, storeId) {
   return `${appUrl}/widget/tilbud?store=${storeId}`
 }
 
-export function topbarUri(appUrl, { butikk, lat, lon, navn }) {
+export function topbarUri(appUrl, { butikk, lat, lon, navn, merke }) {
   const p = new URLSearchParams({
     butikk: butikk ?? "",
     lat: String(lat ?? ""),
     lon: String(lon ?? ""),
     navn: navn ?? "",
+    merke: merke ?? "",
   })
   return `${appUrl}/widget/topbar?${p.toString()}`
 }
