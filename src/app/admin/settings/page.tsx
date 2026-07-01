@@ -12,7 +12,8 @@ import Link from "next/link"
 export const dynamic = "force-dynamic"
 
 export default async function SettingsPage() {
-  const { tenantId, role } = await requireRole(["super_admin", "chain_manager", "area_manager", "store_manager"])
+  // Innstillinger (terminologi, branding, skjermer) er kun for ledelse.
+  const { tenantId, role } = await requireRole(["super_admin", "chain_manager"])
   const supabase = await createClient()
 
   const { data: { user } } = await supabase.auth.getUser()

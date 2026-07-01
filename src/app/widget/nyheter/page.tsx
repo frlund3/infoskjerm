@@ -26,15 +26,16 @@ function normalizeUrl(raw: string): string {
   return /^https?:\/\//i.test(v) ? v : `https://${v}`
 }
 
-export default async function NewsWidgetPage({ searchParams }: { searchParams: Promise<{ store?: string; flate?: string }> }) {
-  const { store, flate } = await searchParams
+export default async function NewsWidgetPage({ searchParams }: { searchParams: Promise<{ store?: string; flate?: string; avdeling?: string }> }) {
+  const { store, flate, avdeling } = await searchParams
   // flate=intern → bakrom/ansatte: internt innhold (nyheter/gratulerer/stilling) + ticker.
   // ellers → kundeskjerm: kun kunde-innhold, aldri ticker.
   const audience = flate === "intern" ? "intern" : "kunde"
   const cardTypes = audience === "intern" ? INTERNAL_CARD_TYPES : CARD_TYPES
+  // Avdeling-filtrering: «felles»/ingen → alt; ellers kun innhold for avdelingen.
   const [items, tickerItems] = await Promise.all([
-    fetchLiveContent(store ?? null, cardTypes, audience),
-    audience === "intern" ? fetchLiveContent(store ?? null, ["ticker"], "intern") : Promise.resolve([]),
+    fetchLiveContent(store ?? null, cardTypes, audience, avdeling),
+    audience === "intern" ? fetchLiveContent(store ?? null, ["ticker"], "intern", avdeling) : Promise.resolve([]),
   ])
   const ticker = tickerItems.map((t) => t.title.trim()).filter(Boolean)
 
