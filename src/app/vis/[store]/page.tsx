@@ -4,6 +4,7 @@ import type { Metadata, Viewport } from "next"
 import { createAdminClient } from "@/lib/supabase/server"
 import { kioskCookieName, kioskCookieValid } from "@/lib/kiosk/auth"
 import { KioskGate } from "./kiosk-gate"
+import { KioskStage } from "./kiosk-stage"
 
 /**
  * «Telefon/nettbrett som skjerm» — en offentlig kiosk-URL du åpner på en
@@ -72,21 +73,19 @@ export default async function KioskPage({
   // Intern skjerm (verksted/pauserom) via ?type=intern → ren intern nyhetsflate.
   // Liggende kundeskjerm via ?orientation=liggende → premium kampanjemal.
   // Ellers stående kundeskjerm.
+  const isIntern = type === "intern"
   const landscape = orientation === "liggende" || orientation === "landscape"
-  const widget = type === "intern"
+  const widget = isIntern
     ? `/widget/nyheter?store=${row.id}&flate=intern`
     : landscape
       ? `/widget/kampanje?store=${row.id}`
       : `/widget/tilbud?store=${row.id}`
 
-  return (
-    <div style={{ position: "fixed", inset: 0, background: "#0a0a0a", overflow: "hidden" }}>
-      <iframe
-        src={widget}
-        title={row.name}
-        style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: 0, display: "block" }}
-        allow="fullscreen"
-      />
-    </div>
-  )
+  // Native design-oppløsning: stående kundeskjerm (tilbud) = portrett 1080×1920;
+  // kampanje + intern = liggende 1920×1080. KioskStage skalerer til å passe enheten.
+  const stagePortrait = !isIntern && !landscape
+  const stageW = stagePortrait ? 1080 : 1920
+  const stageH = stagePortrait ? 1920 : 1080
+
+  return <KioskStage src={widget} title={row.name} width={stageW} height={stageH} />
 }

@@ -59,8 +59,15 @@ export function StoreKioskInline({
         </button>
       </div>
 
-      <KioskLink label="Kunde" url={`/vis/${slug}`} />
-      <KioskLink label="Intern" url={`/vis/${slug}?type=intern`} />
+      <div className="space-y-1">
+        <p className="text-[9px] font-semibold uppercase tracking-wide text-zinc-400 px-0.5">Kundeskjerm</p>
+        <KioskLink label="Stående" url={`/vis/${slug}`} />
+        <KioskLink label="Liggende" url={`/vis/${slug}?orientation=liggende`} />
+      </div>
+      <div className="space-y-1">
+        <p className="text-[9px] font-semibold uppercase tracking-wide text-zinc-400 px-0.5">Intern skjerm</p>
+        <KioskLink label="Åpne" url={`/vis/${slug}?type=intern`} />
+      </div>
 
       {editing && (
         <div className="pt-1 space-y-1.5">
