@@ -166,16 +166,26 @@ function StandardCard({ item, portrait = false }: { item: LiveItem; portrait?: b
   // aldri ser vasket ut/brutt — bildet blir bevisst atmosfære, teksten alltid lesbar.
   const tc = (item.textColor ?? "#fff").toLowerCase()
   const lightText = tc === "#fff" || tc === "#ffffff" || tc === "white"
+  // Mykere scrim enn før — bildet skal SYNES (ikke vaskes helt bort), men teksten
+  // må fortsatt være lesbar: lys tekst → mørk scrim, mørk tekst → lys scrim.
   const scrim = lightText
-    ? "linear-gradient(180deg, rgba(10,10,12,.35) 0%, rgba(10,10,12,.72) 100%)"
-    : "linear-gradient(180deg, rgba(255,255,255,.55) 0%, rgba(255,255,255,.85) 100%)"
+    ? "linear-gradient(180deg, rgba(10,10,12,.30) 0%, rgba(10,10,12,.62) 100%)"
+    : "linear-gradient(180deg, rgba(255,255,255,.45) 0%, rgba(255,255,255,.74) 100%)"
   return (
     <>
       {item.imageUrl && item.isVideo && (
         // eslint-disable-next-line jsx-a11y/media-has-caption
         <video src={item.imageUrl} autoPlay muted loop playsInline style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", opacity: 0.22 }} />
       )}
-      {item.imageUrl && !item.isVideo && <div style={bgImage(item.imageUrl)} />}
+      {/* Bakgrunn: HELE bildet (contain, aldri beskåret — et bredt logo ble halvert
+          av cover) + uskarp cover-kopi bak så kortet fylles kant-til-kant uten
+          tomme striper. */}
+      {item.imageUrl && !item.isVideo && (
+        <>
+          <div style={{ position: "absolute", inset: 0, backgroundImage: `url('${item.imageUrl}')`, backgroundSize: "cover", backgroundPosition: "center", filter: "blur(52px) brightness(.8)", transform: "scale(1.2)" }} />
+          <div style={{ position: "absolute", inset: 0, backgroundImage: `url('${item.imageUrl}')`, backgroundSize: "contain", backgroundPosition: "center", backgroundRepeat: "no-repeat", animation: "grKenBurns 26s ease-in-out infinite alternate", transformOrigin: "center" }} />
+        </>
+      )}
       {item.imageUrl && <div style={{ position: "absolute", inset: 0, background: scrim, pointerEvents: "none" }} />}
       <div style={{ position: "absolute", inset: 0, padding: portrait ? 76 : 70, boxSizing: "border-box", display: "flex", flexDirection: "column", justifyContent: centre ? "center" : "flex-start", color: item.textColor ?? "#fff" }}>
         {KICKER[item.type] && <Kicker>{KICKER[item.type]}</Kicker>}
