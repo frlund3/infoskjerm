@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState, useTransition } from "react"
-import { Monitor, ChevronDown, RefreshCw, Camera, Wifi, WifiOff, Megaphone } from "lucide-react"
+import { Monitor, ChevronDown, RefreshCw, Camera, Wifi, WifiOff, Megaphone, Smartphone, RectangleHorizontal } from "lucide-react"
 import type { StoreScreen, ScreenSync } from "@/lib/xibo/screens"
 import { pushToScreen, requestNewScreenshot } from "./actions"
 import { useTenantConfig, useTenantFeature } from "@/components/admin/tenant-config-provider"
@@ -57,12 +57,18 @@ export function ScreenPreview({
   const [view, setView] = useState<View>("intern-innhold")
   const [oversiktPeriode, setOversiktPeriode] = useState<"uke" | "ar">("uke")
   const [kundeView, setKundeView] = useState<"tilbud" | "klubb">("tilbud")
+  // Orienterings-overstyring: null = følg flate-utledet retning (kunde=stående,
+  // intern=liggende); ellers viser vi begge veier så brukeren ser hvordan
+  // innholdet blir i den andre retningen.
+  const [orientOverride, setOrientOverride] = useState<"portrait" | "landscape" | null>(null)
   const wrapRef = useRef<HTMLDivElement>(null)
   const [scale, setScale] = useState(0.5)
   const flate = view.startsWith("kunde") ? "kunde" : "intern"
 
-  // Customer = portrait 1080×1920, internal = landscape 1920×1080.
-  const portrait = flate === "kunde"
+  // Customer = portrait 1080×1920, internal = landscape 1920×1080 — men brukeren
+  // kan overstyre for å forhåndsvise den andre retningen.
+  const flatePortrait = flate === "kunde"
+  const portrait = orientOverride ? orientOverride === "portrait" : flatePortrait
   const STAGE_W = portrait ? 1080 : 1920
   const STAGE_H = portrait ? 1920 : 1080
 
@@ -138,6 +144,15 @@ export function ScreenPreview({
             <Monitor className="w-3.5 h-3.5 shrink-0" /> <span className="truncate">Internskjerm <span className="hidden sm:inline">(bakrom)</span></span>
           </button>
         </div>
+        {/* Orientering — overstyrer den flate-utledede retningen så man ser innholdet begge veier */}
+        <div className="flex w-full sm:w-auto sm:inline-flex rounded-lg border border-zinc-200 p-0.5 bg-zinc-50">
+          <button onClick={() => setOrientOverride("portrait")} title="Vis stående (9:16)" className={`flex flex-1 sm:flex-none items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${portrait ? "bg-zinc-900 text-white" : "text-zinc-600"}`}>
+            <Smartphone className="w-3.5 h-3.5 shrink-0" /> Stående
+          </button>
+          <button onClick={() => setOrientOverride("landscape")} title="Vis liggende (16:9)" className={`flex flex-1 sm:flex-none items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${!portrait ? "bg-zinc-900 text-white" : "text-zinc-600"}`}>
+            <RectangleHorizontal className="w-3.5 h-3.5 shrink-0" /> Liggende
+          </button>
+        </div>
       </div>
 
       {/* Sub-view within the flate (intern only) */}
@@ -169,7 +184,7 @@ export function ScreenPreview({
           </div>
         )}
         {flate === "kunde" && (
-          <span className="text-xs text-zinc-400">Stående — tilbud/kundeavis i full skjerm.</span>
+          <span className="text-xs text-zinc-400">{portrait ? "Stående" : "Liggende"} — tilbud/kundeavis i full skjerm.</span>
         )}
         {view === "intern-oversikt" && (
           <div className="inline-flex rounded-lg border border-zinc-200 p-0.5 bg-zinc-50 ml-1">

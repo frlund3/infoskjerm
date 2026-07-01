@@ -7,8 +7,15 @@ import type { LiveItem } from "@/lib/content/live"
  * Råflott galleri-kort med WOW: Ken Burns-zoom, lys-sveip, svevende gnister,
  * animert prislapp (pop + puls) og glødende QR. Veksler mellom varer med myk
  * slide-inn.
- * - Kundeskjerm (portrait): bilde i full bredde med tekst/pris nederst.
- * - Bakrom (landscape): tekst + pris til venstre, produktbilde til høyre.
+ *
+ * To bevisste layouts, valgt av `portrait`:
+ * - Portrait (9:16, kundeskjerm): full-bleed produktbilde med navn/pris lagt
+ *   nederst, dots + QR under. Bildet flexer og fyller hele midten.
+ * - Landscape (16:9, bakrom/nyheter): horisontal SPLIT — navn + pris til
+ *   VENSTRE, produktbilde til HØYRE (~52cqw), dots + QR i en rad nederst.
+ *
+ * Alt måles i container-query-enheter (cqh/cqw) mot kortets egen boks, så det
+ * er oppløsnings-uavhengig og skarpt på alle skjermer.
  */
 
 type Theme = "catering" | "meny" | "ansattilbud"
@@ -49,22 +56,21 @@ export function GalleryCard({ item, qrUrl, portrait = false }: { item: LiveItem;
   const fg = item.textColor ?? "#fff"
   const accent = theme.accent
   const current = items[idx % Math.max(1, items.length)] ?? null
-  const pad = portrait ? 64 : 78
 
   const heading = (
     <div style={{ flex: "0 0 auto" }}>
-      <p style={{ margin: 0, color: accent, fontWeight: 800, letterSpacing: 5, fontSize: portrait ? 30 : 26, textTransform: "uppercase", animation: "grGalRise .7s ease-out both" }}>{theme.kicker}</p>
-      <h1 style={{ margin: "10px 0 0", fontSize: portrait ? 92 : 76, fontWeight: 900, lineHeight: 1.02, letterSpacing: -2, textShadow: "0 6px 30px rgba(0,0,0,.35)", animation: "grGalRise .8s ease-out both" }}>{item.title}</h1>
-      <div style={{ marginTop: 14, height: 6, width: portrait ? 160 : 130, borderRadius: 9999, background: accent, boxShadow: `0 0 18px ${accent}`, animation: "grGalPop .7s ease-out both" }} />
+      <p style={{ margin: 0, color: accent, fontWeight: 800, letterSpacing: "0.4cqh", fontSize: portrait ? "2.8cqh" : "2.4cqh", textTransform: "uppercase", animation: "grGalRise .7s ease-out both" }}>{theme.kicker}</p>
+      <h1 style={{ margin: "1cqh 0 0", fontSize: portrait ? "8cqh" : "7cqh", fontWeight: 900, lineHeight: 1.02, letterSpacing: "-0.2cqh", textShadow: "0 0.6cqh 3cqh rgba(0,0,0,.35)", animation: "grGalRise .8s ease-out both" }}>{item.title}</h1>
+      <div style={{ marginTop: "1.4cqh", height: "0.6cqh", width: portrait ? "14cqh" : "12cqh", borderRadius: 9999, background: accent, boxShadow: `0 0 1.8cqh ${accent}`, animation: "grGalPop .7s ease-out both" }} />
     </div>
   )
 
   // Price tag — hugs content, pops in then pulses, with a sliding sheen.
   const priceTag = (big: boolean) =>
     current && (current.price || current.priceInfo) ? (
-      <div style={{ position: "relative", overflow: "hidden", display: "inline-flex", alignSelf: "flex-start", width: "fit-content", alignItems: "baseline", gap: 12, background: accent, color: theme.ink, fontWeight: 900, padding: big ? "16px 34px" : "12px 28px", borderRadius: 16, boxShadow: "0 12px 40px rgba(0,0,0,.35)", animation: "grGalPop .6s cubic-bezier(.2,1.5,.4,1) both, grGalPulse 2.8s ease-in-out 1s infinite" }}>
-        {current.price && <span style={{ fontSize: big ? 76 : 58 }}>{current.price}</span>}
-        {current.priceInfo && <span style={{ fontSize: big ? 32 : 28, fontWeight: 800, opacity: 0.85 }}>{current.priceInfo}</span>}
+      <div style={{ position: "relative", overflow: "hidden", display: "inline-flex", alignSelf: "flex-start", width: "fit-content", alignItems: "baseline", gap: "1.2cqh", background: accent, color: theme.ink, fontWeight: 900, padding: big ? "1.5cqh 3.2cqh" : "1.1cqh 2.6cqh", borderRadius: "1.6cqh", boxShadow: "0 1.2cqh 4cqh rgba(0,0,0,.35)", animation: "grGalPop .6s cubic-bezier(.2,1.5,.4,1) both, grGalPulse 2.8s ease-in-out 1s infinite" }}>
+        {current.price && <span style={{ fontSize: big ? "7cqh" : "5.4cqh" }}>{current.price}</span>}
+        {current.priceInfo && <span style={{ fontSize: big ? "3cqh" : "2.6cqh", fontWeight: 800, opacity: 0.85 }}>{current.priceInfo}</span>}
         <span style={{ position: "absolute", top: 0, bottom: 0, left: 0, width: "45%", background: "linear-gradient(90deg,transparent,rgba(255,255,255,.6),transparent)", animation: "grGalSheen 3.2s ease-in-out 1.2s infinite", pointerEvents: "none" }} />
       </div>
     ) : null
@@ -73,22 +79,22 @@ export function GalleryCard({ item, qrUrl, portrait = false }: { item: LiveItem;
     // eslint-disable-next-line @next/next/no-img-element
     <img src={current.imageUrl} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", animation: "grGalKen 5s ease-out both" }} />
   ) : (
-    <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 130, opacity: 0.5 }}>🍽️</div>
+    <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "13cqh", opacity: 0.5 }}>🍽️</div>
   )
 
   // Shine bar that sweeps across an image box.
   const shine = (
-    <span style={{ position: "absolute", top: 0, bottom: 0, left: 0, width: 200, background: "linear-gradient(90deg,transparent,rgba(255,255,255,.22),transparent)", animation: "grGalShine 6s linear 1s infinite", pointerEvents: "none" }} />
+    <span style={{ position: "absolute", top: 0, bottom: 0, left: 0, width: "18cqh", background: "linear-gradient(90deg,transparent,rgba(255,255,255,.22),transparent)", animation: "grGalShine 6s linear 1s infinite", pointerEvents: "none" }} />
   )
 
   // Portrait (kundeskjerm): full-bleed image with name/price overlaid at the bottom.
   const featuredFull = current && (
-    <div key={idx} style={{ position: "relative", flex: "1 1 auto", minHeight: 0, borderRadius: 28, overflow: "hidden", boxShadow: "0 24px 70px rgba(0,0,0,.45)", background: "rgba(255,255,255,.06)", animation: "grGalIn .8s cubic-bezier(.16,1,.3,1) both" }}>
+    <div key={idx} style={{ position: "relative", flex: "1 1 auto", minHeight: 0, borderRadius: "2.4cqh", overflow: "hidden", boxShadow: "0 2.2cqh 6cqh rgba(0,0,0,.45)", background: "rgba(255,255,255,.06)", animation: "grGalIn .8s cubic-bezier(.16,1,.3,1) both" }}>
       {kenImg}
       {shine}
       <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,.82) 0%, rgba(0,0,0,.12) 46%, transparent 70%)" }} />
-      <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, padding: 44, display: "flex", flexDirection: "column", gap: 18 }}>
-        <h2 style={{ margin: 0, fontSize: 66, fontWeight: 900, lineHeight: 1.05, textShadow: "0 4px 20px rgba(0,0,0,.5)", animation: "grGalRise .7s ease-out .1s both" }}>{current.name}</h2>
+      <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, padding: "4cqh 3.8cqh", display: "flex", flexDirection: "column", gap: "1.6cqh" }}>
+        <h2 style={{ margin: 0, fontSize: "6cqh", fontWeight: 900, lineHeight: 1.05, textShadow: "0 0.4cqh 2cqh rgba(0,0,0,.5)", animation: "grGalRise .7s ease-out .1s both" }}>{current.name}</h2>
         {priceTag(false)}
       </div>
     </div>
@@ -96,12 +102,12 @@ export function GalleryCard({ item, qrUrl, portrait = false }: { item: LiveItem;
 
   // Landscape (bakrom): text + price LEFT, product image RIGHT.
   const featuredSplit = current && (
-    <div key={idx} style={{ flex: "1 1 auto", minHeight: 0, display: "flex", gap: 54, alignItems: "stretch" }}>
-      <div style={{ flex: "1 1 auto", minWidth: 0, display: "flex", flexDirection: "column", justifyContent: "center", gap: 30 }}>
-        <h2 style={{ margin: 0, fontSize: 80, fontWeight: 900, lineHeight: 1.04, letterSpacing: -1, textShadow: "0 4px 20px rgba(0,0,0,.35)", animation: "grGalRise .7s ease-out .05s both" }}>{current.name}</h2>
+    <div key={idx} style={{ flex: "1 1 auto", minHeight: 0, display: "flex", gap: "3.4cqw", alignItems: "stretch" }}>
+      <div style={{ flex: "1 1 auto", minWidth: 0, display: "flex", flexDirection: "column", justifyContent: "center", gap: "2.8cqh" }}>
+        <h2 style={{ margin: 0, fontSize: "7.4cqh", fontWeight: 900, lineHeight: 1.04, letterSpacing: "-0.1cqh", textShadow: "0 0.4cqh 2cqh rgba(0,0,0,.35)", animation: "grGalRise .7s ease-out .05s both" }}>{current.name}</h2>
         {priceTag(true)}
       </div>
-      <div style={{ position: "relative", flex: "0 0 52%", minWidth: 0, borderRadius: 28, overflow: "hidden", boxShadow: "0 24px 70px rgba(0,0,0,.45)", background: "rgba(255,255,255,.06)", animation: "grGalIn .8s cubic-bezier(.16,1,.3,1) both" }}>
+      <div style={{ position: "relative", flex: "0 0 52cqw", minWidth: 0, borderRadius: "2.4cqh", overflow: "hidden", boxShadow: "0 2.2cqh 6cqh rgba(0,0,0,.45)", background: "rgba(255,255,255,.06)", animation: "grGalIn .8s cubic-bezier(.16,1,.3,1) both" }}>
         {kenImg}
         {shine}
       </div>
@@ -109,52 +115,52 @@ export function GalleryCard({ item, qrUrl, portrait = false }: { item: LiveItem;
   )
 
   const dots = items.length > 1 && (
-    <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+    <div style={{ display: "flex", gap: "1.2cqh", alignItems: "center" }}>
       {items.map((_, i) => (
-        <span key={i} style={{ width: i === idx ? 46 : 14, height: 14, borderRadius: 9999, background: i === idx ? accent : "rgba(255,255,255,.3)", boxShadow: i === idx ? `0 0 16px ${accent}` : "none", transition: "all .4s cubic-bezier(.16,1,.3,1)" }} />
+        <span key={i} style={{ width: i === idx ? "4.6cqh" : "1.4cqh", height: "1.4cqh", borderRadius: 9999, background: i === idx ? accent : "rgba(255,255,255,.3)", boxShadow: i === idx ? `0 0 1.6cqh ${accent}` : "none", transition: "all .4s cubic-bezier(.16,1,.3,1)" }} />
       ))}
     </div>
   )
 
   const qrPanel = qrUrl && (
-    <div style={{ display: "inline-flex", alignItems: "center", gap: 22, background: "rgba(255,255,255,.08)", borderRadius: 22, padding: portrait ? "20px 28px" : "16px 22px" }}>
-      <div style={{ background: "#fff", padding: 12, borderRadius: 14, animation: "grGalGlow 2.6s ease-in-out infinite" }}>
+    <div style={{ display: "inline-flex", alignItems: "center", gap: "2.2cqh", background: "rgba(255,255,255,.08)", borderRadius: "2.2cqh", padding: portrait ? "2cqh 2.8cqh" : "1.6cqh 2.2cqh" }}>
+      <div style={{ background: "#fff", padding: "1.2cqh", borderRadius: "1.4cqh", animation: "grGalGlow 2.6s ease-in-out infinite" }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={qrUrl} alt="QR-kode" width={portrait ? 170 : 130} height={portrait ? 170 : 130} style={{ display: "block" }} />
+        <img src={qrUrl} alt="QR-kode" style={{ display: "block", width: portrait ? "16cqh" : "14cqh", height: portrait ? "16cqh" : "14cqh" }} />
       </div>
-      <div style={{ fontSize: portrait ? 38 : 32, fontWeight: 900, color: accent, maxWidth: 300, lineHeight: 1.1 }}>{g?.qrLabel || "Skann her"}</div>
+      <div style={{ fontSize: portrait ? "3.6cqh" : "3cqh", fontWeight: 900, color: accent, maxWidth: "28cqh", lineHeight: 1.1 }}>{g?.qrLabel || "Skann her"}</div>
     </div>
   )
 
   // Drifting sparkles in the theme accent for atmosphere.
   const sparkles = ([["8%", "20%", 0], ["90%", "16%", 1.1], ["14%", "82%", 2], ["86%", "78%", 0.6], ["50%", "10%", 1.6]] as const).map(([left, top, d], i) => (
-    <span key={i} style={{ position: "absolute", left, top, fontSize: 40, color: accent, opacity: 0.7, animation: `grGalFloat ${4 + (i % 3)}s ease-in-out ${d}s infinite`, pointerEvents: "none", textShadow: `0 0 16px ${accent}` }}>{theme.spark}</span>
+    <span key={i} style={{ position: "absolute", left, top, fontSize: "4cqh", color: accent, opacity: 0.7, animation: `grGalFloat ${4 + (i % 3)}s ease-in-out ${d}s infinite`, pointerEvents: "none", textShadow: `0 0 1.6cqh ${accent}` }}>{theme.spark}</span>
   ))
 
   return (
-    <div style={{ position: "absolute", inset: 0, overflow: "hidden", color: fg, background: item.bgColor ?? theme.bg, fontFamily: "Arial, Helvetica, sans-serif", ["--gal-accent" as string]: accent }}>
+    <div style={{ position: "absolute", inset: 0, containerType: "size", overflow: "hidden", color: fg, background: item.bgColor ?? theme.bg, fontFamily: "Arial, Helvetica, sans-serif", ["--gal-accent" as string]: accent }}>
       <style>{KEYFRAMES}</style>
       {/* Drifting glow blobs */}
-      <div style={{ position: "absolute", top: -160, right: -120, width: 540, height: 540, borderRadius: "50%", background: `radial-gradient(circle, ${accent}22, transparent 70%)`, animation: "grGalDrift 12s ease-in-out infinite" }} />
-      <div style={{ position: "absolute", bottom: -200, left: -140, width: 560, height: 560, borderRadius: "50%", background: "rgba(0,0,0,.18)", animation: "grGalDrift 16s ease-in-out 2s infinite" }} />
+      <div style={{ position: "absolute", top: "-16cqh", right: "-12cqh", width: "48cqh", height: "48cqh", borderRadius: "50%", background: `radial-gradient(circle, ${accent}22, transparent 70%)`, animation: "grGalDrift 12s ease-in-out infinite" }} />
+      <div style={{ position: "absolute", bottom: "-20cqh", left: "-14cqh", width: "50cqh", height: "50cqh", borderRadius: "50%", background: "rgba(0,0,0,.18)", animation: "grGalDrift 16s ease-in-out 2s infinite" }} />
       {/* Big diagonal light sweep across the whole card */}
       <div style={{ position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none" }}>
-        <span style={{ position: "absolute", top: 0, bottom: 0, left: 0, width: 260, background: "linear-gradient(90deg,transparent,rgba(255,255,255,.10),transparent)", animation: "grGalShine 9s linear infinite" }} />
+        <span style={{ position: "absolute", top: 0, bottom: 0, left: 0, width: "24cqh", background: "linear-gradient(90deg,transparent,rgba(255,255,255,.10),transparent)", animation: "grGalShine 9s linear infinite" }} />
       </div>
       {sparkles}
 
       {portrait ? (
-        <div style={{ position: "absolute", inset: 0, padding: pad, display: "flex", flexDirection: "column", gap: 30, boxSizing: "border-box" }}>
+        <div style={{ position: "absolute", inset: 0, padding: "6cqh 5.5cqw", display: "flex", flexDirection: "column", gap: "3cqh", boxSizing: "border-box" }}>
           {heading}
           {featuredFull}
           <div style={{ display: "flex", justifyContent: "center" }}>{dots}</div>
           {qrUrl && <div style={{ display: "flex", justifyContent: "center" }}>{qrPanel}</div>}
         </div>
       ) : (
-        <div style={{ position: "absolute", inset: 0, padding: pad, display: "flex", flexDirection: "column", gap: 32, boxSizing: "border-box" }}>
+        <div style={{ position: "absolute", inset: 0, padding: "8cqh 4.5cqw", display: "flex", flexDirection: "column", gap: "3.2cqh", boxSizing: "border-box" }}>
           {heading}
           {featuredSplit}
-          <div style={{ flex: "0 0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 24 }}>
+          <div style={{ flex: "0 0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "2.4cqh" }}>
             <div>{dots}</div>
             {qrUrl && qrPanel}
           </div>
