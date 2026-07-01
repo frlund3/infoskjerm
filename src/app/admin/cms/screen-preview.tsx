@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useTransition } from "react"
 import { Monitor, ChevronDown, RefreshCw, Camera, Wifi, WifiOff, Megaphone } from "lucide-react"
 import type { StoreScreen, ScreenSync } from "@/lib/xibo/screens"
 import { pushToScreen, requestNewScreenshot } from "./actions"
+import { useTenantConfig } from "@/components/admin/tenant-config-provider"
 
 /**
  * Live, in-app preview of exactly what plays on a store's screen — composed from
@@ -29,16 +30,7 @@ export interface PreviewStore {
 const STRIP_H = 150
 
 // Customer screens are always portrait (1080×1920); internal/back-room landscape.
-const AVDELINGER = [
-  { key: "felles", label: "Hele butikken" },
-  { key: "frukt", label: "Frukt & grønt" },
-  { key: "ferskvare", label: "Ferskvare" },
-  { key: "frys", label: "Frys" },
-  { key: "bakeri", label: "Bakeri" },
-  { key: "kjott-fisk", label: "Kjøtt & fisk" },
-  { key: "kasse", label: "Kasse" },
-  { key: "inngang", label: "Inngang" },
-]
+// Avdelinger lastes per tenant (bil vs mat) via useTenantConfig().
 
 const SYNC_BADGE: Record<ScreenSync, { label: string; cls: string }> = {
   ok: { label: "Oppdatert", cls: "bg-emerald-50 text-emerald-700 border-emerald-200" },
@@ -54,6 +46,7 @@ export function ScreenPreview({
   stores: PreviewStore[]
   screens: Record<string, StoreScreen[]>
 }) {
+  const { avdelinger: AVDELINGER } = useTenantConfig()
   const [storeId, setStoreId] = useState(stores[0]?.id ?? "")
   const [avdeling, setAvdeling] = useState("felles")
   const [view, setView] = useState<View>("intern-innhold")

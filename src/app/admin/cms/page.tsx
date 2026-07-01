@@ -7,6 +7,7 @@ import { ScreenPreview, type PreviewStore } from "./screen-preview"
 import { InsightPanel } from "./insight-panel"
 import { ContentStatus, type ContentStatusCounts } from "./content-status"
 import { RefreshKpiButton } from "./refresh-kpi-button"
+import { getTenantConfig } from "@/lib/tenant/config"
 
 /**
  * "Skjermsystem" — the CMS user's window into what each store's screen is
@@ -19,7 +20,8 @@ export const dynamic = "force-dynamic"
 const VIEW_ROLES = ["super_admin", "chain_manager", "area_manager", "store_manager"] as const
 
 export default async function CmsDashboardPage() {
-  const { supabase } = await requireRole([...VIEW_ROLES])
+  const { supabase, tenantId } = await requireRole([...VIEW_ROLES])
+  const { unitLabel, unitLabelPlural } = await getTenantConfig(supabase, tenantId)
 
   const { data: stores } = await supabase
     .from("stores")
@@ -71,12 +73,12 @@ export default async function CmsDashboardPage() {
     <div className="flex flex-col flex-1">
       <Topbar
         title="Skjermsystem"
-        subtitle="Forhåndsvis og styr hva som vises på hver butikks skjerm"
+        subtitle={`Forhåndsvis og styr hva som vises på hver ${unitLabel.toLowerCase()}s skjerm`}
         actions={<RefreshKpiButton />}
       />
       <div className="flex-1 p-4 sm:p-6 max-w-5xl">
         {previewStores.length === 0 ? (
-          <p className="text-sm text-zinc-500">Ingen butikker er satt opp ennå.</p>
+          <p className="text-sm text-zinc-500">{`Ingen ${unitLabelPlural.toLowerCase()} er satt opp ennå.`}</p>
         ) : (
           <div className="space-y-6">
             <ContentStatus counts={counts} />

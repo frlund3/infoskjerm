@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { UserPlus, X, Loader2, Store as StoreIcon } from "lucide-react"
 import { inviteUser } from "./actions"
+import { useTenantConfig } from "@/components/admin/tenant-config-provider"
 
 import { ROLE_LABELS, ROLE_DESCRIPTIONS } from "@/lib/roles"
 
@@ -23,6 +24,7 @@ const STORE_SCOPED: InviteRole[] = ["area_manager", "store_manager"]
 const SINGLE_STORE: InviteRole[] = ["store_manager"]
 
 export function InviteUserForm({ stores }: { stores: Store[] }) {
+  const { unitLabel, unitLabelPlural } = useTenantConfig()
   const [open, setOpen] = useState(false)
   const [email, setEmail] = useState("")
   const [role, setRole] = useState<InviteRole>("store_manager")
@@ -62,7 +64,7 @@ export function InviteUserForm({ stores }: { stores: Store[] }) {
     e.preventDefault()
     if (!email.trim()) return
     if (needsStores && storeIds.length === 0) {
-      setError("Velg minst én butikk for denne rollen.")
+      setError(`Velg minst én ${unitLabel.toLowerCase()} for denne rollen.`)
       return
     }
     setLoading(true)
@@ -153,13 +155,13 @@ export function InviteUserForm({ stores }: { stores: Store[] }) {
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <label className="block text-xs font-medium text-zinc-600">
-                    {singleStore ? "Velg butikk" : "Velg butikker"}
+                    {singleStore ? `Velg ${unitLabel.toLowerCase()}` : `Velg ${unitLabelPlural.toLowerCase()}`}
                   </label>
                   <span className="text-[11px] text-zinc-400">{storeIds.length} valgt</span>
                 </div>
                 <div className="max-h-44 overflow-y-auto rounded-xl border border-zinc-200 divide-y divide-zinc-100">
                   {stores.length === 0 ? (
-                    <p className="text-xs text-zinc-400 px-3 py-3">Ingen butikker funnet.</p>
+                    <p className="text-xs text-zinc-400 px-3 py-3">{`Ingen ${unitLabelPlural.toLowerCase()} funnet.`}</p>
                   ) : (
                     stores.map((s) => {
                       const checked = storeIds.includes(s.id)

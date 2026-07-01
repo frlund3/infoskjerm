@@ -4,6 +4,8 @@ import { PwaManager } from "@/components/pwa/pwa-manager"
 import { QuickCapture } from "@/components/pwa/quick-capture"
 import { BiometricLock } from "@/components/pwa/biometric-lock"
 import { ChainThemeProvider } from "@/components/admin/chain-theme-provider"
+import { TenantConfigProvider } from "@/components/admin/tenant-config-provider"
+import { getTenantConfig } from "@/lib/tenant/config"
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import { Toaster } from "sonner"
@@ -16,13 +18,14 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   const { data: profile } = await supabase
     .from("users")
-    .select("full_name, role, chains(name, color, brand_light, brand_fg)")
+    .select("full_name, role, tenant_id, chains(name, color, brand_light, brand_fg)")
     .eq("id", user.id)
     .single()
 
   const role = profile?.role ?? "store_employee"
   const chain = (profile as unknown as { chains: { name: string; color: string; brand_light: string | null; brand_fg: string | null } | null } | null)?.chains ?? null
   const chainKey = role === "super_admin" ? "super_admin" : (chain?.name ?? "SPAR")
+  const tenantConfig = await getTenantConfig(supabase, profile?.tenant_id ?? null)
 
   return (
     <ChainThemeProvider
@@ -31,6 +34,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       brandLight={chain?.brand_light ?? undefined}
       brandFg={chain?.brand_fg ?? undefined}
     >
+      <TenantConfigProvider config={tenantConfig}>
       <div className="min-h-screen bg-[var(--background)]">
         {(() => {
           const navUser = {
@@ -57,6 +61,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       <QuickCapture />
       <BiometricLock />
       <Toaster richColors position="bottom-right" />
+      </TenantConfigProvider>
     </ChainThemeProvider>
   )
 }

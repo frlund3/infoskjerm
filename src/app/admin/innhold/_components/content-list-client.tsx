@@ -4,6 +4,7 @@ import { useState, useMemo } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { deleteContent, duplicateContent, bulkSetStatus, bulkDeleteContent, bulkShiftPeriod } from "../actions"
+import { useTenantConfig } from "@/components/admin/tenant-config-provider"
 import { toast } from "sonner"
 import {
   Newspaper, Trophy, ImageIcon, Briefcase, PartyPopper, BarChart3, Megaphone, Globe, Store as StoreIcon, Tag,
@@ -26,16 +27,7 @@ export interface ContentRow {
   avdeling?: string | null
 }
 
-const AVDELINGER: { key: string; label: string }[] = [
-  { key: "felles", label: "Hele butikken" },
-  { key: "frukt", label: "Frukt & grønt" },
-  { key: "ferskvare", label: "Ferskvare" },
-  { key: "frys", label: "Frys" },
-  { key: "bakeri", label: "Bakeri" },
-  { key: "kjott-fisk", label: "Kjøtt & fisk" },
-  { key: "kasse", label: "Kasse" },
-  { key: "inngang", label: "Inngang" },
-]
+// Avdelinger lastes per tenant (bil vs mat) via useTenantConfig().
 
 interface Option { id: string; name: string }
 
@@ -76,6 +68,7 @@ const PAGE_SIZE = 12
 const selectCls = "w-full sm:w-auto text-xs bg-white border border-zinc-200 rounded-lg px-2.5 py-2.5 sm:py-2 text-zinc-600 focus:outline-none focus:ring-1 focus:ring-zinc-300"
 
 export function ContentListClient({ items, stores, tags, newHref = "/admin/innhold/ny", editBase = "/admin/innhold" }: { items: ContentRow[]; stores: Option[]; tags: Option[]; newHref?: string; editBase?: string }) {
+  const { avdelinger: AVDELINGER } = useTenantConfig()
   const router = useRouter()
   const [busyId, setBusyId] = useState<string | null>(null)
   const [menuId, setMenuId] = useState<string | null>(null)

@@ -10,17 +10,9 @@ import { OfferCard } from "@/app/widget/tilbud/offer-card"
 import { MediaUploader } from "@/components/admin/media-uploader"
 import { bulkLookupSpar, bulkCreateOffers, type BulkShared } from "../bulk-actions"
 import type { StoreOption, TagOption } from "../../innhold/_components/content-form"
+import { useTenantConfig } from "@/components/admin/tenant-config-provider"
 
-const AVDELINGER: { key: string; label: string }[] = [
-  { key: "felles", label: "Hele butikken" },
-  { key: "frukt", label: "Frukt & grønt" },
-  { key: "ferskvare", label: "Ferskvare" },
-  { key: "frys", label: "Frys" },
-  { key: "bakeri", label: "Bakeri" },
-  { key: "kjott-fisk", label: "Kjøtt & fisk" },
-  { key: "kasse", label: "Kasse" },
-  { key: "inngang", label: "Inngang" },
-]
+// Avdelinger lastes per tenant (bil vs mat) via useTenantConfig().
 const BADGES = ["", "TILBUD", "KNALLPRIS", "NYHET", "SUPERPRIS", "KAMPANJE"]
 const OFFER_GRID: { k: keyof OfferFields; label: string; ph: string }[] = [
   { k: "pris", label: "Pris", ph: "39,90" },
@@ -124,6 +116,7 @@ function TargetPicker({ value, onChange, stores, tags, chosen = true, canTargetA
 
 export function BulkImport({ stores, tags, initialLinks = "", canTargetAll = true }: { stores: StoreOption[]; tags: TagOption[]; initialLinks?: string; canTargetAll?: boolean }) {
   const router = useRouter()
+  const { avdelinger: AVDELINGER } = useTenantConfig()
   const [raw, setRaw] = useState(initialLinks)
   const [rows, setRows] = useState<Row[]>([])
   const [loading, setLoading] = useState(false)

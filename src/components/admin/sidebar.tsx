@@ -7,6 +7,7 @@ import {
   Store, Monitor, Tv, Users, Settings, ChevronRight, LogOut, Newspaper, Megaphone, ScrollText, Ticket, QrCode,
 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
+import { useTenantConfig } from "./tenant-config-provider"
 
 type UserRole = "super_admin" | "chain_manager" | "area_manager" | "store_manager" | "store_employee"
 
@@ -85,6 +86,14 @@ export function Sidebar({ user }: SidebarProps) {
   const pathname = usePathname()
   const router = useRouter()
   const role = user.role as UserRole
+  const { unitLabelPlural } = useTenantConfig()
+  // Bytt «Butikker» → tenantens substantiv (f.eks. «Forhandlere»).
+  const relabel = (s: string) => (s === "Butikker" ? unitLabelPlural : s)
+  const groups = navGroups.map((g) => ({
+    ...g,
+    label: relabel(g.label),
+    items: g.items.map((i) => ({ ...i, label: relabel(i.label) })),
+  }))
 
   const handleLogout = async () => {
     const supabase = createClient()
@@ -111,7 +120,7 @@ export function Sidebar({ user }: SidebarProps) {
       </div>
 
       <nav className="flex-1 overflow-y-auto py-3 px-2">
-        {navGroups.map((group) => {
+        {groups.map((group) => {
           const visibleItems = group.items.filter((item) => item.roles.includes(role))
           if (visibleItems.length === 0) return null
 
