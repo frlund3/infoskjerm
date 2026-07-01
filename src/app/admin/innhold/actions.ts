@@ -5,6 +5,8 @@ import { logAudit } from "@/lib/admin/audit"
 import { revalidatePath } from "next/cache"
 import { audienceForType, type Audience } from "./audience"
 import type { OfferFields, CampaignFields } from "@/lib/content/live"
+import { isDeckUrl } from "@/lib/content/deck"
+import { triggerDeckRender } from "@/lib/content/trigger-render"
 import type { Json } from "@/types/database"
 
 const AUTHOR_ROLES = ["super_admin", "chain_manager", "area_manager", "store_manager", "store_employee"] as const
@@ -139,15 +141,29 @@ export async function saveContent(input: ContentInput, id?: string): Promise<Sav
 
   const body = buildBody(input)
   const status = input.publish ? "live" : "draft"
+  const deckUrl = (input.imageUrls?.filter(Boolean)[0]) ?? input.imageUrl ?? null
+  const isDeck = isDeckUrl(deckUrl)
 
   let contentId = id
   if (id) {
+    // Bevar ferdig-renderte deck-sider (body.pages/pagesFor) når kildefila er
+    // uendret, så en vanlig redigering ikke sletter sidene som render-jobben la
+    // inn (buildBody bygger body fra bunnen og kjenner dem ikke).
+    let bodyToSave = body
+    if (isDeck) {
+      const { data: existing } = await supabase
+        .from("content_items").select("body").eq("id", id).eq("tenant_id", tenantId).maybeSingle()
+      const eb = (existing?.body ?? {}) as Record<string, unknown>
+      if (Array.isArray(eb.pages) && eb.pages.length > 0 && eb.pagesFor === deckUrl) {
+        bodyToSave = { ...(body as Record<string, unknown>), pages: eb.pages, pagesFor: eb.pagesFor } as Json
+      }
+    }
     const { error } = await supabase
       .from("content_items")
       .update({
         title: input.title.trim(),
         type: input.type,
-        body,
+        body: bodyToSave,
         status,
         valid_from: input.validFrom || null,
         valid_to: input.validTo || null,
@@ -203,6 +219,11 @@ export async function saveContent(input: ContentInput, id?: string): Promise<Sav
     summary: `${id ? "Endret" : "Opprettet"}${input.publish ? " og publiserte" : ""} «${input.title.trim() || "innhold"}»`,
     metadata: { type: input.type, audience: input.audience ?? audienceForType(input.type), status },
   })
+
+  // Publisert deck (PowerPoint/PDF) → be render-jobben lage sidebilder nå, så det
+  // vises på skjerm innen minutter (best-effort; daglig cron er sikkerhetsnettet).
+  if (input.publish && isDeck) await triggerDeckRender()
+
   revalidatePath("/admin/innhold")
   return { ok: true, id: contentId }
 }

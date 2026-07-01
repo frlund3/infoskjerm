@@ -304,7 +304,7 @@ function SlideCard({ item }: { item: LiveItem }) {
       </div>
     )
   }
-  if (item.isPdf && item.imageUrl) return <PdfFlyer url={item.imageUrl} title={item.title} pages={item.pages} />
+  if ((item.isPdf || item.isPpt) && item.imageUrl) return <PdfFlyer url={item.imageUrl} title={item.title} pages={item.pages} ppt={item.isPpt} />
   return <PosterCard item={item} />
 }
 

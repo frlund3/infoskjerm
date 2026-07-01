@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { RichTextEditor } from "@/components/admin/rich-text-editor"
 import { MediaUploader } from "@/components/admin/media-uploader"
+import { isDeckUrl, isPptUrl } from "@/lib/content/deck"
 import { Button } from "@/components/ui/button"
 import { saveContent, type ContentType, type TargetMode, type ImageMode, type Audience, type InvitationFields, type GalleryFields, type GalleryItem } from "../actions"
 import { lookupSparProduct } from "../spar-actions"
@@ -56,6 +57,8 @@ export interface ContentInitial {
   bodyHtml: string
   imageUrl: string | null
   imageUrls?: string[]
+  /** Pre-rendered deck page images (kundeavis-PDF/PowerPoint) — for a true preview. */
+  pages?: string[]
   imageMode?: ImageMode
   targetMode: TargetMode
   storeIds: string[]
@@ -306,10 +309,10 @@ export function ContentForm({ stores, tags, initial, audience = "intern", defaul
     : ({ stats: 12, job: 20, competition: 16, invitation: 18, gallery: 30 } as Record<string, number>)[type] ?? 16
   // Tilbud/annonser må alltid ha en gyldig periode (fra + til).
   const periodRequired = type === "slide" && !isKlubb
-  const isPdfUrl = (imageUrls[0] ?? "").toLowerCase().split("?")[0].endsWith(".pdf")
+  const isDeck = isDeckUrl(imageUrls[0])
   const MAX_IMAGES = 4
   const isMulti = imageUrls.length >= 2
-  const canAddMore = !isPdfUrl && imageUrls.length < MAX_IMAGES
+  const canAddMore = !isDeck && imageUrls.length < MAX_IMAGES
   const addImages = (urls: string[]) => setImageUrls((prev) => [...prev, ...urls].slice(0, MAX_IMAGES))
   const removeImage = (url: string) => setImageUrls((prev) => prev.filter((u) => u !== url))
 
@@ -402,6 +405,9 @@ export function ContentForm({ stores, tags, initial, audience = "intern", defaul
     bodyHtml: usesBody ? bodyHtml : "",
     imageUrl: imageUrls[0] ?? null,
     imageUrls,
+    // Vis ferdig-renderte deck-sider i previewen så lenge kildefila er den samme
+    // (bytter redaktøren fil, forkastes de gamle sidene — de rendres på nytt).
+    pages: isDeck && initial?.pages && initial.pages.length > 0 && imageUrls[0] === (initial.imageUrls?.[0] ?? initial.imageUrl) ? initial.pages : [],
     imageMode: (type === "slide" || isMulti ? "plakat" : imageMode) as ImageMode,
     offer: isOfferStruktur ? offer : null,
     campaign: isCampaign ? campaign : null,
@@ -607,19 +613,20 @@ export function ContentForm({ stores, tags, initial, audience = "intern", defaul
 
           {usesImage && (
             <div>
-              <label className="block text-xs font-semibold text-zinc-600 mb-1.5">Bilde / PDF</label>
+              <label className="block text-xs font-semibold text-zinc-600 mb-1.5">Bilde / PDF / PowerPoint</label>
               {imageUrls.length > 0 ? (
                 <div className="space-y-3">
                   <div className="grid grid-cols-2 gap-2 max-w-md">
                     {imageUrls.map((url) => {
                       const lower = url.toLowerCase().split("?")[0]
                       const isPdf = lower.endsWith(".pdf")
+                      const isPpt = lower.endsWith(".pptx") || lower.endsWith(".ppt")
                       const isVid = /\.(mp4|webm|mov|m4v)$/.test(lower)
                       return (
                         <div key={url} className="relative rounded-xl overflow-hidden border border-zinc-200 group">
-                          {isPdf ? (
+                          {isPdf || isPpt ? (
                             <div className="w-full h-36 flex items-center justify-center bg-zinc-900 text-white gap-2 text-sm font-semibold">
-                              <FileText className="w-5 h-5" /> PDF
+                              <FileText className="w-5 h-5" /> {isPpt ? "PowerPoint" : "PDF"}
                             </div>
                           ) : isVid ? (
                             // eslint-disable-next-line jsx-a11y/media-has-caption
@@ -637,7 +644,7 @@ export function ContentForm({ stores, tags, initial, audience = "intern", defaul
                   </div>
 
                   {/* Visningsvalg: kun relevant for ett enkelt bilde. */}
-                  {!isPdfUrl && !isMulti && type !== "slide" && (
+                  {!isDeck && !isMulti && type !== "slide" && (
                     <div>
                       <label className="block text-[10px] text-zinc-400 mb-1">Bildevisning</label>
                       <div className="flex gap-1.5">
@@ -652,7 +659,7 @@ export function ContentForm({ stores, tags, initial, audience = "intern", defaul
                     </div>
                   )}
                   {isMulti && <p className="text-[10px] text-zinc-400">{imageUrls.length} bilder vises som <strong>helside, side om side</strong> — uten dempet bakgrunn.</p>}
-                  {isPdfUrl && <p className="text-[10px] text-zinc-400">PDF vises i full størrelse (helside) på skjermen.</p>}
+                  {isDeck && <p className="text-[10px] text-zinc-400">{isPptUrl(imageUrls[0]) ? "PowerPoint" : "PDF"} vises i full størrelse (helside) på skjermen. <strong className="text-amber-600">Kun de første 6 sidene vises på skjermene.</strong></p>}
 
                   {canAddMore && (
                     <div className="max-w-md">
@@ -661,7 +668,10 @@ export function ContentForm({ stores, tags, initial, audience = "intern", defaul
                   )}
                 </div>
               ) : (
-                <MediaUploader maxFiles={MAX_IMAGES} accept={["image/jpeg", "image/png", "image/webp", "image/gif", "image/avif", "application/pdf", "video/mp4", "video/webm", "video/quicktime"]} onUpload={(files) => addImages(files.map((f) => f.url))} />
+                <div className="space-y-2">
+                  <MediaUploader maxFiles={MAX_IMAGES} accept={["image/jpeg", "image/png", "image/webp", "image/gif", "image/avif", "application/pdf", "application/vnd.openxmlformats-officedocument.presentationml.presentation", "application/vnd.ms-powerpoint", "video/mp4", "video/webm", "video/quicktime"]} onUpload={(files) => addImages(files.map((f) => f.url))} />
+                  <p className="text-[10px] text-zinc-400">Laster du opp PDF eller PowerPoint, vises <strong className="text-amber-600">kun de første 6 sidene</strong> på skjermene.</p>
+                </div>
               )}
             </div>
           )}

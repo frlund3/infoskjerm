@@ -1,5 +1,6 @@
 import QRCode from "qrcode"
 import { htmlToBlocks, type LiveItem } from "@/lib/content/live"
+import { isPdfUrl, isPptUrl } from "@/lib/content/deck"
 import { CampaignCard } from "@/app/widget/kampanje/campaign-card"
 import { getBaseUrl } from "@/lib/base-url"
 import { TilbudRotator } from "@/app/widget/tilbud/tilbud-rotator"
@@ -25,6 +26,8 @@ interface PreviewData {
   bodyHtml?: string
   imageUrl?: string | null
   imageUrls?: string[]
+  /** Pre-rendered deck page images (kundeavis-PDF/PowerPoint) — vist 1:1 som på skjerm. */
+  pages?: string[]
   imageMode?: "plakat" | "bakgrunn" | "liten"
   offer?: LiveItem["offer"]
   campaign?: LiveItem["campaign"]
@@ -68,10 +71,11 @@ export default async function PreviewWidgetPage({ searchParams }: { searchParams
     imageUrl: firstImage,
     imageUrls,
     imageMode: data.imageMode === "plakat" ? "plakat" : data.imageMode === "liten" ? "liten" : "bakgrunn",
-    isPdf: (firstImage ?? "").toLowerCase().split("?")[0].endsWith(".pdf"),
+    isPdf: isPdfUrl(firstImage),
+    isPpt: isPptUrl(firstImage),
     isVideo: /\.(mp4|webm|mov|m4v)$/.test((firstImage ?? "").toLowerCase().split("?")[0]),
     durationSeconds: null,
-    pages: [],
+    pages: Array.isArray(data.pages) ? data.pages.filter(Boolean) : [],
     validFrom: data.validFrom || null,
     validTo: data.validTo || null,
     author: "",

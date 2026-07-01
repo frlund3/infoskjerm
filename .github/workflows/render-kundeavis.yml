@@ -1,12 +1,18 @@
-name: Render kundeavis (PDF → bilder)
+name: Render decks (kundeavis-PDF + PowerPoint → bilder)
 
 # Vercel-bundleren ødelegger native canvas + pdf-worker, så server-renderingen
 # kjører her (Node på Ubuntu, der pdfjs + @napi-rs/canvas virker). Den fyller
-# body.pages på kundeavis-item(er) som mangler ferdige sidebilder. Idempotent.
+# body.pages på kundeavis-PDF- og PowerPoint-item(er) som mangler ferdige
+# sidebilder. Idempotent.
+#
+# repository_dispatch (event render-decks) sendes fra appen når et deck publiseres,
+# så det rendres innen minutter i stedet for å vente på den daglige cron-en.
 on:
   schedule:
     - cron: "0 6 * * *"   # daglig 06:00 UTC — fanger opp ukens nye/endrede kundeavis
   workflow_dispatch:
+  repository_dispatch:
+    types: [render-decks]
 
 # Minste nødvendige rettigheter — jobben gjør kun checkout + Supabase-API via secrets.
 permissions:
@@ -29,6 +35,20 @@ jobs:
           npm install --no-audit --no-fund pdfjs-dist@^4.10.38 @napi-rs/canvas@^1.0.1
           cp "$GITHUB_WORKSPACE/scripts/render-kundeavis.mjs" render-kundeavis.mjs
           node render-kundeavis.mjs
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      # PowerPoint-decks: LibreOffice konverterer PPTX/PPT → PDF, deretter samme
+      # pdfjs-rasterisering. Gjenbruker node_modules fra kundeavis-steget (samme
+      # RUNNER_TEMP). LibreOffice er som regel forhåndsinstallert på ubuntu-latest;
+      # apt-installeres kun hvis soffice mangler.
+      - run: |
+          cd "$RUNNER_TEMP"
+          [ -f package.json ] || npm init -y >/dev/null 2>&1
+          npm install --no-audit --no-fund pdfjs-dist@^4.10.38 @napi-rs/canvas@^1.0.1
+          if ! command -v soffice >/dev/null 2>&1; then sudo apt-get update && sudo apt-get install -y libreoffice-impress; fi
+          cp "$GITHUB_WORKSPACE/scripts/render-decks.mjs" render-decks.mjs
+          node render-decks.mjs
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}

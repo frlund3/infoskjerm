@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/server"
+import { isPdfUrl, isPptUrl } from "@/lib/content/deck"
 
 /**
  * Reads published, in-window content straight from Supabase for the signage
@@ -65,6 +66,8 @@ export interface LiveItem {
   imageUrls: string[]
   imageMode: ImageMode
   isPdf: boolean
+  /** First media is a PowerPoint (.pptx/.ppt) → shown as pre-rendered page images (never client-rendered). */
+  isPpt: boolean
   /** First media is a video (mp4/webm) → rendered as autoplay/muted/loop. */
   isVideo: boolean
   /** Optional per-item display time in seconds (overrides the type default). */
@@ -299,7 +302,8 @@ export async function fetchLiveContent(storeId: string | null, types: string[], 
       imageUrl: firstImage,
       imageUrls,
       imageMode: body.imageMode === "plakat" ? "plakat" : body.imageMode === "liten" ? "liten" : "bakgrunn",
-      isPdf: (firstImage ?? "").toLowerCase().split("?")[0].endsWith(".pdf"),
+      isPdf: isPdfUrl(firstImage),
+      isPpt: isPptUrl(firstImage),
       isVideo: /\.(mp4|webm|mov|m4v)$/.test((firstImage ?? "").toLowerCase().split("?")[0]),
       durationSeconds: typeof body.durationSeconds === "number" && body.durationSeconds > 0 ? body.durationSeconds : null,
       pages: Array.isArray(body.pages) ? body.pages.filter(Boolean) : [],
