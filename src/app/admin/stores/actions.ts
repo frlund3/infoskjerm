@@ -131,6 +131,53 @@ export async function createTag(name: string, color: string): Promise<CreateTagR
   return { ok: true, tag: data }
 }
 
+export async function updateTag(tagId: string, name: string, color: string): Promise<CreateTagResult> {
+  const trimmed = name.trim()
+  if (!trimmed) return { ok: false, error: "Tag-navn kan ikke være tomt" }
+
+  const { supabase, userId, tenantId } = await requireRole([...STORE_ROLES])
+
+  const { data, error } = await supabase
+    .from("tags")
+    .update({ name: trimmed, color })
+    .eq("id", tagId)
+    .eq("tenant_id", tenantId)
+    .select("id, name, color")
+    .maybeSingle()
+
+  if (error) return { ok: false, error: error.message }
+  // RLS kan filtrere bort raden uten feil → 0 rader oppdatert. Ikke rapporter suksess da.
+  if (!data) return { ok: false, error: "Ikke funnet" }
+  await logAudit({ userId, action: "tag.update", entityType: "tag", entityId: tagId, summary: `Oppdaterte tagg «${trimmed}»` })
+  revalidatePath("/admin/stores")
+  return { ok: true, tag: data }
+}
+
+export async function deleteTag(tagId: string): Promise<{ ok: boolean; error?: string }> {
+  const { supabase, userId, tenantId } = await requireRole([...STORE_ROLES])
+
+  const { data: tag } = await supabase
+    .from("tags")
+    .select("name")
+    .eq("id", tagId)
+    .eq("tenant_id", tenantId)
+    .maybeSingle()
+  if (!tag) return { ok: false, error: "Ikke funnet" }
+
+  // store_tags har on delete cascade; content_targets.tag_id har det IKKE →
+  // FK-brudd (23503) betyr at taggen brukes i innholdsmålretting.
+  const { error } = await supabase.from("tags").delete().eq("id", tagId).eq("tenant_id", tenantId)
+  if (error) {
+    if (error.code === "23503") {
+      return { ok: false, error: "Taggen brukes i målretting av innhold. Fjern den fra innholdet først." }
+    }
+    return { ok: false, error: error.message }
+  }
+  await logAudit({ userId, action: "tag.delete", entityType: "tag", entityId: tagId, summary: `Slettet tagg «${tag.name}»` })
+  revalidatePath("/admin/stores")
+  return { ok: true }
+}
+
 export async function createStore(data: {
   name: string
   company_name: string

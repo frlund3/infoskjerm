@@ -16,6 +16,8 @@ interface StoreCardProps {
   allTags: BoardTag[]
   onToggleTag: (tag: BoardTag, assign: boolean) => void
   onCreateTag: (name: string, color: string) => Promise<{ ok: boolean; error?: string }>
+  onUpdateTag: (tag: BoardTag) => Promise<{ ok: boolean; error?: string }>
+  onDeleteTag: (tagId: string) => Promise<{ ok: boolean; error?: string }>
 }
 
 export function StoreCard({
@@ -26,6 +28,8 @@ export function StoreCard({
   allTags,
   onToggleTag,
   onCreateTag,
+  onUpdateTag,
+  onDeleteTag,
 }: StoreCardProps) {
   const online = store.screenCount > 0
   const [tagOpen, setTagOpen] = useState(false)
@@ -115,6 +119,8 @@ export function StoreCard({
             onOpenChange={setTagOpen}
             onToggle={onToggleTag}
             onCreate={onCreateTag}
+            onUpdate={onUpdateTag}
+            onDelete={onDeleteTag}
           />
         </div>
 

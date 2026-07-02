@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { Search, Store as StoreIcon, X, SlidersHorizontal } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { StoreCard } from "./store-card"
-import { toggleStoreTag, createTag } from "../actions"
+import { toggleStoreTag, createTag, updateTag, deleteTag } from "../actions"
 import type { BoardChain, BoardTag } from "./types"
 import { withAlpha } from "./types"
 
@@ -70,6 +70,48 @@ export function StoresBoard({ chains, allTags }: StoresBoardProps) {
       return { ok: true }
     }
     return { ok: false, error: res.error }
+  }
+
+  async function handleUpdateTag(tag: BoardTag) {
+    const res = await updateTag(tag.id, tag.name, tag.color)
+    if (!res.ok) return { ok: false, error: res.error }
+    setTags((prev) =>
+      prev
+        .map((t) => (t.id === res.tag.id ? res.tag : t))
+        .sort((a, b) => a.name.localeCompare(b.name, "nb"))
+    )
+    setTagsByStore((prev) =>
+      Object.fromEntries(
+        Object.entries(prev).map(([storeId, list]) => [
+          storeId,
+          list.map((t) => (t.id === res.tag.id ? res.tag : t)),
+        ])
+      )
+    )
+    startTransition(() => router.refresh())
+    return { ok: true }
+  }
+
+  async function handleDeleteTag(tagId: string) {
+    const res = await deleteTag(tagId)
+    if (!res.ok) return { ok: false, error: res.error }
+    setTags((prev) => prev.filter((t) => t.id !== tagId))
+    setTagsByStore((prev) =>
+      Object.fromEntries(
+        Object.entries(prev).map(([storeId, list]) => [
+          storeId,
+          list.filter((t) => t.id !== tagId),
+        ])
+      )
+    )
+    setActiveTagIds((prev) => {
+      if (!prev.has(tagId)) return prev
+      const next = new Set(prev)
+      next.delete(tagId)
+      return next
+    })
+    startTransition(() => router.refresh())
+    return { ok: true }
   }
 
   function toggleTagFilter(tagId: string) {
@@ -261,6 +303,8 @@ export function StoresBoard({ chains, allTags }: StoresBoardProps) {
                     allTags={tags}
                     onToggleTag={(tag, assign) => handleToggleTag(store.id, tag, assign)}
                     onCreateTag={(name, color) => handleCreateTag(store.id, name, color)}
+                    onUpdateTag={handleUpdateTag}
+                    onDeleteTag={handleDeleteTag}
                   />
                 ))}
               </div>
